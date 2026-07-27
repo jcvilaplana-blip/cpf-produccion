@@ -1,0 +1,334 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* CamareroPorFavor Brand Colors: Teal #01A89E, Orange #F48221 */
+  --background: #fafafa;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #01A89E;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f4;
+  --secondary-foreground: #171717;
+  --muted: #f5f5f4;
+  --muted-foreground: #737373;
+  --accent: #f5f5f4;
+  --accent-foreground: #171717;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #01A89E;
+  --chart-1: #F48221;
+  --chart-2: #01A89E;
+  --chart-3: #334155;
+  --chart-4: #eab308;
+  --chart-5: #f97316;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #01A89E;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #01A89E;
+}
+
+/* Dark mode */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #0a0a0a;
+  --popover-foreground: #fafafa;
+  --primary: #01C4B8;
+  --primary-foreground: #fafafa;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #b91c1c;
+  --destructive-foreground: #fafafa;
+  --border: #404040;
+  --input: #262626;
+  --ring: #01C4B8;
+  --chart-1: #F48221;
+  --chart-2: #01C4B8;
+  --chart-3: #eab308;
+  --chart-4: #a855f7;
+  --chart-5: #f87171;
+  --sidebar: #171717;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #01C4B8;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #404040;
+  --sidebar-ring: #01C4B8;
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Eliminar scrollbars en vista movil */
+  @media (max-width: 768px) {
+    html,
+    body {
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Ocultar scrollbar vertical pero permitir scroll */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+    }
+    html,
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Ocultar scrollbars en todos los contenedores scrolleables */
+    *::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .card {
+      @apply border-0 shadow-none;
+    }
+
+    input,
+    textarea,
+    select {
+      @apply bg-background border-border/50;
+    }
+  }
+}
+
+/* Prevent tap/hover effects from distorting card images */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Lock aspect ratio on video card containers -- no hover/active transforms */
+.aspect-\[3\/4\] {
+  contain: layout;
+  --tw-enter-scale: 1 !important;
+  --tw-enter-opacity: 1 !important;
+}
+.aspect-\[3\/4\] > img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Ensure MuxPlayer fills card container without distortion */
+.aspect-\[3\/4\] mux-player {
+  --controls: none;
+  --media-object-fit: cover;
+  --media-object-position: center;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* The invisible reCAPTCHA widget (Firebase Phone Auth) renders a floating
+   badge fixed to the bottom-right corner of the viewport at all times. On
+   mobile it overlaps our fixed bottom navigation bar and isn't responsive -
+   hidden here, with the legally-required attribution text shown inline next
+   to the phone verification form instead (see phone-verification.tsx). */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+
+/* Custom animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Estilos para video vertical estilo TikTok/Instagram */
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+/* Smooth scroll para carruseles */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Transiciones suaves para hover */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Improved bottom nav hiding animation */
+body.hide-bottom-nav .global-bottom-nav {
+  transform: translateY(100%) !important;
+  transition: transform 0.3s ease-in-out !important;
+}
+
+/* ===== Mobile Safe Areas (Web & Native) ===== */
+/* Bottom navigation respects safe area on all devices */
+.global-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure main content doesn't get hidden behind fixed bottom nav */
+@media (max-width: 768px) {
+  main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Keyboard open state - hide bottom nav */
+body.keyboard-open .global-bottom-nav {
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+}
+
+/* ===== Safe Area for Headers (TWA/PWA/Native) ===== */
+/* Apply safe area padding to sticky headers for all mobile apps */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Auto-apply to ALL sticky/fixed headers on mobile for TWA/PWA */
+  @media (max-width: 768px) {
+    /* Sticky headers get safe area padding */
+    header[class*="sticky"],
+    .sticky-header,
+    [class*="sticky"][class*="top-0"] {
+      padding-top: env(safe-area-inset-top, 0px) !important;
+    }
+    
+    /* Fixed top elements also get safe area */
+    .fixed.top-0,
+    [class*="fixed"][class*="top-0"]:not(.global-bottom-nav):not([class*="bottom-"]) {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+  }
+}
+
+/* ===== Capacitor Native Safe Areas ===== */
+/* Apply safe area padding when running in Capacitor native */
+html.native-app body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Top navigation respects notch in native app */
+html.native-app .top-navigation {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Android status bar overlay fix */
+html.native-app.plt-android body {
+  padding-top: max(env(safe-area-inset-top, 0px), 24px);
+}

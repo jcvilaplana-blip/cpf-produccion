@@ -1,0 +1,569 @@
+"use client"
+
+import type React from "react"
+import { useState, useRef, useEffect, useCallback } from "react" 
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, CalendarCheck, Star, X } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
+import { BottomNavigation } from "@/components/bottom-navigation"
+import type { Profile } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import {
+  getMessages,
+  sendMessage,
+  markConversationAsRead,
+  getConversations as fetchConversations,
+  getRelevantApplication,
+  hasRated as checkHasRated,
+  type Conversation,
+  type Message,
+  type RelevantApplication,
+} from "@/lib/messaging"
+import { useRealtimeMessages, useRealtimeConversations } from "@/hooks/use-realtime-messages"
+import { updateApplicationStatusAction } from "@/lib/actions"
+import { RatingDialog } from "@/components/rating-dialog"
+import { toast } from "sonner"
+
+const availabilityMap: Record<string, { label: string; color: string }> = {
+  available: { label: "Disponible", color: "bg-emerald-100 text-emerald-700" },
+  busy: { label: "Ocupado", color: "bg-amber-100 text-amber-700" },
+  not_looking: { label: "No busca empleo", color: "bg-slate-100 text-slate-600" },
+}
+
+interface MessagesContentProps {
+  user: { id: string; email?: string }
+  profile: Profile | null
+  conversations: Conversation[]
+  initialConversationId?: string | null
+}
+
+export function MessagesContent({
+  user,
+  profile,
+  conversations: initialConversations,
+  initialConversationId,
+}: MessagesContentProps) {
+  const supabase = createClient()
+  const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(
+    initialConversationId
+      ? initialConversations.find((c) => c.id === initialConversationId) || null
+      : null
+  )
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSending, setIsSending] = useState(false)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Job application linking this conversation's two participants (if any),
+  // used to offer interview/hire confirmation and unlock mutual ratings.
+  const [activeApplication, setActiveApplication] = useState<RelevantApplication | null>(null)
+  const [alreadyRated, setAlreadyRated] = useState(false)
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+
+  // Scroll to bottom helper
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 100)
+  }, [])
+
+  // Load the job application (if any) tying the two participants together
+  useEffect(() => {
+    setActiveApplication(null)
+    setAlreadyRated(false)
+    if (!selectedConversation || !profile) return
+
+    const otherId = selectedConversation.other_participant?.id
+    const otherType = selectedConversation.other_participant?.user_type
+    if (!otherId) return
+
+    const workerId = profile.user_type === "business" ? otherId : user.id
+    const businessId = profile.user_type === "business" ? user.id : otherId
+    // Only makes sense between a worker and a business
+    if (profile.user_type === otherType) return
+
+    const loadApplication = async () => {
+      const app = await getRelevantApplication(supabase, workerId, businessId)
+      if (!app) return
+      setActiveApplication(app)
+      if (app.status === "accepted") {
+        const rated = await checkHasRated(supabase, user.id, otherId, app.job_id)
+        setAlreadyRated(rated)
+      }
+    }
+    loadApplication()
+  }, [selectedConversation, profile, supabase, user.id])
+
+  const handleApplicationStatusChange = async (newStatus: string) => {
+    if (!activeApplication) return
+    setIsUpdatingStatus(true)
+    const result = await updateApplicationStatusAction(activeApplication.id, newStatus)
+    setIsUpdatingStatus(false)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    setActiveApplication((prev) => (prev ? { ...prev, status: newStatus } : prev))
+    const labels: Record<string, string> = {
+      interview: "Entrevista confirmada",
+      accepted: "Contratación confirmada — ya podéis valoraros mutuamente",
+      rejected: "Candidatura rechazada",
+    }
+    toast.success(labels[newStatus] || "Estado actualizado")
+  }
+
+  // Load messages when conversation is selected
+  useEffect(() => {
+    if (!selectedConversation) return
+
+    const loadMessages = async () => {
+      setIsLoadingMessages(true)
+      const msgs = await getMessages(supabase, selectedConversation.id)
+      setMessages(msgs)
+      setIsLoadingMessages(false)
+      scrollToBottom()
+
+      // Mark as read
+      await markConversationAsRead(supabase, selectedConversation.id, user.id)
+      // Update unread count locally
+      setConversations((prev) =>
+        prev.map((c) => (c.id === selectedConversation.id ? { ...c, unread_count: 0 } : c))
+      )
+    }
+
+    loadMessages()
+  }, [selectedConversation, supabase, user.id, scrollToBottom])
+
+  // Realtime: new messages in the selected conversation
+  const handleNewMessage = useCallback(
+    (message: Message) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev
+        return [...prev, message]
+      })
+      scrollToBottom()
+
+      // Mark incoming message as read since we're viewing the conversation
+      if (message.receiver_id === user.id) {
+        markConversationAsRead(supabase, message.conversation_id!, user.id)
+      }
+    },
+    [supabase, user.id, scrollToBottom]
+  )
+
+  useRealtimeMessages({
+    supabase,
+    conversationId: selectedConversation?.id || null,
+    userId: user.id,
+    onNewMessage: handleNewMessage,
+  })
+
+  // Realtime: refresh conversation list on changes
+  const refreshConversations = useCallback(async () => {
+    const updated = await fetchConversations(supabase, user.id)
+    setConversations(updated)
+  }, [supabase, user.id])
+
+  useRealtimeConversations({
+    supabase,
+    userId: user.id,
+    onUpdate: refreshConversations,
+  })
+
+  // Send message handler
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMessage.trim() || !selectedConversation || isSending) return
+
+    const content = newMessage.trim()
+    setNewMessage("")
+    setIsSending(true)
+
+    // Optimistic update
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: selectedConversation.id,
+      sender_id: user.id,
+      receiver_id: selectedConversation.other_participant?.id || "",
+      content,
+      read: false,
+      created_at: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, optimisticMsg])
+    scrollToBottom()
+
+    const sent = await sendMessage(
+      supabase,
+      selectedConversation.id,
+      user.id,
+      selectedConversation.other_participant?.id || "",
+      content
+    )
+
+    if (sent) {
+      // Replace optimistic message with real one
+      setMessages((prev) => prev.map((m) => (m.id === optimisticMsg.id ? sent : m)))
+    }
+
+    setIsSending(false)
+  }
+
+  const filteredConversations = conversations.filter((conv) =>
+    conv.other_participant?.display_name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+    } else if (diffDays === 1) {
+      return "Ayer"
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString("es-ES", { weekday: "short" })
+    }
+    return date.toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20 md:pb-6 md:pt-14">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 pt-[env(safe-area-inset-top,0px)]">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            {selectedConversation ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSelectedConversation(null)
+                  setMessages([])
+                }}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/dashboard">
+                  <ArrowLeft className="h-5 w-5" />
+                </Link>
+              </Button>
+            )}
+            <Image
+              src="/logo-cpf.png"
+              alt="CamareroPorFavor"
+              width={36}
+              height={36}
+              className="object-contain rounded-full"
+            />
+            {selectedConversation ? (
+              <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage
+                    src={selectedConversation.other_participant?.avatar_url || undefined}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {selectedConversation.other_participant?.display_name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h1 className="text-base font-semibold leading-tight">
+                    {selectedConversation.other_participant?.display_name}
+                  </h1>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      {selectedConversation.other_participant?.user_type === "business"
+                        ? "Empresa"
+                        : "Trabajador"}
+                    </p>
+                    {selectedConversation.other_participant?.user_type !== "business" &&
+                      selectedConversation.other_participant?.availability_status && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] px-1.5 py-0 h-4 border-0",
+                            availabilityMap[selectedConversation.other_participant.availability_status]?.color ||
+                              "bg-slate-100 text-slate-600"
+                          )}
+                        >
+                          {availabilityMap[selectedConversation.other_participant.availability_status]?.label ||
+                            selectedConversation.other_participant.availability_status}
+                        </Badge>
+                      )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <h1 className="text-xl font-bold">Mensajes</h1>
+            )}
+          </div>
+
+          {/* Interview / hire confirmation + mutual rating */}
+          {selectedConversation && activeApplication && (
+            <div className="flex flex-wrap items-center gap-2 px-1 pb-3 pt-1">
+              {profile?.user_type === "business" &&
+                ["pending", "interview"].includes(activeApplication.status) && (
+                  <>
+                    {activeApplication.status === "pending" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={isUpdatingStatus}
+                        onClick={() => handleApplicationStatusChange("interview")}
+                      >
+                        <CalendarCheck className="h-3 w-3 mr-1" />
+                        Citar entrevista
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                      disabled={isUpdatingStatus}
+                      onClick={() => handleApplicationStatusChange("accepted")}
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      Confirmar contratación
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs text-destructive"
+                      disabled={isUpdatingStatus}
+                      onClick={() => handleApplicationStatusChange("rejected")}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Rechazar
+                    </Button>
+                  </>
+                )}
+              {activeApplication.status === "accepted" && !alreadyRated && (
+                <Button
+                  size="sm"
+                  className="h-7 text-xs bg-primary hover:bg-primary/90"
+                  onClick={() => setShowRatingDialog(true)}
+                >
+                  <Star className="h-3 w-3 mr-1" />
+                  Valorar a {selectedConversation.other_participant?.display_name}
+                </Button>
+              )}
+              {activeApplication.status === "accepted" && alreadyRated && (
+                <Badge variant="outline" className="h-7 text-xs px-2 flex items-center gap-1 border-0 bg-emerald-50 text-emerald-700">
+                  <Check className="h-3 w-3" />
+                  Ya has valorado esta contratación
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {selectedConversation && activeApplication && (
+        <RatingDialog
+          open={showRatingDialog}
+          onOpenChange={setShowRatingDialog}
+          ratedUserId={selectedConversation.other_participant?.id || ""}
+          ratedUserName={selectedConversation.other_participant?.display_name || "Usuario"}
+          jobId={activeApplication.job_id}
+          onSuccess={() => setAlreadyRated(true)}
+        />
+      )}
+
+      <div className="container mx-auto px-4 py-4 max-w-6xl">
+        {conversations.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No tienes conversaciones</h3>
+              <p className="text-muted-foreground mb-4">
+                Comienza a aplicar a trabajos o contacta con candidatos para iniciar conversaciones.
+              </p>
+              <Button asChild className="bg-primary hover:bg-primary/90">
+                <Link href="/dashboard">Explorar Trabajos</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-160px)]">
+            {/* Conversations List */}
+            <div
+              className={cn(
+                "md:col-span-1 flex flex-col gap-3",
+                selectedConversation && "hidden md:flex"
+              )}
+            >
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar conversaciones..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto flex flex-col gap-1.5">
+                {filteredConversations.map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg text-left transition-colors w-full hover:bg-accent",
+                      selectedConversation?.id === conversation.id &&
+                        "bg-accent ring-1 ring-primary/20"
+                    )}
+                    onClick={() => setSelectedConversation(conversation)}
+                  >
+                    <Avatar className="h-11 w-11 flex-shrink-0">
+                      <AvatarImage
+                        src={conversation.other_participant?.avatar_url || undefined}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {conversation.other_participant?.display_name?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex items-center justify-between mb-0.5 gap-2">
+                        <span className="font-semibold text-sm truncate">
+                          {conversation.other_participant?.display_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {formatTime(conversation.last_message_at)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground truncate">
+                          {conversation.last_message || "Inicia una conversacion"}
+                        </p>
+                        {(conversation.unread_count || 0) > 0 && (
+                          <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 flex items-center justify-center flex-shrink-0">
+                            {conversation.unread_count}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chat View */}
+            <div
+              className={cn(
+                "md:col-span-2 flex flex-col",
+                !selectedConversation && "hidden md:flex md:items-center md:justify-center"
+              )}
+            >
+              {selectedConversation ? (
+                <Card className="flex-1 flex flex-col overflow-hidden">
+                  {/* Messages area */}
+                  <CardContent className="flex-1 p-4 overflow-y-auto">
+                    {isLoadingMessages ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-center">
+                        <div>
+                          <MessageCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                          <p className="text-sm text-muted-foreground">
+                            Envia el primer mensaje para iniciar la conversacion
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {messages.map((message) => {
+                          const isOwn = message.sender_id === user.id
+                          return (
+                            <div
+                              key={message.id}
+                              className={cn("flex", isOwn ? "justify-end" : "justify-start")}
+                            >
+                              <div
+                                className={cn(
+                                  "max-w-[75%] rounded-2xl px-4 py-2.5",
+                                  isOwn
+                                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                                    : "bg-muted text-foreground rounded-bl-sm"
+                                )}
+                              >
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {message.content}
+                                </p>
+                                <div
+                                  className={cn(
+                                    "flex items-center justify-end gap-1 mt-1",
+                                    isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
+                                  )}
+                                >
+                                  <span className="text-[10px]">
+                                    {new Date(message.created_at).toLocaleTimeString("es-ES", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                  {isOwn &&
+                                    (message.read ? (
+                                      <CheckCheck className="h-3.5 w-3.5" />
+                                    ) : (
+                                      <Check className="h-3.5 w-3.5" />
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        <div ref={messagesEndRef} />
+                      </div>
+                    )}
+                  </CardContent>
+
+                  {/* Message Input */}
+                  <div className="p-3 border-t bg-card">
+                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                      <Input
+                        placeholder="Escribe un mensaje..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        className="flex-1"
+                        autoFocus
+                      />
+                      <Button
+                        type="submit"
+                        size="icon"
+                        disabled={!newMessage.trim() || isSending}
+                        className="bg-primary hover:bg-primary/90 flex-shrink-0"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </div>
+                </Card>
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm">Selecciona una conversacion para comenzar</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <BottomNavigation profile={profile} />
+    </div>
+  )
+}

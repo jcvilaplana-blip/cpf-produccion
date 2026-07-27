@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.camareroporfavor.app",
+        "paths": [
+          "/auth/callback",
+          "/auth/login",
+          "/auth/sign-up",
+          "/profile/*",
+          "/jobs/*"
+        ]
+      }
+    ]
+  }
+}

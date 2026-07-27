@@ -1,0 +1,247 @@
+"use client"
+
+import type React from "react"
+import { HeroSlider } from "@/components/hero-slider"
+import { CategoriesScroll } from "@/components/categories-scroll"
+import { WorkerVideoCard } from "@/components/worker-video-card"
+import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
+import { CompaniesCarousel } from "@/components/companies-carousel"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { ArrowRight, Zap } from "lucide-react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+
+import { useLanguage } from "@/lib/i18n/language-context"
+import Image from "next/image"
+
+interface LandingContentProps {
+  featuredJobs: any[]
+  stats: {
+    totalJobs: number
+    totalWorkers: number
+    totalBusinesses: number
+  }
+  businesses: any[]
+  workers?: any[]
+  flashOffers?: any[]
+  isLoggedIn?: boolean
+}
+
+const INITIAL_WORKERS_COUNT = 6
+const LOAD_MORE_COUNT = 12
+
+export function LandingContent({ featuredJobs, stats, businesses, workers: workersData = [], flashOffers = [], isLoggedIn = false }: LandingContentProps) {
+  const { t } = useLanguage()
+  const router = useRouter()
+  const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
+
+  // Map workers from database format
+  const workers = workersData.map((profile: any) => ({
+    id: profile.id,
+    name: profile.display_name,
+    category: profile.job_category || "General",
+    location: profile.location ? profile.location.split(",")[0].trim() : "Espana",
+    rating: profile.rating || 0,
+    muxPlaybackId: profile.mux_playback_id || null,
+    videoUrl: profile.avatar_url || "/placeholder.svg",
+    experience: `${profile.experience_years || 0} ${t("candidates.years")} ${t("candidates.yearsExperience")}`,
+  }))
+
+  const visibleWorkers = workers.slice(0, displayedWorkers)
+  const hasMoreWorkers = displayedWorkers < workers.length
+
+  const loadMoreWorkers = () => {
+    setDisplayedWorkers((prev) => Math.min(prev + LOAD_MORE_COUNT, workers.length))
+  }
+
+  const featuredFlashOffers = flashOffers.slice(0, 3)
+
+  // Anonymous visitors can see the homepage as a showcase, but any real tap
+  // sends them to login/register instead of letting them interact with
+  // anything. Using onClickCapture (not a blocking overlay) is deliberate:
+  // browsers only ever fire a "click" event for a genuine tap, never for a
+  // drag/swipe, so this still lets touch gestures reach scrollable children
+  // (e.g. the Empleos carousel) natively instead of eating every touch event
+  // outright the way a full-screen overlay div would.
+  const handleGateClick = (e: React.MouseEvent) => {
+    if (isLoggedIn) return
+    e.preventDefault()
+    e.stopPropagation()
+    router.push("/auth/login")
+  }
+
+  return (
+    <div className="min-h-screen bg-background" onClickCapture={handleGateClick}>
+      <HeroSlider />
+
+      <CategoriesScroll />
+
+      <section className="pt-2 pb-6 md:py-6 bg-gradient-to-b from-background to-teal-50/30">
+        <div className="container mx-auto px-4">
+          <div className="bg-gradient-to-br from-[#01A89E] to-[#018F86] rounded-2xl overflow-hidden shadow-lg">
+            <div className="grid md:grid-cols-2 gap-0">
+              {/* Contenido de texto */}
+              <div className="p-6 md:p-8 flex flex-col justify-center">
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t("landing.jobOffersSection")}</h2>
+                <p className="text-white/90 mb-6 text-sm md:text-base">{t("landing.jobOffersDescription")}</p>
+                <Button asChild size="lg" className="bg-white text-[#018F86] hover:bg-teal-50 w-full md:w-auto">
+                  <Link href="/jobs">
+                    {t("landing.exploreAllJobs")}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Grid de imagenes */}
+              <div className="grid grid-cols-2 gap-1 h-48 md:h-auto">
+                <div className="relative">
+                  <Image src="/professional-waiter-serving-in-elegant-restaurant.jpg" alt="Camarero profesional" fill className="object-cover" />
+                </div>
+                <div className="relative">
+                  <Image src="/chef-modern-kitchen.png" alt="Chef cocinando" fill className="object-cover" />
+                </div>
+                <div className="relative">
+                  <Image
+                    src="/bartender-mixing-cocktails.jpg"
+                    alt="Bartender preparando cocteles"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative">
+                  <Image src="/hotel-receptionist-welcoming-guests.jpg" alt="Recepcionista de hotel" fill className="object-cover" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-8 bg-gradient-to-b from-teal-50 to-background">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6 gap-2">
+            <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+              <div className="bg-[#01A89E] p-1.5 md:p-2 rounded-lg flex-shrink-0">
+                <Zap className="w-5 h-5 md:w-6 md:h-6 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold whitespace-nowrap">
+                  {t("landing.flashOffersTitle")}
+                </h2>
+                <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 truncate">
+                  <span className="hidden sm:inline">{t("landing.flashOffersSubtitle")}</span>
+                  <span className="sm:hidden">{t("landing.flashOffersSubtitleMobile")}</span>
+                </p>
+              </div>
+            </div>
+            <Button
+              asChild
+              variant="ghost"
+              className="text-[#018F86] hover:text-[#017A73] flex-shrink-0 text-sm md:text-base"
+            >
+              <Link href="/flash-offers">
+                <span className="hidden sm:inline">{t("common.viewAllFeminine")}</span>
+                <span className="sm:hidden">{t("common.viewMore")}</span>
+                <ArrowRight className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {featuredFlashOffers.length > 0 ? (
+            <FlashOffersCarousel offers={featuredFlashOffers} />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay ofertas flash disponibles en este momento
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-6 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestCandidates")}</h2>
+            </div>
+            <Button asChild variant="ghost">
+              <Link href="/candidates">
+                {t("common.viewAll")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {visibleWorkers.map((worker) => (
+              <WorkerVideoCard key={worker.id} {...worker} />
+            ))}
+          </div>
+
+          {visibleWorkers.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">{t("landing.noCandidatesFound")}</p>
+            </div>
+          )}
+
+          {hasMoreWorkers && (
+            <div className="text-center mt-8">
+              <Button
+                onClick={loadMoreWorkers}
+                size="lg"
+                variant="outline"
+                className="min-w-[200px] bg-background hover:bg-muted"
+              >
+                {t("common.loadMore")}
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2">
+                {t("common.showing")} {visibleWorkers.length} {t("common.of")} {workers.length}{" "}
+                {t("candidates.title").toLowerCase()}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-8 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestBusinesses")}</h2>
+            </div>
+            <Button asChild variant="ghost">
+              <Link href="/businesses">
+                {t("common.viewAllFeminine")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <CompaniesCarousel companies={businesses} />
+        </div>
+      </section>
+
+      <section className="py-6 pb-12 bg-muted/30">
+        <div className="container mx-auto px-4 text-center max-w-4xl">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-balance">{t("landing.readyForNextStep")}</h2>
+            <p className="text-lg text-primary-foreground/90 text-pretty mt-0">{t("landing.joinPlatform")}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-1">
+            <Button asChild size="lg">
+              <Link href="/auth/sign-up?type=worker">{t("landing.createProfileFree")}</Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+            >
+              <Link href="/auth/sign-up?type=business">{t("landing.postJob")}</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}

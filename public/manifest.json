@@ -1,0 +1,23 @@
+{
+  "name": "CamareroPorFavor",
+  "short_name": "CamareroPorFavor",
+  "description": "La app que conecta a profesionales de la hosteleria con bares, restaurantes y hoteles en toda Espana",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#01A89E",
+  "icons": [
+    {
+      "src": "/lazo-512-fondoB.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lazo-512-fondoB.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
