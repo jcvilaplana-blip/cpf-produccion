@@ -24,7 +24,7 @@ import { ExperienceSection } from "@/components/edit-profile/experience-section"
 import { EducationSection } from "@/components/edit-profile/education-section"
 import { CvSection } from "@/components/edit-profile/cv-section"
 import { PortfolioSection } from "@/components/edit-profile/portfolio-section"
-import { AdditionalVideosSection } from "@/components/edit-profile/additional-videos-section"
+import { PortfolioVideosSection } from "@/components/edit-profile/portfolio-videos-section"
 import { PremiumFeaturesCard } from "@/components/premium-features-card"
 
 interface EditProfileContentProps {
@@ -67,12 +67,10 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [videoError, setVideoError] = useState("")
   const [cvFileName, setCvFileName] = useState("")
   const [cvUrl, setCvUrl] = useState("")
   const [portfolioImages, setPortfolioImages] = useState<string[]>([])
-  const [additionalVideos, setAdditionalVideos] = useState<any[]>([])
+  const [portfolioVideos, setPortfolioVideos] = useState<string[]>([])
 
   // --- save ---
   const [saving, setSaving] = useState(false)
@@ -109,9 +107,9 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
       setPortfolioImages(profile.portfolio_images.filter(Boolean))
     }
     
-    // Additional videos
-    if (profile.additional_videos && Array.isArray(profile.additional_videos)) {
-      setAdditionalVideos(profile.additional_videos)
+    // Portfolio videos
+    if (profile.portfolio_videos && Array.isArray(profile.portfolio_videos)) {
+      setPortfolioVideos(profile.portfolio_videos.filter(Boolean))
     }
 
     const rawSkills = profile.specialties
@@ -153,23 +151,6 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     if (!file) return
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
-  }
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setVideoError("")
-    const video = document.createElement("video")
-    video.preload = "metadata"
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src)
-      if (video.duration > 60) {
-        setVideoError("El video no puede superar 1 minuto de duracion.")
-        return
-      }
-      setVideoPreview(URL.createObjectURL(file))
-    }
-    video.src = URL.createObjectURL(file)
   }
 
   const handleCvUploaded = (url: string, filename: string) => {
@@ -265,8 +246,8 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         cv_filename: cvFileName || null,
         // Portfolio images
         portfolio_images: portfolioImages,
-        // Additional videos
-        additional_videos: additionalVideos,
+        // Portfolio videos
+        portfolio_videos: portfolioVideos,
       }
 
       const result = await updateProfileAction(updates)
@@ -362,12 +343,6 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         <MediaSection
           avatarPreview={avatarPreview}
           onAvatarChange={handleAvatarChange}
-          videoPreview={videoPreview}
-          onVideoChange={handleVideoChange}
-          onRemoveVideo={() => setVideoPreview(null)}
-          videoError={videoError}
-          muxPlaybackId={profile?.mux_playback_id}
-          videoStatus={profile?.video_status}
         />
 
         <PersonalSection
@@ -420,10 +395,10 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
           maxImages={3}
         />
 
-        <AdditionalVideosSection
-          videos={additionalVideos}
-          onVideosChange={setAdditionalVideos}
-          maxVideos={2}
+        <PortfolioVideosSection
+          videos={portfolioVideos}
+          onVideosChange={setPortfolioVideos}
+          maxVideos={3}
         />
 
         <CvSection

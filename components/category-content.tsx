@@ -9,10 +9,18 @@ import { WorkerVideoCard } from "@/components/worker-video-card"
 import { MapPin, SlidersHorizontal, ArrowLeft, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { CityAutocomplete } from "@/components/city-autocomplete"
 
 interface CategoryContentProps {
   categoryName: string
   user: any | null
+}
+
+interface CategoryOption {
+  id: string
+  name: string
+  slug: string
+  subcategories: { id: string; name: string; slug: string }[]
 }
 
 const SPECIAL_CATEGORY_NAMES = ["Todas", "Guardados"]
@@ -22,6 +30,7 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
   const [experienceFilter, setExperienceFilter] = useState("all")
   const [jobTypeFilter, setJobTypeFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const [subcategoryFilter, setSubcategoryFilter] = useState("all")
   const [locationFilter, setLocationFilter] = useState("")
   const [postalCodeFilter, setPostalCodeFilter] = useState("")
   const [flashOffersOnly, setFlashOffersOnly] = useState(false)
@@ -30,18 +39,23 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
   const [workers, setWorkers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [resolvedCategory, setResolvedCategory] = useState<{ id: string; name: string } | null>(null)
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
 
   // categoryName arrives as a URL slug (e.g. "camarero") for real categories,
   // or one of the special values above. Resolve the slug to its real id/name
   // so we can match candidates by category_id instead of fragile string equality.
+  // Also populates the "Categoría" filter dropdown below with the real
+  // candidate taxonomy (role_type='candidate') instead of a stale hardcoded list.
   useEffect(() => {
-    if (SPECIAL_CATEGORY_NAMES.includes(categoryName)) return
     fetch("/api/categories")
       .then((r) => r.json())
       .then((json) => {
-        const cats = json.data || []
-        const match = cats.find((c: any) => c.slug === categoryName)
-        if (match) setResolvedCategory({ id: match.id, name: match.name })
+        const cats = (json.data || []).filter((c: any) => c.role_type === "candidate")
+        setCategoryOptions(cats)
+        if (!SPECIAL_CATEGORY_NAMES.includes(categoryName)) {
+          const match = cats.find((c: any) => c.slug === categoryName)
+          if (match) setResolvedCategory({ id: match.id, name: match.name })
+        }
       })
       .catch(() => {})
   }, [categoryName])
@@ -69,8 +83,7 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
           specialties: Array.isArray(profile.specialties) ? profile.specialties : [],
           location: profile.location ? profile.location.split(",")[0].trim() : "España",
           rating: profile.rating || 0,
-          muxPlaybackId: profile.mux_playback_id || null,
-          videoUrl: profile.avatar_url || "/placeholder.svg",
+          avatarUrl: profile.avatar_url || "/placeholder.svg",
           experience: `${profile.experience_years || 0} años de experiencia`,
           experienceLevel: profile.experience_years >= 7 ? "high" : profile.experience_years >= 4 ? "medium" : "low",
           jobType: profile.availability_status || "full-time",
@@ -101,7 +114,15 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
         : worker.category === categoryName || matchesSpecialty(categoryName))
     const matchesExperience = experienceFilter === "all" || worker.experienceLevel === experienceFilter
     const matchesJobType = jobTypeFilter === "all" || worker.jobType === jobTypeFilter
-    const matchesCategoryFilter = categoryFilter === "all" || worker.category === categoryFilter || matchesSpecialty(categoryFilter)
+    const selectedFilterCat = categoryOptions.find((c) => c.slug === categoryFilter)
+    const matchesCategoryFilter = (() => {
+      if (categoryFilter === "all" || !selectedFilterCat) return true
+      if (subcategoryFilter !== "all") {
+        const selectedSub = selectedFilterCat.subcategories.find((s) => s.id === subcategoryFilter)
+        return worker.specialties.includes(`${selectedFilterCat.name} - ${selectedSub?.name}`)
+      }
+      return worker.category === selectedFilterCat.name || matchesSpecialty(selectedFilterCat.name)
+    })()
     const matchesLocation = !locationFilter || worker.location.toLowerCase().includes(locationFilter.toLowerCase())
     const matchesPostalCode = !postalCodeFilter || worker.location.includes(postalCodeFilter)
     const matchesFlash = !flashOffersOnly || worker.isFlashOffer
@@ -189,28 +210,47 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
 
               <div className="w-full">
                 <Label htmlFor="category">Categoría</Label>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setSubcategoryFilter("all") }}>
                   <SelectTrigger id="category" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Más actuales</SelectItem>
-                    <SelectItem value="Camarero">Camarero</SelectItem>
-                    <SelectItem value="Cocinero">Cocinero</SelectItem>
-                    <SelectItem value="Barista">Barista</SelectItem>
-                    <SelectItem value="Chef">Chef</SelectItem>
-                    <SelectItem value="Ayudante de cocina">Ayudante de cocina</SelectItem>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
+                    {categoryOptions.map((c) => (
+                      <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
+              {(() => {
+                const selectedFilterCat = categoryOptions.find((c) => c.slug === categoryFilter)
+                if (!selectedFilterCat || selectedFilterCat.subcategories.length === 0) return null
+                return (
+                  <div className="w-full">
+                    <Label htmlFor="subcategory">Especialidad</Label>
+                    <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
+                      <SelectTrigger id="subcategory" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas</SelectItem>
+                        {selectedFilterCat.subcategories.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )
+              })()}
+
               <div className="w-full">
                 <Label htmlFor="location">Ciudad</Label>
-                <Input
+                <CityAutocomplete
                   id="location"
                   placeholder="Madrid, Barcelona..."
                   value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
+                  onChange={setLocationFilter}
                   className="w-full"
                 />
               </div>
@@ -245,6 +285,7 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
                 setExperienceFilter("all")
                 setJobTypeFilter("all")
                 setCategoryFilter("all")
+                setSubcategoryFilter("all")
                 setLocationFilter("")
                 setPostalCodeFilter("")
                 setFlashOffersOnly(false)

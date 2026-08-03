@@ -182,8 +182,12 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <span className="text-xs text-muted-foreground">Valoración</span>
           </Link>
           <div className="w-px h-8 bg-border" />
-          <Link
-            href={`/search?business=${id}`}
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              business.address || business.location || business.city || business.display_name
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity"
           >
             <div className="flex items-center gap-1">
@@ -193,7 +197,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <span className="text-xs text-muted-foreground text-center">
               {(business.city || business.location || "").split(",")[0].trim()}
             </span>
-          </Link>
+          </a>
           <div className="w-px h-8 bg-border" />
           <Link
             href={`/business/${id}/jobs`}

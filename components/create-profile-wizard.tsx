@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -55,7 +55,7 @@ const slideVariants = {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function CreateProfileWizard() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(1)

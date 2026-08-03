@@ -4,8 +4,8 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Users, Building2, FolderTree, MapPin, Crown, Globe,
-  Languages, CreditCard, Settings, Video, Star, MessageCircle, Briefcase,
-  ChevronDown, ChevronRight, Zap, Map, DollarSign, Plug, X, LogOut, Bell,
+  Languages, CreditCard, Settings, Star, MessageCircle, Briefcase, CalendarCheck,
+  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -13,11 +13,11 @@ export type AdminSection =
   | "dashboard"
   | "candidates" | "businesses"
   | "jobs" | "flash"
+  | "interviews"
   | "categories"
-  | "videos" | "ratings"
+  | "ratings"
   | "messages"
   | "notifications"
-  | "map"
   | "plans"
   | "countries" | "cities"
   | "languages"
@@ -45,24 +45,23 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Ofertas",
     items: [
-      { id: "jobs", label: "Empleos", icon: Briefcase },
+      { id: "jobs", label: "Ofertas de Empleo", icon: Briefcase },
       { id: "flash", label: "Ofertas Flash", icon: Zap },
+    ],
+  },
+  {
+    label: "Entrevistas",
+    items: [
+      { id: "interviews", label: "Solicitudes de Entrevista", icon: CalendarCheck },
     ],
   },
   {
     label: "Contenido",
     items: [
-      { id: "categories", label: "Categorías", icon: FolderTree },
-      { id: "videos", label: "Vídeos / Reels", icon: Video },
+      { id: "categories", label: "Empleos", icon: FolderTree },
       { id: "ratings", label: "Reseñas", icon: Star },
       { id: "messages", label: "Mensajes", icon: MessageCircle },
       { id: "notifications", label: "Notificaciones", icon: Bell },
-    ],
-  },
-  {
-    label: "Mapa",
-    items: [
-      { id: "map", label: "Vista en Tiempo Real", icon: Map },
     ],
   },
   {

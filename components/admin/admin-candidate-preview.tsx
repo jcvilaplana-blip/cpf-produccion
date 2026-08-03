@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  X, MapPin, Star, Play, Briefcase, MessageCircle, Heart,
-  Clock, CheckCircle, Award, Globe, Video, Image as ImageIcon, ExternalLink
+  X, MapPin, Star, Briefcase, MessageCircle, Heart,
+  Clock, CheckCircle, Award, Globe, Image as ImageIcon, ExternalLink
 } from "lucide-react"
-import MuxPlayer from "@mux/mux-player-react"
 
 interface CandidatePreviewProps {
   open: boolean
@@ -19,7 +18,6 @@ interface CandidatePreviewProps {
 
 export function AdminCandidatePreview({ open, onOpenChange, candidate }: CandidatePreviewProps) {
   const [liked, setLiked] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
   const [activeImage, setActiveImage] = useState<string | null>(null)
 
   if (!candidate) return null
@@ -61,32 +59,9 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl max-h-[92vh] overflow-y-auto bg-background">
-          {/* Hero section - Video reel or avatar */}
+          {/* Hero section - avatar */}
           <div className="relative w-full aspect-[9/12] max-h-[45vh] bg-black overflow-hidden">
-            {c.mux_playback_id && showVideo ? (
-              <MuxPlayer
-                playbackId={c.mux_playback_id}
-                autoPlay="muted"
-                loop
-                muted
-                className="w-full h-full"
-                style={{ aspectRatio: "9/16", width: "100%", height: "100%", objectFit: "cover", "--controls": "none" } as any}
-                thumbnailTime={2}
-              />
-            ) : c.mux_playback_id ? (
-              <div className="w-full h-full relative cursor-pointer group" onClick={() => setShowVideo(true)}>
-                <img
-                  src={`https://image.mux.com/${c.mux_playback_id}/thumbnail.webp?time=2&width=600`}
-                  alt={c.display_name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                  <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                    <Play className="h-7 w-7 text-[#01A89E] ml-1" fill="#01A89E" />
-                  </div>
-                </div>
-              </div>
-            ) : c.avatar_url ? (
+            {c.avatar_url ? (
               <img src={c.avatar_url} alt={c.display_name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#01A89E]/20 to-[#01A89E]/5 flex items-center justify-center">
@@ -120,11 +95,6 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
               {c.is_premium && (
                 <Badge className="bg-[#F5A623]/90 text-white border-0 text-[10px] px-2 py-0.5">
                   <Award className="h-3 w-3 mr-1" /> Premium
-                </Badge>
-              )}
-              {c.video_status === "ready" && (
-                <Badge className="bg-[#01A89E]/90 text-white border-0 text-[10px] px-2 py-0.5">
-                  <Video className="h-3 w-3 mr-1" /> Video Reel
                 </Badge>
               )}
             </div>
@@ -163,14 +133,6 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
 
             {/* Action buttons */}
             <div className="flex gap-2">
-              {c.mux_playback_id && (
-                <Button
-                  onClick={() => setShowVideo(true)}
-                  className="flex-1 h-11 rounded-xl bg-[#01A89E] hover:bg-[#018F86] text-white font-semibold text-sm"
-                >
-                  <Play className="h-4 w-4 mr-1.5" fill="white" /> Ver Video Reel
-                </Button>
-              )}
               <Button variant="outline" className="flex-1 h-11 rounded-xl font-semibold text-sm">
                 <MessageCircle className="h-4 w-4 mr-1.5" /> Contactar
               </Button>
@@ -263,7 +225,7 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
               <Card className="border-slate-200/80">
                 <CardContent className="p-3.5">
                   <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5 text-foreground">
-                    <ImageIcon className="h-3.5 w-3.5 text-[#01A89E]" /> Portfolio ({portfolioImages.length}/5)
+                    <ImageIcon className="h-3.5 w-3.5 text-[#01A89E]" /> Portfolio ({portfolioImages.length}/3)
                   </h3>
                   <div className="grid grid-cols-3 gap-1.5">
                     {portfolioImages.map((img: string, i: number) => (
@@ -285,8 +247,6 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
               {c.is_active && <Badge className="bg-emerald-50 text-emerald-700 border-0 text-[10px]">Activo</Badge>}
               {c.is_premium && <Badge className="bg-[#F5A623]/10 text-[#F5A623] border-0 text-[10px]">Premium</Badge>}
               {c.is_admin && <Badge className="bg-red-50 text-red-600 border-0 text-[10px]">Admin</Badge>}
-              {c.video_status === "ready" && <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-0 text-[10px]">Video Ready</Badge>}
-              {c.video_status === "processing" && <Badge className="bg-amber-50 text-amber-600 border-0 text-[10px]">Video Procesando...</Badge>}
             </div>
           </div>
         </DialogContent>

@@ -47,7 +47,7 @@ export default async function JobApplicationsPage({
   if (workerIds.length > 0) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_url, rating, total_ratings, location, phone, bio, specialties, job_category, mux_playback_id")
+      .select("id, display_name, avatar_url, rating, total_ratings, location, phone, bio, specialties, job_category")
       .in("id", workerIds)
 
     workers = data || []

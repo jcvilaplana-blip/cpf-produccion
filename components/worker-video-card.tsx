@@ -1,10 +1,8 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge" 
-import { MapPin, Star, Play } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { MapPin, Star } from "lucide-react"
 import Link from "next/link"
-import { useRef, useState, useEffect } from "react"
-import MuxPlayer from "@mux/mux-player-react"
 
 interface WorkerVideoCardProps {
   id: string
@@ -12,66 +10,20 @@ interface WorkerVideoCardProps {
   category: string
   location: string
   rating: number
-  videoUrl?: string
-  muxPlaybackId?: string | null
+  avatarUrl?: string | null
   experience: string
 }
 
-export function WorkerVideoCard({ id, name, category, location, rating, muxPlaybackId, videoUrl, experience }: WorkerVideoCardProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  // IntersectionObserver: autoplay only when card is in viewport
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(entry.isIntersecting),
-      { threshold: 0.3 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  const thumbnailSrc = muxPlaybackId
-    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.webp?width=400&height=534&fit_mode=smartcrop&time=2`
-    : (videoUrl || "/placeholder.svg?height=400&width=300")
-
+export function WorkerVideoCard({ id, name, category, location, rating, avatarUrl, experience }: WorkerVideoCardProps) {
   return (
-    <Link href={muxPlaybackId ? `/reels?worker=${id}` : `/profile/${id}`}>
-      <div ref={containerRef} className="relative aspect-[3/4] overflow-hidden rounded-xl shadow-lg bg-black">
-        {/* Mux autoplay preview when visible, static thumbnail as poster/fallback */}
-        {muxPlaybackId && isVisible ? (
-          <MuxPlayer
-            playbackId={muxPlaybackId}
-            autoPlay="muted"
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full"
-            style={{
-              aspectRatio: "3/4",
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              "--controls": "none",
-              "--media-object-fit": "cover",
-              "--media-object-position": "center",
-            } as React.CSSProperties}
-          />
-        ) : (
-          <img
-            src={thumbnailSrc}
-            alt={name}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-
-        {/* Play icon */}
-        <div className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-          <Play className="h-4 w-4 text-white fill-white" />
-        </div>
+    <Link href={`/profile/${id}`}>
+      <div className="relative aspect-[3/4] overflow-hidden rounded-xl shadow-lg bg-black">
+        <img
+          src={avatarUrl || "/placeholder.svg?height=400&width=300"}
+          alt={name}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+        />
 
         {/* Gradient overlay */}
         <div

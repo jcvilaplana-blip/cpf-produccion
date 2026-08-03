@@ -15,7 +15,7 @@ export async function createClient() {
     supabaseAnonKey,
     {
       auth: {
-        flowType: 'implicit',
+        flowType: 'pkce',
       },
       cookies: {
         getAll() {

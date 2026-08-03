@@ -12,8 +12,13 @@ export function Footer() {
 
   if (pathname?.startsWith("/admin")) return null
 
+  // On mobile, only the homepage shows the footer - everywhere else (search,
+  // chat, auth forms, etc.) it just added extra scroll for no benefit on a
+  // small screen. Desktop keeps showing it on every page as before.
+  const isHome = pathname === "/"
+
   return (
-    <footer className="bg-[#01A89E] text-white/80 py-12 mt-auto">
+    <footer className={`bg-[#01A89E] text-white/80 py-12 mt-auto ${isHome ? "" : "hidden md:block"}`}>
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Logo y descripcion */}

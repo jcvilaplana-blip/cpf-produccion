@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { notifyUser } from "@/lib/notifications/create-notification"
 
 // =====================================================
 // JOB ACTIONS
@@ -157,6 +158,191 @@ export async function withdrawApplicationAction(applicationId: string) {
   if (error) return { error: error.message }
 
   revalidatePath("/profile")
+  return { success: true }
+}
+
+// =====================================================
+// INTERVIEW REQUEST ACTIONS
+// =====================================================
+
+const INTERVIEW_TYPE_LABELS: Record<string, string> = {
+  call: "una llamada",
+  in_person: "una entrevista presencial",
+  video_call: "una videoconferencia",
+  other: "una entrevista",
+}
+
+export async function createInterviewRequestAction(
+  jobId: string,
+  workerId: string,
+  interviewType: "call" | "in_person" | "video_call" | "other",
+  scheduledAt: string,
+  otherTypeDetail?: string,
+  notes?: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id, business_id, title")
+    .eq("id", jobId)
+    .single()
+
+  if (!job || job.business_id !== user.id) return { error: "No autorizado" }
+
+  // Find an existing application for this (job, worker) pair, or create one -
+  // a business can request an interview with a candidate it found by browsing,
+  // not only with someone who already applied.
+  let applicationId: string
+  const { data: existingApplication } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("job_id", jobId)
+    .eq("worker_id", workerId)
+    .maybeSingle()
+
+  if (existingApplication) {
+    applicationId = existingApplication.id
+    await updateApplicationStatusAction(applicationId, "interview")
+  } else {
+    const { data: newApplication, error: createError } = await supabase
+      .from("applications")
+      .insert({ job_id: jobId, worker_id: workerId, status: "interview" })
+      .select("id")
+      .single()
+    if (createError || !newApplication) return { error: createError?.message || "No se pudo crear la solicitud" }
+    applicationId = newApplication.id
+  }
+
+  const { data: interview, error } = await supabase
+    .from("interview_requests")
+    .insert({
+      application_id: applicationId,
+      business_id: user.id,
+      worker_id: workerId,
+      interview_type: interviewType,
+      other_type_detail: interviewType === "other" ? otherTypeDetail || null : null,
+      scheduled_at: scheduledAt,
+      notes: notes || null,
+    })
+    .select()
+    .single()
+
+  if (error) return { error: error.message }
+
+  const { data: businessProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  await notifyUser(workerId, {
+    title: "Nueva solicitud de entrevista",
+    body: `${businessProfile?.display_name || "Una empresa"} te ha propuesto ${INTERVIEW_TYPE_LABELS[interviewType]} para el puesto de ${job.title}`,
+    type: "entrevista",
+    link: `/messages?businessId=${user.id}`,
+    createdBy: user.id,
+  })
+
+  revalidatePath("/messages")
+  revalidatePath("/interviews")
+  return { success: true, data: interview }
+}
+
+export async function respondToInterviewRequestAction(
+  interviewId: string,
+  response: "confirmed" | "cancelled"
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: interview } = await supabase
+    .from("interview_requests")
+    .select("id, application_id, business_id, worker_id, status")
+    .eq("id", interviewId)
+    .single()
+
+  if (!interview) return { error: "Entrevista no encontrada" }
+  if (interview.worker_id !== user.id) return { error: "No autorizado" }
+  if (interview.status !== "pending") return { error: "Esta entrevista ya no está pendiente" }
+
+  const { error } = await supabase
+    .from("interview_requests")
+    .update({ status: response, updated_at: new Date().toISOString() })
+    .eq("id", interviewId)
+
+  if (error) return { error: error.message }
+
+  if (response === "cancelled") {
+    await updateApplicationStatusAction(interview.application_id, "pending")
+  }
+
+  const { data: workerProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  await notifyUser(interview.business_id, {
+    title: response === "confirmed" ? "Entrevista confirmada" : "Entrevista cancelada",
+    body: `${workerProfile?.display_name || "El candidato"} ha ${response === "confirmed" ? "confirmado" : "cancelado"} la entrevista propuesta`,
+    type: "entrevista",
+    link: `/messages?candidateId=${user.id}`,
+    createdBy: user.id,
+  })
+
+  revalidatePath("/messages")
+  return { success: true }
+}
+
+export async function resolveInterviewRequestAction(
+  interviewId: string,
+  resolution: "approved" | "cancelled"
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: interview } = await supabase
+    .from("interview_requests")
+    .select("id, application_id, business_id, worker_id, status")
+    .eq("id", interviewId)
+    .single()
+
+  if (!interview) return { error: "Entrevista no encontrada" }
+  if (interview.business_id !== user.id) return { error: "No autorizado" }
+  if (interview.status !== "confirmed") return { error: "Esta entrevista aún no ha sido confirmada por el candidato" }
+
+  const { error } = await supabase
+    .from("interview_requests")
+    .update({ status: resolution, updated_at: new Date().toISOString() })
+    .eq("id", interviewId)
+
+  if (error) return { error: error.message }
+
+  await updateApplicationStatusAction(interview.application_id, resolution === "approved" ? "accepted" : "rejected")
+
+  const { data: businessProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  await notifyUser(interview.worker_id, {
+    title: resolution === "approved" ? "¡Has sido contratado!" : "Proceso finalizado",
+    body: resolution === "approved"
+      ? `${businessProfile?.display_name || "La empresa"} te ha contratado tras la entrevista`
+      : `${businessProfile?.display_name || "La empresa"} ha decidido no continuar el proceso`,
+    type: "entrevista",
+    link: `/messages?businessId=${user.id}`,
+    createdBy: user.id,
+  })
+
+  revalidatePath("/messages")
+  revalidatePath(`/profile/${interview.worker_id}`)
   return { success: true }
 }
 

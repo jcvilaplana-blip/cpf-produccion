@@ -11,7 +11,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     // Supabase not configured - pass through
-    return supabaseResponse
+    return { response: supabaseResponse, user: null }
   }
 
   const supabase = createServerClient(
@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   )
 
   // CRITICAL: Must call getUser() to refresh session
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  return supabaseResponse
+  return { response: supabaseResponse, user }
 }

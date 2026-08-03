@@ -11,6 +11,7 @@ import { Search, SlidersHorizontal, ChevronDown, ChevronUp, X, MapPin, Loader2, 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { CityAutocomplete } from "@/components/city-autocomplete"
 
 type Candidate = {
   id: string
@@ -21,7 +22,6 @@ type Candidate = {
   subcategory_name: string | null
   specialties: string[]
   experience_years: number | null
-  mux_playback_id: string | null
 }
 
 type Category = {
@@ -29,7 +29,13 @@ type Category = {
   name: string
   slug: string
 }
-const CITIES = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Malaga", "Bilbao", "Zaragoza", "Murcia"]
+
+type Subcategory = {
+  id: string
+  name: string
+  slug: string
+  category_id: string
+}
 
 const PAGE_SIZE = 8 // 4 rows x 2 columns
 
@@ -38,12 +44,23 @@ export function CandidatesBrowser() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [filterCategory, setFilterCategory] = useState("all")
-  const [filterCity, setFilterCity] = useState("all")
+  const [filterSubcategory, setFilterSubcategory] = useState("all")
+  const [filterCity, setFilterCity] = useState("")
   const [page, setPage] = useState(1)
-  
+
+  // Seed filters from the search wizard (/search) via URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const category = params.get("category")
+    const city = params.get("city")
+    if (category) setFilterCategory(category)
+    if (city) setFilterCity(city)
+  }, [])
+
   // Real data from database
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const [loadError, setLoadError] = useState(false)
@@ -59,7 +76,7 @@ export function CandidatesBrowser() {
           .from("profiles")
           .select(`
             id, display_name, avatar_url, location, specialties,
-            experience_years, mux_playback_id,
+            experience_years,
             category:categories(name),
             subcategory:subcategories(name)
           `)
@@ -71,11 +88,19 @@ export function CandidatesBrowser() {
 
         if (candidatesError) throw candidatesError
 
-        // Load categories for filter
+        // Load categories for filter - candidate/position taxonomy only
+        // (role_type='candidate'), not the business venue-type taxonomy
+        // that shares this same table.
         const { data: catsData } = await supabase
           .from("categories")
           .select("id, name, slug")
-          .order("name")
+          .eq("role_type", "candidate")
+          .order("sort_order")
+
+        const { data: subsData } = await supabase
+          .from("subcategories")
+          .select("id, name, slug, category_id")
+          .order("sort_order")
 
         const formattedCandidates = (candidatesData || []).map((c: any) => ({
           id: c.id,
@@ -86,11 +111,11 @@ export function CandidatesBrowser() {
           subcategory_name: c.subcategory?.name || null,
           specialties: Array.isArray(c.specialties) ? c.specialties : [],
           experience_years: c.experience_years,
-          mux_playback_id: c.mux_playback_id,
         }))
 
         setCandidates(formattedCandidates)
         setCategories(catsData || [])
+        setSubcategories(subsData || [])
       } catch (e) {
         console.error("Error loading candidates:", e)
         setLoadError(true)
@@ -115,29 +140,41 @@ export function CandidatesBrowser() {
       }
       if (filterCategory !== "all") {
         const selectedCat = categories.find(cat => cat.slug === filterCategory)
-        const matchesSpecialty = c.specialties.some(
-          (s) => s === selectedCat?.name || s.startsWith(`${selectedCat?.name} - `)
-        )
-        if (selectedCat && c.category_name !== selectedCat.name && !matchesSpecialty) return false
+        if (filterSubcategory !== "all") {
+          const selectedSub = subcategories.find(s => s.id === filterSubcategory)
+          const specialtyLabel = `${selectedCat?.name} - ${selectedSub?.name}`
+          if (!c.specialties.includes(specialtyLabel)) return false
+        } else {
+          const matchesSpecialty = c.specialties.some(
+            (s) => s === selectedCat?.name || s.startsWith(`${selectedCat?.name} - `)
+          )
+          if (selectedCat && c.category_name !== selectedCat.name && !matchesSpecialty) return false
+        }
       }
-      if (filterCity !== "all" && !(c.location || "").toLowerCase().includes(filterCity.toLowerCase())) return false
+      if (filterCity && !(c.location || "").toLowerCase().includes(filterCity.toLowerCase())) return false
       return true
     })
-  }, [candidates, categories, searchQuery, filterCategory, filterCity])
+  }, [candidates, categories, subcategories, searchQuery, filterCategory, filterSubcategory, filterCity])
 
   const displayed = filtered.slice(0, page * PAGE_SIZE)
   const hasMore = displayed.length < filtered.length
 
   const activeCount =
     (filterCategory !== "all" ? 1 : 0) +
-    (filterCity !== "all" ? 1 : 0)
+    (filterCity ? 1 : 0)
 
   const clearFilters = () => {
     setFilterCategory("all")
-    setFilterCity("all")
+    setFilterSubcategory("all")
+    setFilterCity("")
     setSearchQuery("")
     setPage(1)
   }
+
+  const selectedCategoryObj = categories.find((c) => c.slug === filterCategory)
+  const subcategoriesForSelected = selectedCategoryObj
+    ? subcategories.filter((s) => s.category_id === selectedCategoryObj.id)
+    : []
   
   if (isLoading) {
     return (
@@ -221,7 +258,7 @@ export function CandidatesBrowser() {
                   <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Categoría
                   </Label>
-                  <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setPage(1) }}>
+                  <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setFilterSubcategory("all"); setPage(1) }}>
                     <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
                       <SelectValue />
                     </SelectTrigger>
@@ -234,28 +271,43 @@ export function CandidatesBrowser() {
                   </Select>
                 </div>
 
+                {/* Subcategoría - only shown when the chosen category has any */}
+                {subcategoriesForSelected.length > 0 && (
+                  <div>
+                    <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                      Especialidad
+                    </Label>
+                    <Select value={filterSubcategory} onValueChange={(v) => { setFilterSubcategory(v); setPage(1) }}>
+                      <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="py-2.5 text-sm">Todas</SelectItem>
+                        {subcategoriesForSelected.map((s) => (
+                          <SelectItem key={s.id} value={s.id} className="py-2.5 text-sm">{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Ciudad */}
                 <div>
                   <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Ciudad
                   </Label>
-                  <Select value={filterCity} onValueChange={(v) => { setFilterCity(v); setPage(1) }}>
-                    <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all" className="py-2.5 text-sm">Todas las ciudades</SelectItem>
-                      {CITIES.map((c) => (
-                        <SelectItem key={c} value={c} className="py-2.5 text-sm">{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CityAutocomplete
+                    value={filterCity}
+                    onChange={(city) => { setFilterCity(city); setPage(1) }}
+                    placeholder="Todas las ciudades"
+                    className="h-12 rounded-2xl bg-gray-50 border-gray-200"
+                  />
                 </div>
 
                 {/* Ver en Mapa */}
                 <div>
                   <Link
-                    href="/search"
+                    href="/map"
                     className="flex items-center justify-center gap-2.5 w-full h-12 rounded-2xl bg-[#F48221] hover:bg-[#D9721D] text-white text-sm font-bold transition-all active:scale-[0.98] shadow-md shadow-[#F48221]/20"
                   >
                     <MapPin className="w-4.5 h-4.5" />
@@ -305,10 +357,8 @@ export function CandidatesBrowser() {
               category={candidate.subcategory_name || candidate.category_name || "General"}
               location={candidate.location?.split(",")[0].trim() || "Espana"}
               rating={4.5}
-              muxPlaybackId={candidate.mux_playback_id || null}
-              videoUrl={candidate.avatar_url || "/placeholder.svg"}
+              avatarUrl={candidate.avatar_url || "/placeholder.svg"}
               experience={candidate.experience_years ? `${candidate.experience_years} años de experiencia` : ""}
-              experience_years={candidate.experience_years || 0}
             />
           ))}
         </div>

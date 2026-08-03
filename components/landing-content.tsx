@@ -43,8 +43,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
     category: profile.job_category || "General",
     location: profile.location ? profile.location.split(",")[0].trim() : "Espana",
     rating: profile.rating || 0,
-    muxPlaybackId: profile.mux_playback_id || null,
-    videoUrl: profile.avatar_url || "/placeholder.svg",
+    avatarUrl: profile.avatar_url || "/placeholder.svg",
     experience: `${profile.experience_years || 0} ${t("candidates.years")} ${t("candidates.yearsExperience")}`,
   }))
 

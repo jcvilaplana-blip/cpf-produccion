@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react" 
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -26,9 +26,25 @@ import {
   type RelevantApplication,
 } from "@/lib/messaging"
 import { useRealtimeMessages, useRealtimeConversations } from "@/hooks/use-realtime-messages"
-import { updateApplicationStatusAction } from "@/lib/actions"
+import { updateApplicationStatusAction, respondToInterviewRequestAction, resolveInterviewRequestAction } from "@/lib/actions"
 import { RatingDialog } from "@/components/rating-dialog"
+import { InterviewRequestDialog } from "@/components/interview-request-dialog"
 import { toast } from "sonner"
+
+interface ActiveInterview {
+  id: string
+  status: "pending" | "confirmed" | "cancelled" | "approved"
+  scheduled_at: string
+  interview_type: "call" | "in_person" | "video_call" | "other"
+  other_type_detail: string | null
+}
+
+const INTERVIEW_TYPE_LABELS: Record<string, string> = {
+  call: "Llamada",
+  in_person: "Presencial",
+  video_call: "Videoconferencia",
+  other: "Otra",
+}
 
 const availabilityMap: Record<string, { label: string; color: string }> = {
   available: { label: "Disponible", color: "bg-emerald-100 text-emerald-700" },
@@ -49,7 +65,9 @@ export function MessagesContent({
   conversations: initialConversations,
   initialConversationId,
 }: MessagesContentProps) {
-  const supabase = createClient()
+  // createClient() returns a new client instance every call - memoize so it
+  // doesn't destabilize effect dependency arrays that include `supabase`.
+  const supabase = useMemo(() => createClient(), [])
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(
     initialConversationId
@@ -69,6 +87,21 @@ export function MessagesContent({
   const [alreadyRated, setAlreadyRated] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [activeInterview, setActiveInterview] = useState<ActiveInterview | null>(null)
+  const [showInterviewDialog, setShowInterviewDialog] = useState(false)
+  const [isUpdatingInterview, setIsUpdatingInterview] = useState(false)
+
+  const loadActiveInterview = useCallback(async (applicationId: string) => {
+    const { data } = await supabase
+      .from("interview_requests")
+      .select("id, status, scheduled_at, interview_type, other_type_detail")
+      .eq("application_id", applicationId)
+      .in("status", ["pending", "confirmed"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setActiveInterview(data || null)
+  }, [supabase])
 
   // Scroll to bottom helper
   const scrollToBottom = useCallback(() => {
@@ -81,6 +114,7 @@ export function MessagesContent({
   useEffect(() => {
     setActiveApplication(null)
     setAlreadyRated(false)
+    setActiveInterview(null)
     if (!selectedConversation || !profile) return
 
     const otherId = selectedConversation.other_participant?.id
@@ -100,9 +134,10 @@ export function MessagesContent({
         const rated = await checkHasRated(supabase, user.id, otherId, app.job_id)
         setAlreadyRated(rated)
       }
+      loadActiveInterview(app.id)
     }
     loadApplication()
-  }, [selectedConversation, profile, supabase, user.id])
+  }, [selectedConversation, profile, supabase, user.id, loadActiveInterview])
 
   const handleApplicationStatusChange = async (newStatus: string) => {
     if (!activeApplication) return
@@ -120,6 +155,30 @@ export function MessagesContent({
       rejected: "Candidatura rechazada",
     }
     toast.success(labels[newStatus] || "Estado actualizado")
+  }
+
+  const handleInterviewResponse = async (response: "confirmed" | "cancelled") => {
+    if (!activeInterview) return
+    setIsUpdatingInterview(true)
+    const result = await respondToInterviewRequestAction(activeInterview.id, response)
+    setIsUpdatingInterview(false)
+    if (result.error) { toast.error(result.error); return }
+    toast.success(response === "confirmed" ? "Entrevista confirmada" : "Entrevista cancelada")
+    if (activeApplication) {
+      loadActiveInterview(activeApplication.id)
+      if (response === "cancelled") setActiveApplication((prev) => (prev ? { ...prev, status: "pending" } : prev))
+    }
+  }
+
+  const handleInterviewResolve = async (resolution: "approved" | "cancelled") => {
+    if (!activeInterview) return
+    setIsUpdatingInterview(true)
+    const result = await resolveInterviewRequestAction(activeInterview.id, resolution)
+    setIsUpdatingInterview(false)
+    if (result.error) { toast.error(result.error); return }
+    toast.success(resolution === "approved" ? "Contratación confirmada — ya podéis valoraros mutuamente" : "Proceso finalizado")
+    setActiveApplication((prev) => (prev ? { ...prev, status: resolution === "approved" ? "accepted" : "rejected" } : prev))
+    setActiveInterview(null)
   }
 
   // Load messages when conversation is selected
@@ -316,13 +375,12 @@ export function MessagesContent({
               {profile?.user_type === "business" &&
                 ["pending", "interview"].includes(activeApplication.status) && (
                   <>
-                    {activeApplication.status === "pending" && (
+                    {activeApplication.status === "pending" && !activeInterview && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-7 text-xs"
-                        disabled={isUpdatingStatus}
-                        onClick={() => handleApplicationStatusChange("interview")}
+                        onClick={() => setShowInterviewDialog(true)}
                       >
                         <CalendarCheck className="h-3 w-3 mr-1" />
                         Citar entrevista
@@ -367,6 +425,45 @@ export function MessagesContent({
               )}
             </div>
           )}
+
+          {/* Active interview request banner */}
+          {selectedConversation && activeInterview && (
+            <div className="mx-1 mb-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs space-y-1.5">
+              <div className="flex items-center gap-1.5 font-medium">
+                <CalendarCheck className="h-3.5 w-3.5 text-[#01A89E]" />
+                Entrevista {activeInterview.status === "pending" ? "propuesta" : "confirmada"}:{" "}
+                {new Date(activeInterview.scheduled_at).toLocaleString("es-ES", {
+                  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                })}{" "}
+                · {INTERVIEW_TYPE_LABELS[activeInterview.interview_type]}
+                {activeInterview.interview_type === "other" && activeInterview.other_type_detail
+                  ? ` (${activeInterview.other_type_detail})`
+                  : ""}
+              </div>
+              <div className="flex gap-2">
+                {activeInterview.status === "pending" && profile?.user_type !== "business" && (
+                  <>
+                    <Button size="sm" className="h-6 text-[11px] bg-green-600 hover:bg-green-700" disabled={isUpdatingInterview} onClick={() => handleInterviewResponse("confirmed")}>
+                      Confirmar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] text-destructive" disabled={isUpdatingInterview} onClick={() => handleInterviewResponse("cancelled")}>
+                      Cancelar
+                    </Button>
+                  </>
+                )}
+                {activeInterview.status === "confirmed" && profile?.user_type === "business" && (
+                  <>
+                    <Button size="sm" className="h-6 text-[11px] bg-green-600 hover:bg-green-700" disabled={isUpdatingInterview} onClick={() => handleInterviewResolve("approved")}>
+                      Aprobar (contratar)
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] text-destructive" disabled={isUpdatingInterview} onClick={() => handleInterviewResolve("cancelled")}>
+                      Cancelar
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -378,6 +475,17 @@ export function MessagesContent({
           ratedUserName={selectedConversation.other_participant?.display_name || "Usuario"}
           jobId={activeApplication.job_id}
           onSuccess={() => setAlreadyRated(true)}
+        />
+      )}
+
+      {selectedConversation && activeApplication && profile?.user_type === "business" && (
+        <InterviewRequestDialog
+          open={showInterviewDialog}
+          onOpenChange={setShowInterviewDialog}
+          jobId={activeApplication.job_id}
+          workerId={activeApplication.worker_id}
+          workerName={selectedConversation.other_participant?.display_name || "el candidato"}
+          onSent={() => loadActiveInterview(activeApplication.id)}
         />
       )}
 

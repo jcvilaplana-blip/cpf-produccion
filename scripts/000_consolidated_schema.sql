@@ -47,6 +47,7 @@ create table if not exists public.profiles (
   availability_status text default 'available', -- available | busy | not_looking
 
   portfolio_images text[] default '{}',
+  portfolio_videos text[] default '{}', -- up to 3 URLs, 1 min each, no MUX
   certificates jsonb default '[]',
   badges text[] default '{}',
   points integer default 0,
@@ -250,6 +251,20 @@ create table if not exists public.applications (
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   unique(job_id, worker_id)
+);
+
+create table if not exists public.interview_requests (
+  id uuid primary key default gen_random_uuid(),
+  application_id uuid not null references public.applications(id) on delete cascade,
+  business_id uuid not null references public.profiles(id) on delete cascade,
+  worker_id uuid not null references public.profiles(id) on delete cascade,
+  interview_type text not null check (interview_type in ('call', 'in_person', 'video_call', 'other')),
+  other_type_detail text,
+  scheduled_at timestamptz not null,
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled', 'approved')),
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table if not exists public.saved_jobs (
@@ -704,6 +719,22 @@ create policy "applications_update_business" on public.applications for update u
 );
 drop policy if exists "applications_delete_worker" on public.applications;
 create policy "applications_delete_worker" on public.applications for delete using (auth.uid() = worker_id);
+
+-- INTERVIEW_REQUESTS: visible to both sides; business creates, either side updates
+-- (exact allowed transitions enforced in server actions, not by policy)
+alter table public.interview_requests enable row level security;
+drop policy if exists "interview_requests_select_own" on public.interview_requests;
+create policy "interview_requests_select_own" on public.interview_requests for select using (
+  auth.uid() = business_id or auth.uid() = worker_id
+);
+drop policy if exists "interview_requests_insert_business" on public.interview_requests;
+create policy "interview_requests_insert_business" on public.interview_requests for insert with check (
+  auth.uid() = business_id
+);
+drop policy if exists "interview_requests_update_own" on public.interview_requests;
+create policy "interview_requests_update_own" on public.interview_requests for update using (
+  auth.uid() = business_id or auth.uid() = worker_id
+);
 
 -- SAVED_JOBS: owner only
 drop policy if exists "saved_jobs_select_own" on public.saved_jobs;

@@ -35,7 +35,7 @@ import { JobFiltersComponent } from "@/components/job-filters"
 import type { JobFilters } from "@/lib/filters"
 import { calculateDistance, formatDistance, geocodeAddress } from "@/lib/geolocation"
 import { BottomNavigation } from "@/components/bottom-navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
 
 interface DashboardContentProps {
   user: any
@@ -67,6 +67,7 @@ const contractTypeLabels: Record<string, string> = {
 }
 
 export function DashboardContent({ user, profile, jobs }: DashboardContentProps) {
+  const { logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<JobCategory | "all">("all")
   const [filters, setFilters] = useState<JobFilters>({
@@ -109,12 +110,7 @@ export function DashboardContent({ user, profile, jobs }: DashboardContentProps)
     calculateDistances()
   }, [filters.userLocation, jobs])
 
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
-  }
+  const handleLogout = logout
 
   const filteredJobs = jobsWithDistance
     .filter((job) => {

@@ -24,6 +24,8 @@ import {
 } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { createClient } from "@/lib/supabase/client"
+import { CityAutocomplete } from "@/components/city-autocomplete"
+import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
 
 // Normalize business data from Supabase
 function normalizeBusiness(b: any) {
@@ -41,35 +43,8 @@ function normalizeBusiness(b: any) {
 }
 
 const BUSINESS_TYPES = [
-  { value: "all", label: "Todos los sectores" },
-  { value: "Hosteleria y Turismo", label: "Hosteleria y Turismo" },
-  { value: "Informatica y Comunicaciones", label: "Informatica y Comunicaciones" },
-  { value: "Sanidad", label: "Sanidad" },
-  { value: "Edificacion y Obra Civil", label: "Edificacion y Obra Civil" },
-  { value: "Energia y Agua", label: "Energia y Agua" },
-  { value: "Transporte y Vehiculos", label: "Transporte y Vehiculos" },
-  { value: "Imagen y Sonido", label: "Imagen y Sonido" },
-  { value: "Derecho", label: "Derecho" },
-  { value: "Comercio y Marketing", label: "Comercio y Marketing" },
-  { value: "Imagen Personal", label: "Imagen Personal" },
-  { value: "Actividades Fisicas y Deportivas", label: "Act. Fisicas y Deportivas" },
-  { value: "Docencia", label: "Docencia" },
-  { value: "Administracion y Gestion", label: "Administracion y Gestion" },
-]
-
-const CITIES = [
-  "Madrid",
-  "Barcelona",
-  "Valencia",
-  "Sevilla",
-  "Malaga",
-  "Bilbao",
-  "Zaragoza",
-  "Murcia",
-  "Granada",
-  "Salamanca",
-  "Cadiz",
-  "Alicante",
+  { value: "all", label: "Todos los tipos" },
+  ...BUSINESS_VENUE_TYPES.map((name) => ({ value: name, label: name })),
 ]
 
 const VERIFICATION_OPTIONS = [
@@ -84,7 +59,7 @@ export default function BusinessesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [filterType, setFilterType] = useState("all")
-  const [filterCity, setFilterCity] = useState("all")
+  const [filterCity, setFilterCity] = useState("")
   const [filterVerification, setFilterVerification] = useState("all_status")
   const [page, setPage] = useState(1)
   const [allBusinesses, setAllBusinesses] = useState<any[]>([])
@@ -133,7 +108,7 @@ export default function BusinessesPage() {
       // Type filter
       if (filterType !== "all" && b.business_type !== filterType) return false
       // City filter
-      if (filterCity !== "all" && !b.city.toLowerCase().includes(filterCity.toLowerCase())) return false
+      if (filterCity && !b.city.toLowerCase().includes(filterCity.toLowerCase())) return false
       // Verification filter
       if (filterVerification === "verified" && !b.verified) return false
       return true
@@ -145,12 +120,12 @@ export default function BusinessesPage() {
 
   const activeCount =
     (filterType !== "all" ? 1 : 0) +
-    (filterCity !== "all" ? 1 : 0) +
+    (filterCity ? 1 : 0) +
     (filterVerification !== "all_status" ? 1 : 0)
 
   const clearFilters = () => {
     setFilterType("all")
-    setFilterCity("all")
+    setFilterCity("")
     setFilterVerification("all_status")
     setSearchQuery("")
     setPage(1)
@@ -216,10 +191,10 @@ export default function BusinessesPage() {
                 className="max-h-[60vh] overflow-y-auto overscroll-contain px-4 py-5 space-y-5"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
-                {/* Sector / Tipo de Empresa */}
+                {/* Tipo de local */}
                 <div>
                   <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                    Sector
+                    Tipo de local
                   </Label>
                   <Select
                     value={filterType}
@@ -246,27 +221,15 @@ export default function BusinessesPage() {
                   <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Ciudad
                   </Label>
-                  <Select
+                  <CityAutocomplete
                     value={filterCity}
-                    onValueChange={(v) => {
-                      setFilterCity(v)
+                    onChange={(city) => {
+                      setFilterCity(city)
                       setPage(1)
                     }}
-                  >
-                    <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all" className="py-2.5 text-sm">
-                        Todas las ciudades
-                      </SelectItem>
-                      {CITIES.map((c) => (
-                        <SelectItem key={c} value={c} className="py-2.5 text-sm">
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Todas las ciudades"
+                    className="h-12 rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                  />
                 </div>
 
                 {/* Verificacion - Big touch chips */}

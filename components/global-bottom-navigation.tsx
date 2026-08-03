@@ -22,13 +22,12 @@ import {
   Shield,
   LogOut,
 } from "lucide-react"
-import type { Profile } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { X } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -42,15 +41,29 @@ import { LayoutDashboard, MapPin, Settings, Pencil } from "lucide-react"
 export function GlobalBottomNavigation(): React.JSX.Element | null {
   const pathname = usePathname()
   const router = useRouter()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { user, isAuthenticated, logout } = useAuth()
+  // Shim kept in the same shape the rest of this file already reads, so the
+  // large JSX below (many `profile?.x` references) needs no other changes.
+  // The actual session lives in one shared AuthProvider (see
+  // components/providers/auth-provider.tsx) - this component no longer runs
+  // its own independent auth subscription.
+  const profile = user
+    ? { user_type: user.userType, is_admin: user.userType === "admin", display_name: user.displayName, avatar_url: user.avatarUrl }
+    : null
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const { language, setLanguage, t } = useLanguage()
-  const supabase = createClient()
 
-  // Determine effective user type and dashboard path
-  const isLoggedIn = !!profile
+  // isLoggedIn must reflect "is there a session" (isAuthenticated), NOT "has
+  // the full profile row finished loading" (!!user/profile). The session
+  // resolves before the profile fetch does, so keying this off the profile
+  // meant a real, logged-in user tapping "Perfil" in that brief window saw
+  // the login link instead of their account menu - a race, not a permanent
+  // bug, which is why it only happened "sometimes". Fields that DO depend on
+  // the profile (display name, avatar, business-vs-worker layout) still fall
+  // back gracefully below until it arrives a moment later.
+  const isLoggedIn = isAuthenticated
   const effectiveUserType = profile?.user_type
   const isAdmin = profile?.is_admin
   const displayName = profile?.display_name || "Usuario"
@@ -63,11 +76,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
     return "/dashboard"
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
-  }
+  const handleLogout = logout
 
   const ringColor = "ring-[#01A89E]"
 
@@ -81,59 +90,6 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
     e.stopPropagation()
     router.push("/auth/login")
   }
-
-  useEffect(() => {
-    // Don't run auth checks on auth pages to avoid interference with login process
-    if (pathname?.startsWith("/auth/")) {
-      return
-    }
-    
-    const loadProfile = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        const user = session?.user
-        if (user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single()
-          if (data) {
-            setProfile(data as Profile)
-          }
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-    }
-    loadProfile()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Skip on auth pages
-      if (pathname?.startsWith("/auth/")) return
-      
-      try {
-        if (session?.user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single()
-          if (data) {
-            setProfile(data as Profile)
-          }
-        } else {
-          setProfile(null)
-        }
-      } catch (e) {
-        // Ignore errors during auth
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase, pathname])
-
-  useEffect(() => {}, [language])
 
   useEffect(() => {
     const root = document.documentElement

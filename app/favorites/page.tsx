@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { FavoritesContent } from "@/components/favorites-content"
 import { createClient } from "@/lib/supabase/client"
@@ -8,7 +8,7 @@ import type { UserType } from "@/lib/types"
 
 export default function FavoritesPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [savedItems, setSavedItems] = useState<any[]>([])
   const [userType, setUserType] = useState<UserType>("worker")
   const [loading, setLoading] = useState(true)

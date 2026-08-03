@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useLayoutEffect } from "react"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button" 
+import { Button } from "@/components/ui/button"
 import { ChevronUp } from "lucide-react"
 
 export function ScrollToTop() {
@@ -10,8 +10,22 @@ export function ScrollToTop() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const pathname = usePathname()
 
+  // The browser's own scroll restoration (history.scrollRestoration, default
+  // "auto") races against this app's own reset below on every client-side
+  // navigation - the browser sometimes re-applies the PREVIOUS page's scroll
+  // offset to the new page's content, which is what made destination pages
+  // "arrive" already scrolled down. Taking manual control once, on mount,
+  // removes that race entirely instead of just fighting it after the fact.
   useEffect(() => {
-    // Immediate scroll to top on route change - no animation
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual"
+    }
+  }, [])
+
+  // useLayoutEffect (synchronous, before the browser paints) instead of
+  // useEffect (after paint) - the previous version could still show a brief
+  // flash of the new page at the old scroll position before snapping to top.
+  useLayoutEffect(() => {
     window.scrollTo(0, 0)
     document.documentElement.scrollTop = 0
     document.body.scrollTop = 0

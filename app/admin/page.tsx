@@ -12,8 +12,8 @@ import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AdminCities } from "@/components/admin/admin-cities"
 import { AdminCandidatePreview } from "@/components/admin/admin-candidate-preview"
 import { AdminSettingsSection } from "@/components/admin/admin-settings-section"
-import { MapView, type MapZoomLevel } from "@/components/map-view"
 import { AdminCrudTable, type ColumnDef } from "@/components/admin/admin-crud-table"
+import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,11 +24,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
-  Users, Building2, Briefcase, Zap, FolderTree, Video, Star, MessageCircle,
-  Map, Crown, Globe, MapPin, Languages, CreditCard, Plug, Settings,
-  TrendingUp, UserCheck, Activity, ClipboardList, Search, Menu,
-  Pencil, Trash2, Plus, Eye, Play, ExternalLink, AlertTriangle,
-  CheckCircle, X, Shield, Locate, Bell,
+  Users, Building2, Briefcase, Zap, FolderTree, Star, MessageCircle,
+  Crown, Globe, MapPin, Languages, CreditCard, Plug, Settings,
+  TrendingUp, UserCheck, ClipboardList, Search, Menu,
+  Pencil, Trash2, Plus, Eye, ExternalLink,
+  CheckCircle, X, Shield, Bell,
 } from "lucide-react"
 
 const supabase = createClient()
@@ -36,14 +36,12 @@ const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 export default function AdminPage() {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const [section, setSection] = useState<AdminSection>("dashboard")
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [mobileOpen, setMobileOpen] = useState(false)
   const [previewCandidate, setPreviewCandidate] = useState<any>(null)
-  const [mapFilter, setMapFilter] = useState("all")
-  const [mapZoomLevel, setMapZoomLevel] = useState<MapZoomLevel>("country")
   const [authChecked, setAuthChecked] = useState(false)
   const [editDialog, setEditDialog] = useState<{ open: boolean; type: string; item: any }>({ open: false, type: "", item: null })
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; type: string; item: any; endpoint: string }>({ open: false, type: "", item: null, endpoint: "" })
@@ -55,55 +53,24 @@ export default function AdminPage() {
   const [notifSending, setNotifSending] = useState(false)
   const [notifError, setNotifError] = useState("")
 
-  // Auth guard: only allow admin users
+  // Auth guard: only allow admin users. Reads from the single shared
+  // AuthProvider instead of running its own independent getSession() check -
+  // a separate direct check here (with its own hard timeout) used to force
+  // a logout redirect whenever the profile fetch was merely slow, even for a
+  // genuinely logged-in admin.
   useEffect(() => {
-    let isMounted = true
-    let timeoutId: NodeJS.Timeout
-    
-    const checkAdminAccess = async () => {
-      // Wait for loading to complete
-      if (authLoading) return
-      
-      // Direct Supabase check - most reliable
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      // No session = not logged in, redirect immediately
-      if (!session?.user || sessionError) {
-        if (isMounted) window.location.href = "/auth/login"
-        return
-      }
-      
-      // Check if user is admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin, rol, user_type")
-        .eq("id", session.user.id)
-        .single()
-      
-      // Check is_admin OR rol=1 (superadmin) OR rol=2 (admin) OR user_type='admin'
-      if (profile?.is_admin || profile?.rol === 1 || profile?.user_type === "admin") {
-        if (isMounted) setAuthChecked(true)
-        return
-      }
-      
-      // Not admin - redirect to login
-      if (isMounted) window.location.href = "/auth/login"
+    if (authLoading) return
+    if (!isAuthenticated) {
+      router.push("/auth/login")
+      return
     }
-    
-    // Add timeout to prevent infinite loading
-    timeoutId = setTimeout(() => {
-      if (isMounted && !authChecked) {
-        window.location.href = "/auth/login"
-      }
-    }, 5000)
-    
-    checkAdminAccess()
-    
-    return () => { 
-      isMounted = false 
-      clearTimeout(timeoutId)
+    if (!user) return
+    if (user.userType === "admin") {
+      setAuthChecked(true)
+    } else {
+      router.push("/auth/login")
     }
-  }, [authLoading, authChecked])
+  }, [authLoading, isAuthenticated, user, router])
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300)
@@ -137,12 +104,11 @@ export default function AdminPage() {
   const { data: flashData } = useSWR(flashKey, fetcher)
   const catsKey = section === "categories" ? "/api/admin/categories" : null
   const { data: catsData } = useSWR(catsKey, fetcher)
-  const { data: videosData } = useSWR(section === "videos" ? `/api/admin/videos?search=${debouncedSearch}` : null, fetcher)
   const { data: ratingsData } = useSWR(section === "ratings" ? `/api/admin/ratings?search=${debouncedSearch}` : null, fetcher)
+  const { data: interviewsData } = useSWR(section === "interviews" ? `/api/admin/interviews?search=${debouncedSearch}` : null, fetcher)
   const { data: msgsData } = useSWR(section === "messages" ? "/api/admin/messages" : null, fetcher)
   const notifKey = section === "notifications" ? "/api/admin/notifications" : null
   const { data: notifData } = useSWR(notifKey, fetcher)
-  const { data: mapData } = useSWR(section === "map" ? `/api/admin/map?filter=${mapFilter}` : null, fetcher)
 
   const countriesKey = section === "countries" ? `/api/admin/countries?search=${debouncedSearch}` : null
   const { data: countriesData } = useSWR(countriesKey, fetcher)
@@ -165,9 +131,8 @@ export default function AdminPage() {
   const flashJobs = flashData?.data || []
   const categories = catsData?.categories || catsData?.data || []
   const subcategories = catsData?.subcategories || []
-  const videos = videosData?.data || []
-  const videoStats = videosData?.stats || {}
   const ratings = ratingsData?.data || []
+  const interviews = interviewsData?.data || []
   const conversations = msgsData?.data || []
   const sentNotifications = notifData?.data || []
   const countries = countriesData?.data || []
@@ -176,7 +141,6 @@ export default function AdminPage() {
   const languages = langsData?.data || []
   const paymentMethods = pmData?.data || []
   const plans = plansData?.data || []
-  const mapMarkers = mapData?.data || { candidates: [], businesses: [], flash_jobs: [] }
 
   // ===== HANDLERS =====
   const handleLogout = async () => {
@@ -245,8 +209,7 @@ export default function AdminPage() {
   const candidateColumns: ColumnDef[] = [
     // -- Visual / Media (top of form) --
     { key: "avatar_url", label: "Foto de Perfil", type: "avatar", editable: true },
-    { key: "video_reel_url", label: "Video Reel (max 3, 1 min c/u)", type: "video", editable: true, videoConfig: { profileType: "worker", playbackIdKey: "mux_playback_id", statusKey: "video_status" } },
-    { key: "portfolio_images", label: "Portfolio de Imagenes (max 5)", type: "images", editable: true, maxImages: 5 },
+    { key: "portfolio_images", label: "Portfolio de Imagenes (max 3)", type: "images", editable: true, maxImages: 3 },
     // -- Basic info --
     { key: "display_name", label: "Nombre", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin nombre"}</span> },
     { key: "email", label: "Email", editable: false, render: (v) => <span className="text-sm text-muted-foreground">{v || "Sin email"}</span> },
@@ -277,7 +240,7 @@ export default function AdminPage() {
     { key: "company_name", label: "Empresa", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin nombre"}</span> },
     { key: "email", label: "Email", editable: true },
     { key: "company_description", label: "Descripción", type: "textarea", editable: true },
-    { key: "business_type", label: "Tipo negocio", editable: true, type: "select", options: [{ value: "restaurant", label: "Restaurante" }, { value: "hotel", label: "Hotel" }, { value: "bar", label: "Bar/Cafetería" }, { value: "catering", label: "Catering" }, { value: "events", label: "Eventos" }, { value: "other", label: "Otro" }] },
+    { key: "business_type", label: "Tipo de local", editable: true, type: "select", options: BUSINESS_VENUE_TYPES.map((name) => ({ value: name, label: name })) },
     { key: "category_id", label: "Categoría", type: "category", editable: true },
     { key: "phone", label: "Teléfono", editable: true },
     { key: "website", label: "Web", editable: true },
@@ -391,15 +354,15 @@ export default function AdminPage() {
   // Section titles
   const sectionTitles: Record<AdminSection, string> = {
     dashboard: "Dashboard", candidates: "Candidatos", businesses: "Empresas",
-    jobs: "Empleos", flash: "Ofertas Flash", categories: "Categorías",
-    videos: "Vídeos / Reels", ratings: "Reseñas", messages: "Mensajes",
+    jobs: "Ofertas de Empleo", flash: "Ofertas Flash", interviews: "Solicitudes de Entrevista", categories: "Empleos",
+    ratings: "Reseñas", messages: "Mensajes",
     notifications: "Notificaciones",
-    map: "Mapa en Tiempo Real", plans: "Planes de Suscripción",
+    plans: "Planes de Suscripción",
     countries: "Países", cities: "Ciudades", languages: "Idiomas",
     "payment-methods": "Métodos de Pago", apis: "APIs e Integraciones", settings: "Configuración",
   }
 
-  const showSearch = !["dashboard", "settings", "apis", "map", "notifications"].includes(section)
+  const showSearch = !["dashboard", "settings", "apis", "notifications"].includes(section)
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -524,45 +487,6 @@ export default function AdminPage() {
             <AdminCategories categories={categories} swrKey={catsKey!} />
           )}
 
-          {/* ========== VIDEOS ========== */}
-          {section === "videos" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                {[
-                  { label: "Total", value: videosData?.total ?? 0, icon: Video, color: "bg-rose-100 text-rose-600" },
-                  { label: "Mux HLS", value: videoStats.totalMux ?? 0, icon: Play, color: "bg-emerald-100 text-emerald-600" },
-                  { label: "Legacy MP4", value: videoStats.totalLegacy ?? 0, icon: Video, color: "bg-slate-100 text-slate-600" },
-                  { label: "Procesando", value: videoStats.totalProcessing ?? 0, icon: Activity, color: "bg-amber-100 text-amber-600" },
-                  { label: "Error", value: videoStats.totalErrored ?? 0, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
-                ].map(s => (
-                  <Card key={s.label} className="bg-white"><CardContent className="p-3"><div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-1.5 ${s.color}`}><s.icon className="h-4 w-4" /></div><p className="text-xl font-bold">{s.value}</p><p className="text-[10px] text-slate-500">{s.label}</p></CardContent></Card>
-                ))}
-              </div>
-              <div className="space-y-2">
-                {videos.map((v: any) => (
-                  <Card key={`${v.type}-${v.id}`} className="bg-white"><CardContent className="p-3"><div className="flex items-center gap-3">
-                    <div className="relative h-14 w-10 rounded-lg overflow-hidden bg-slate-100 shrink-0">
-                      {v.mux_playback_id ? <img src={`https://image.mux.com/${v.mux_playback_id}/thumbnail.webp?width=80&height=112&fit_mode=smartcrop`} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><Video className="h-4 w-4 text-slate-400" /></div>}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20"><Play className="h-3 w-3 text-white fill-white" /></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-semibold truncate">{v.name || "Sin nombre"}</p>
-                        <Badge className={`text-[9px] px-1.5 py-0 border-0 ${v.type === "candidate" ? "bg-[#01A89E]/10 text-[#01A89E]" : "bg-teal-50 text-[#01A89E]"}`}>{v.type === "candidate" ? "Candidato" : "Empresa"}</Badge>
-                        {v.mux_playback_id && <Badge className="text-[9px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-0">HLS</Badge>}
-                        <Badge className={`text-[9px] px-1.5 py-0 border-0 ${v.video_status === "ready" ? "bg-emerald-50 text-emerald-700" : v.video_status === "errored" ? "bg-red-50 text-red-700" : "bg-slate-50 text-slate-600"}`}>{v.video_status || "legacy"}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      {v.mux_playback_id && <a href={`https://stream.mux.com/${v.mux_playback_id}.m3u8`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-slate-100"><ExternalLink className="h-3 w-3 text-slate-500" /></a>}
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteDialog({ open: true, type: "video", item: v, endpoint: "/api/admin/videos" })}><Trash2 className="h-3 w-3" /></Button>
-                    </div>
-                  </div></CardContent></Card>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* ========== RATINGS ========== */}
           {section === "ratings" && (
             <div className="space-y-2">
@@ -588,6 +512,45 @@ export default function AdminPage() {
                   </div>
                 </div></CardContent></Card>
               ))}
+            </div>
+          )}
+
+          {/* ========== INTERVIEWS ========== */}
+          {section === "interviews" && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">{interviews.length} solicitudes de entrevista</p>
+              {interviews.map((i: any) => {
+                const statusStyle: Record<string, string> = {
+                  pending: "bg-amber-50 text-amber-700",
+                  confirmed: "bg-blue-50 text-blue-700",
+                  approved: "bg-emerald-50 text-emerald-700",
+                  cancelled: "bg-red-50 text-red-700",
+                }
+                const statusLabel: Record<string, string> = {
+                  pending: "Pendiente", confirmed: "Confirmada", approved: "Contratado", cancelled: "Cancelada",
+                }
+                const typeLabel: Record<string, string> = {
+                  call: "Llamada", in_person: "Presencial", video_call: "Videoconferencia", other: "Otra",
+                }
+                return (
+                  <Card key={i.id} className="bg-white"><CardContent className="p-3"><div className="flex items-start gap-3">
+                    <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={i.worker?.avatar_url} /><AvatarFallback className="bg-teal-100 text-teal-700 text-xs">{(i.worker?.display_name || "?")[0]}</AvatarFallback></Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium">{i.worker?.display_name || "Candidato"}</p>
+                        <span className="text-[10px] text-slate-400">{"<-"}</span>
+                        <p className="text-sm font-medium text-[#01A89E]">{i.business?.display_name || "Empresa"}</p>
+                        <Badge className={`text-[9px] px-1.5 py-0 border-0 ${statusStyle[i.status] || "bg-slate-50 text-slate-600"}`}>{statusLabel[i.status] || i.status}</Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {new Date(i.scheduled_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · {typeLabel[i.interview_type] || i.interview_type}
+                      </p>
+                      {i.notes && <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded p-1.5 line-clamp-2">{i.notes}</p>}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setDeleteDialog({ open: true, type: "entrevista", item: i, endpoint: "/api/admin/interviews" })}><Trash2 className="h-3 w-3" /></Button>
+                  </div></CardContent></Card>
+                )
+              })}
             </div>
           )}
 
@@ -733,78 +696,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ========== MAP ========== */}
-          {section === "map" && (
-            <div className="space-y-4">
-              {/* Zoom level buttons */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {([
-                  { value: "planet" as MapZoomLevel, label: "Planeta", icon: Globe },
-                  { value: "country" as MapZoomLevel, label: "Pais", icon: Map },
-                  { value: "city" as MapZoomLevel, label: "Ciudad", icon: Locate },
-                  { value: "flash" as MapZoomLevel, label: "Ofertas Flash", icon: Zap },
-                ]).map(z => (
-                  <button
-                    key={z.value}
-                    onClick={() => setMapZoomLevel(z.value)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                      mapZoomLevel === z.value
-                        ? "bg-[#01A89E] text-white shadow-md"
-                        : "bg-white text-slate-600 border hover:bg-slate-50 hover:border-[#01A89E]/30"
-                    }`}
-                  >
-                    <z.icon className="h-3.5 w-3.5" />
-                    {z.label}
-                  </button>
-                ))}
-              </div>
-              {/* Data filter buttons */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {[
-                  { value: "all", label: "Todos", count: (mapMarkers.candidates?.length||0)+(mapMarkers.businesses?.length||0)+(mapMarkers.flash_jobs?.length||0) },
-                  { value: "candidates", label: "Candidatos", count: mapMarkers.candidates?.length||0 },
-                  { value: "businesses", label: "Empresas", count: mapMarkers.businesses?.length||0 },
-                  { value: "flash", label: "Ofertas Flash", count: mapMarkers.flash_jobs?.length||0 },
-                ].map(f => (
-                  <button key={f.value} onClick={() => setMapFilter(f.value)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${mapFilter === f.value ? "bg-[#F48221] text-white" : "bg-white text-slate-600 border hover:bg-slate-50"}`}>
-                    {f.label} ({f.count})
-                  </button>
-                ))}
-              </div>
-              <Card className="bg-white overflow-hidden"><CardContent className="p-0">
-                <div className="h-[600px]">
-                  <MapView userRole="admin" fullscreen={false} showHeader={false} zoomLevel={mapZoomLevel} />
-                </div>
-              </CardContent></Card>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {(mapFilter === "all" || mapFilter === "candidates") && (
-                  <Card className="bg-white"><CardContent className="p-3">
-                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-full bg-[#01A89E]" /> Candidatos</h4>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">{(mapMarkers.candidates||[]).map((c: any) => (
-                      <div key={c.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-slate-50"><Avatar className="h-5 w-5"><AvatarImage src={c.avatar_url} /><AvatarFallback className="text-[8px]">C</AvatarFallback></Avatar><span className="truncate flex-1">{c.display_name}</span><span className="text-slate-400 text-[10px] shrink-0">{c.location}</span></div>
-                    ))}{(!mapMarkers.candidates||mapMarkers.candidates.length===0) && <p className="text-[10px] text-slate-400">Sin datos de ubicacion</p>}</div>
-                  </CardContent></Card>
-                )}
-                {(mapFilter === "all" || mapFilter === "businesses") && (
-                  <Card className="bg-white"><CardContent className="p-3">
-                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-full bg-[#01A89E]" /> Empresas</h4>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">{(mapMarkers.businesses||[]).map((b: any) => (
-                      <div key={b.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-slate-50"><Avatar className="h-5 w-5"><AvatarImage src={b.logo_url} /><AvatarFallback className="text-[8px]">E</AvatarFallback></Avatar><span className="truncate flex-1">{b.company_name}</span><span className="text-slate-400 text-[10px] shrink-0">{b.location}</span></div>
-                    ))}{(!mapMarkers.businesses||mapMarkers.businesses.length===0) && <p className="text-[10px] text-slate-400">Sin datos de ubicacion</p>}</div>
-                  </CardContent></Card>
-                )}
-                {(mapFilter === "all" || mapFilter === "flash") && (
-                  <Card className="bg-white"><CardContent className="p-3">
-                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-full bg-orange-500" /> Ofertas Flash</h4>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">{(mapMarkers.flash_jobs||[]).map((j: any) => (
-                      <div key={j.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-slate-50"><Zap className="h-3.5 w-3.5 text-orange-500 shrink-0" /><span className="truncate flex-1">{j.title}</span><span className="text-slate-400 text-[10px] shrink-0">{j.location}</span></div>
-                    ))}{(!mapMarkers.flash_jobs||mapMarkers.flash_jobs.length===0) && <p className="text-[10px] text-slate-400">Sin ofertas flash activas</p>}</div>
-                  </CardContent></Card>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* ========== PLANS ========== */}
           {section === "plans" && (
             <AdminCrudTable title="Planes de Suscripcion" icon={<Crown className="h-5 w-5 text-[#F5A623]" />} data={plans} columns={planColumns} endpoint="/api/admin/plans" swrKey={plansKey!} emptyText="No hay planes" createDefaults={{ slug: "", name: "", price_monthly: 0, currency: "EUR", is_active: true }} />
@@ -837,7 +728,6 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   { name: "Supabase", desc: "Base de datos PostgreSQL, Auth y Storage", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: false },
-                  { name: "Mux Video", desc: "Streaming HLS adaptativo y CDN", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: false },
                   { name: "Stripe", desc: "Pagos internacionales con tarjeta y wallets", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://dashboard.stripe.com" },
                   { name: "RedSys", desc: "Pasarela de pago para tarjetas espanolas", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://canales.redsys.es" },
                   { name: "Mapbox", desc: "API de mapas y geolocalizacion", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://account.mapbox.com" },

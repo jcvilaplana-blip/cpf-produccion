@@ -6,20 +6,27 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {
-  ArrowLeft, MapPin, Star, Play, Briefcase, MessageCircle, Heart,
-  Globe, Clock, Award, Video, Image as ImageIcon, Loader2, FileText
+  ArrowLeft, MapPin, Star, Briefcase, MessageCircle, Heart, CalendarCheck,
+  Globe, Clock, Award, Image as ImageIcon, Video, Loader2, FileText, ChevronRight
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import useSWR from "swr"
-import MuxPlayer from "@mux/mux-player-react"
+import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
+import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
+import { InterviewRequestDialog } from "@/components/interview-request-dialog"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export function ProfileDetailContent({ id }: { id: string }) {
+interface ProfileDetailContentProps {
+  id: string
+  viewerId?: string | null
+  viewerType?: "worker" | "business" | "admin" | null
+}
+
+export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetailContentProps) {
   const router = useRouter()
   const [liked, setLiked] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
-  const [activeImage, setActiveImage] = useState<string | null>(null)
+  const [showInterviewDialog, setShowInterviewDialog] = useState(false)
 
   // Fetch real profile data from Supabase
   const { data: profileData, isLoading } = useSWR(`/api/profile/${id}`, fetcher)
@@ -44,6 +51,8 @@ export function ProfileDetailContent({ id }: { id: string }) {
       </div>
     )
   }
+
+  const isBusinessViewer = viewerType === "business" && viewerId !== id
 
   const specialties = (() => {
     try {
@@ -70,6 +79,7 @@ export function ProfileDetailContent({ id }: { id: string }) {
     } catch { return [] }
   })()
   const portfolioImages = Array.isArray(worker.portfolio_images) ? worker.portfolio_images : []
+  const portfolioVideos = Array.isArray(worker.portfolio_videos) ? worker.portfolio_videos : []
 
   const availabilityMap: Record<string, { label: string; color: string }> = {
     available: { label: "Disponible", color: "bg-emerald-100 text-emerald-700" },
@@ -80,32 +90,9 @@ export function ProfileDetailContent({ id }: { id: string }) {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Hero - Video reel or avatar */}
+      {/* Hero - avatar */}
       <div className="relative w-full aspect-[9/12] max-h-[50vh] bg-black overflow-hidden">
-        {worker.mux_playback_id && showVideo ? (
-          <MuxPlayer
-            playbackId={worker.mux_playback_id}
-            autoPlay="muted"
-            loop
-            muted
-            className="w-full h-full [&>mux-player]:w-full [&>mux-player]:h-full"
-            style={{ aspectRatio: "9/16", width: "100%", height: "100%", objectFit: "cover", "--controls": "none" } as any}
-            thumbnailTime={2}
-          />
-        ) : worker.mux_playback_id ? (
-          <div className="w-full h-full relative cursor-pointer group" onClick={() => setShowVideo(true)}>
-            <img
-              src={`https://image.mux.com/${worker.mux_playback_id}/thumbnail.webp?time=2&width=800`}
-              alt={worker.display_name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-              <div className="h-20 w-20 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                <Play className="h-9 w-9 text-[#01A89E] ml-1" fill="#01A89E" />
-              </div>
-            </div>
-          </div>
-        ) : worker.avatar_url ? (
+        {worker.avatar_url ? (
           <img src={worker.avatar_url} alt={worker.display_name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#01A89E]/20 to-[#01A89E]/5 flex items-center justify-center">
@@ -140,11 +127,6 @@ export function ProfileDetailContent({ id }: { id: string }) {
               <Award className="h-3.5 w-3.5 mr-1" /> Premium
             </Badge>
           )}
-          {worker.video_status === "ready" && (
-            <Badge className="bg-[#01A89E]/90 text-white border-0 text-xs px-2.5 py-1">
-              <Video className="h-3.5 w-3.5 mr-1" /> Video Reel
-            </Badge>
-          )}
         </div>
 
         <div className="absolute bottom-4 left-4 right-4 z-10 text-white">
@@ -158,10 +140,11 @@ export function ProfileDetailContent({ id }: { id: string }) {
         <div className="flex items-center gap-3 flex-wrap">
           <Badge className={`${avail.color} border-0 text-xs px-2.5 py-1`}>{avail.label}</Badge>
           {worker.rating > 0 && (
-            <div className="flex items-center gap-1">
+            <Link href={`/profile/${id}/ratings`} className="flex items-center gap-1">
               <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               <span className="font-bold text-lg">{worker.rating}</span>
-            </div>
+              <span className="text-xs text-muted-foreground">({worker.total_ratings || 0})</span>
+            </Link>
           )}
           {worker.location && (
             <div className="flex items-center gap-1 text-muted-foreground">
@@ -177,12 +160,12 @@ export function ProfileDetailContent({ id }: { id: string }) {
 
         {/* CTA Buttons */}
         <div className="flex gap-3">
-          {worker.mux_playback_id && (
+          {isBusinessViewer && (
             <Button
-              onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setShowVideo(true) }}
-              className="flex-1 h-12 rounded-xl bg-[#01A89E] hover:bg-[#018F86] text-white font-bold"
+              className="flex-1 h-12 rounded-xl font-bold bg-[#01A89E] hover:bg-[#018F86] text-white"
+              onClick={() => setShowInterviewDialog(true)}
             >
-              <Play className="h-4 w-4 mr-2" fill="white" /> Ver Video Reel
+              <CalendarCheck className="h-4 w-4 mr-2" /> Solicitar Entrevista
             </Button>
           )}
           <Button
@@ -190,7 +173,7 @@ export function ProfileDetailContent({ id }: { id: string }) {
             className="flex-1 h-12 rounded-xl font-bold"
             onClick={() => router.push(`/messages?candidateId=${worker.id}&candidateName=${encodeURIComponent(worker.display_name)}`)}
           >
-            <MessageCircle className="h-4 w-4 mr-2" /> Contactar
+            <MessageCircle className="h-4 w-4 mr-2" /> Hacer Preguntas
           </Button>
         </div>
 
@@ -226,6 +209,19 @@ export function ProfileDetailContent({ id }: { id: string }) {
             <div><span className="text-muted-foreground block">Valoración</span><span className="font-medium flex items-center gap-1">{worker.rating || "-"} {worker.rating > 0 && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}</span></div>
           </div>
         </CardContent></Card>
+
+        {/* Ratings link */}
+        <Link href={`/profile/${id}/ratings`}>
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-[#01A89E]" />
+                <span className="font-semibold text-sm">Ver todas las valoraciones</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Languages */}
         {languages.length > 0 && (
@@ -269,32 +265,34 @@ export function ProfileDetailContent({ id }: { id: string }) {
           </CardContent></Card>
         )}
 
+        {/* Portfolio videos */}
+        {portfolioVideos.length > 0 && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
+              <Video className="h-4 w-4 text-[#01A89E]" /> Vídeos ({portfolioVideos.length}/3)
+            </h3>
+            <PortfolioVideoViewer videos={portfolioVideos} />
+          </CardContent></Card>
+        )}
+
         {/* Portfolio images */}
         {portfolioImages.length > 0 && (
           <Card><CardContent className="p-4">
             <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <ImageIcon className="h-4 w-4 text-[#01A89E]" /> Portfolio ({portfolioImages.length}/5)
+              <ImageIcon className="h-4 w-4 text-[#01A89E]" /> Portfolio ({portfolioImages.length}/3)
             </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {portfolioImages.map((img: string, i: number) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImage(img)}
-                  className="aspect-square rounded-xl overflow-hidden border bg-slate-50 hover:opacity-80 transition-opacity"
-                >
-                  <img src={img} alt={`Portfolio ${i + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            <PortfolioImageViewer images={portfolioImages} />
           </CardContent></Card>
         )}
       </div>
 
-      {/* Full image lightbox */}
-      {activeImage && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setActiveImage(null)}>
-          <img src={activeImage} alt="Portfolio" className="max-w-full max-h-full rounded-lg" />
-        </div>
+      {isBusinessViewer && (
+        <InterviewRequestDialog
+          open={showInterviewDialog}
+          onOpenChange={setShowInterviewDialog}
+          workerId={id}
+          workerName={worker.display_name}
+        />
       )}
     </div>
   )

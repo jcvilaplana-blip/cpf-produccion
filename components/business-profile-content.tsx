@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,7 +17,7 @@ interface BusinessProfileContentProps {
 }
 
 export function BusinessProfileContent({ user, profile, businessProfile }: BusinessProfileContentProps) {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [stats, setStats] = useState({ totalJobs: 0, hiredCandidates: 0 })
 
   useEffect(() => {

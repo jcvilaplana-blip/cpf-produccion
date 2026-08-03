@@ -1,12 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
 import { LogOut, LayoutDashboard, MapPin, Shield, Pencil } from "lucide-react"
-import type { Profile } from "@/lib/types"
 import { useLanguage } from "@/lib/i18n/language-context"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,45 +16,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function TopNavigation() {
   const { t } = useLanguage()
-  const router = useRouter()
   const pathname = usePathname()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const supabase = createClient()
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single()
-        if (data) setProfile(data as Profile)
-      }
-    }
-    loadProfile()
-  }, [supabase])
+  const { user, logout } = useAuth()
 
   if (pathname?.startsWith("/auth/") || pathname === "/reels" || pathname?.startsWith("/admin")) {
     return null
   }
 
-  if (!profile) return null
+  if (!user) return null
 
-  const displayName = profile.display_name || "Usuario"
-  const avatarUrl = profile.avatar_url
-  const userType = profile.user_type
-  const isAdmin = profile.is_admin
+  const displayName = user.displayName || "Usuario"
+  const avatarUrl = user.avatarUrl
+  const userType = user.userType
+  const isAdmin = userType === "admin"
   const roleLabel = userType === "business" ? t("topNav.business") : t("topNav.worker")
   const initials = displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
-  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-transparent pointer-events-none hidden md:block">
@@ -116,7 +90,7 @@ export function TopNavigation() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
+              <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{t("topNav.logout")}</span>
               </DropdownMenuItem>

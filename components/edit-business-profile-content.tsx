@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import {
   Loader2, ArrowLeft, Save, Building2, MapPin, Globe, Phone,
-  Camera, Image as ImageIcon, Upload, X, Video, Plus, CheckCircle, Play
+  Camera, Image as ImageIcon, Upload, X, Plus
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,9 +13,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import type { BusinessProfile } from "@/lib/types"
+import { CityAutocomplete } from "@/components/city-autocomplete"
+import { AddressAutofill } from "@/components/address-autofill"
 
 interface Category {
   id: string
@@ -53,26 +54,25 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
     company_logo_url: "",
     photos: [] as string[],
     email: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
   })
 
   // Media states
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [videoStatus, setVideoStatus] = useState("none")
-  const [muxPlaybackId, setMuxPlaybackId] = useState<string | null>(null)
-  const [uploadingVideo, setUploadingVideo] = useState(false)
-  const [videoProgress, setVideoProgress] = useState(0)
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
-  const videoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
 
-      // Load categories
-      const { data: cats } = await supabase.from("categories").select("*").order("name")
+      // Load categories - business venue types only (role_type='business'),
+      // not the candidate position taxonomy (Camarero, Cocinero...) which
+      // shares the same table.
+      const { data: cats } = await supabase.from("categories").select("*").eq("role_type", "business").order("sort_order")
       if (cats) setCategories(cats)
 
       // Load business profile
@@ -91,9 +91,9 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
           company_logo_url: bp.company_logo_url || "",
           photos: bp.photos || [],
           email: bp.email || "",
+          latitude: bp.latitude ?? null,
+          longitude: bp.longitude ?? null,
         })
-        setVideoStatus(bp.video_status || "none")
-        setMuxPlaybackId(bp.mux_playback_id || null)
 
         // Load subcategories if category exists
         if (bp.category_id) {
@@ -178,65 +178,6 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
     setFormData({ ...formData, photos: formData.photos.filter((_, i) => i !== index) })
   }
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith("video/")) {
-      toast.error("Solo se permiten videos")
-      return
-    }
-    if (file.size > 200 * 1024 * 1024) {
-      toast.error("Maximo 200MB")
-      return
-    }
-    setUploadingVideo(true)
-    setVideoProgress(0)
-    setVideoStatus("uploading")
-    try {
-      const res = await fetch("/api/mux/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileType: "business" }),
-      })
-      if (!res.ok) throw new Error()
-      const { uploadUrl } = await res.json()
-
-      const xhr = new XMLHttpRequest()
-      xhr.upload.addEventListener("progress", (event) => {
-        if (event.lengthComputable) {
-          setVideoProgress(Math.round((event.loaded / event.total) * 100))
-        }
-      })
-      await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener("load", () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject())
-        xhr.addEventListener("error", reject)
-        xhr.open("PUT", uploadUrl)
-        xhr.send(file)
-      })
-      setVideoStatus("processing")
-      toast.success("Video subido. Procesando...")
-
-      // Poll for status
-      for (let i = 0; i < 60; i++) {
-        await new Promise(r => setTimeout(r, 3000))
-        const statusRes = await fetch("/api/mux/status?type=business")
-        const statusData = await statusRes.json()
-        if (statusData.status === "ready" && statusData.playbackId) {
-          setVideoStatus("ready")
-          setMuxPlaybackId(statusData.playbackId)
-          toast.success("Video listo")
-          break
-        }
-      }
-    } catch {
-      toast.error("Error al subir video")
-      setVideoStatus("error")
-    } finally {
-      setUploadingVideo(false)
-      if (videoInputRef.current) videoInputRef.current.value = ""
-    }
-  }
-
   const handleSave = async () => {
     if (!formData.company_name) {
       toast.error("El nombre de la empresa es requerido")
@@ -244,6 +185,11 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
     }
     setSaving(true)
     try {
+      // business_type is kept as a plain-text mirror of the selected
+      // category's name so it stays in sync with category_id - other
+      // surfaces (search filters, admin) read business_type directly.
+      const selectedCategory = categories.find((c) => c.id === formData.category_id)
+
       // Update business_profiles
       const { error } = await supabase
         .from("business_profiles")
@@ -254,9 +200,12 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
           website: formData.website,
           category_id: formData.category_id || null,
           subcategory_id: formData.subcategory_id || null,
+          business_type: selectedCategory?.name || null,
           company_logo_url: formData.company_logo_url || null,
           photos: formData.photos,
           email: formData.email || null,
@@ -288,10 +237,6 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
       </div>
     )
   }
-
-  const videoThumbnail = muxPlaybackId
-    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.webp?width=480&height=270`
-    : null
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 md:pt-14">
@@ -369,20 +314,26 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Ciudad</Label>
-                <Input
+                <CityAutocomplete
                   placeholder="Madrid"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(city) => setFormData({ ...formData, city })}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Dirección</Label>
-              <Input
+              <AddressAutofill
                 placeholder="Calle Mayor 1, 28001"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(address, coords) =>
+                  setFormData({
+                    ...formData,
+                    address,
+                    ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {}),
+                  })
+                }
               />
             </div>
 
@@ -465,59 +416,6 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
               )}
             </div>
             <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-          </CardContent>
-        </Card>
-
-        {/* Video */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="bg-gradient-to-r from-[#01A89E]/10 to-transparent pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Video className="w-4 h-4 text-[#01A89E]" />
-              Video de Presentacion
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {videoStatus === "ready" && videoThumbnail && (
-              <div className="relative rounded-xl overflow-hidden bg-black">
-                <img src={videoThumbnail} alt="Video" className="w-full max-h-56 object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-black/40 rounded-full p-3">
-                    <Play className="w-6 h-6 text-white" fill="white" />
-                  </div>
-                </div>
-                <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Listo
-                </div>
-              </div>
-            )}
-
-            {videoStatus === "processing" && (
-              <div className="border-2 border-dashed border-[#01A89E]/50 rounded-xl py-10 flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#01A89E] animate-spin" />
-                <span className="text-sm text-gray-600">Procesando video...</span>
-              </div>
-            )}
-
-            {videoStatus === "uploading" && uploadingVideo && (
-              <div className="border-2 border-dashed border-[#01A89E]/50 rounded-xl py-10 flex flex-col items-center gap-3 px-6">
-                <Upload className="w-8 h-8 text-[#01A89E]" />
-                <span className="text-sm text-gray-600">Subiendo... {videoProgress}%</span>
-                <Progress value={videoProgress} className="h-2 w-full max-w-xs" />
-              </div>
-            )}
-
-            {(videoStatus === "none" || videoStatus === "error") && !uploadingVideo && (
-              <button
-                type="button"
-                onClick={() => videoInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-300 hover:border-[#01A89E] rounded-xl py-10 flex flex-col items-center gap-2 transition-colors group"
-              >
-                <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#01A89E]" />
-                <span className="text-sm text-gray-600">Subir video de presentacion</span>
-                <span className="text-xs text-gray-400">MP4, MOV, WebM. Max 200MB</span>
-              </button>
-            )}
-            <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
           </CardContent>
         </Card>
 

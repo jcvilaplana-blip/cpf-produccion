@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { SearchContent } from "@/components/search-content"
+import { SearchWizardContent } from "@/components/search-wizard-content"
 
 
 export const metadata = {
@@ -21,5 +21,5 @@ export default async function SearchPage() {
     profile = data
   }
 
-  return <SearchContent profile={profile} />
+  return <SearchWizardContent profile={profile} />
 }

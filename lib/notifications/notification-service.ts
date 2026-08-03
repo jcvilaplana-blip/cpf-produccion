@@ -20,6 +20,7 @@ const POLL_INTERVAL_MS = 30000
 
 function mapDbTypeToPayloadType(dbType: string): NotificationPayload["type"] {
   if (dbType === "oferta") return "job"
+  if (dbType === "entrevista") return "interview"
   return "general"
 }
 

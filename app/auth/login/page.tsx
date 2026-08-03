@@ -56,12 +56,26 @@ export default function LoginPage() {
         return
       }
 
-      // Get profile to determine redirect
-      const { data: profile, error: profileError } = await supabase
+      // Get profile to determine redirect. Bounded with a timeout - this
+      // query can occasionally stall (the same supabase-js session-lock
+      // contention documented elsewhere in this app), and a hung request
+      // here must never leave the user stuck on a spinner forever with no
+      // way forward.
+      const profileQuery = supabase
         .from("profiles")
         .select("is_admin, user_type, rol, profile_completed")
         .eq("id", data.user.id)
         .single()
+      const timeout = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 8000))
+      const result = await Promise.race([profileQuery, timeout])
+
+      if (result === "timeout") {
+        setError("La conexión está tardando más de lo normal. Vuelve a intentarlo.")
+        setIsLoading(false)
+        return
+      }
+
+      const { data: profile, error: profileError } = result
 
       // If no profile exists, redirect to create profile
       if (profileError || !profile) {
@@ -71,16 +85,24 @@ export default function LoginPage() {
 
       // Determine redirect URL based on user type
       let redirectUrl = "/dashboard"
-      
+
       const isBusiness = profile.user_type === "business" || profile.rol === 3
       const isAdmin = profile.is_admin === true || profile.rol === 1 || profile.user_type === "admin"
-      
+
       if (isAdmin) {
         redirectUrl = "/admin"
       } else if (!profile.profile_completed) {
         redirectUrl = "/create-profile"
       } else if (isBusiness) {
         redirectUrl = "/business-dashboard"
+      }
+
+      // If middleware redirected here from a protected page (?next=...),
+      // send the user back there instead of their default dashboard -
+      // but only once we know they have a real, completed profile.
+      const next = new URLSearchParams(window.location.search).get("next")
+      if (next && next.startsWith("/") && profile.profile_completed) {
+        redirectUrl = next
       }
 
       // Use window.location for full page reload to ensure cookies are set

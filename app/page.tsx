@@ -57,7 +57,7 @@ export default async function HomePage() {
       // Get real workers/candidates
       supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, job_category, location, experience_years, mux_playback_id")
+        .select("id, display_name, avatar_url, job_category, location, experience_years")
         .eq("user_type", "worker")
         .eq("is_admin", false)
         .order("created_at", { ascending: false })

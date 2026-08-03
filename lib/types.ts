@@ -14,11 +14,6 @@ export interface Profile {
   location?: string
   bio?: string
   avatar_url?: string
-  video_reel_url?: string // @deprecated - use mux_playback_id instead
-  mux_asset_id?: string
-  mux_playback_id?: string
-  mux_upload_id?: string
-  video_status?: string
   rating: number
   total_ratings: number
   is_active: boolean
@@ -38,8 +33,8 @@ export interface Profile {
   cv_filename?: string
   // Portfolio images (max 3)
   portfolio_images?: string[]
-  // Additional videos (max 2, not shown in reels)
-  additional_videos?: Array<{ url?: string; playbackId?: string; status: string }>
+  // Portfolio videos (max 3, 1 min each, shown fullscreen on tap)
+  portfolio_videos?: string[]
   // Experience
   experience_years?: number
   contract_type_sought?: string[]
@@ -61,11 +56,6 @@ export interface BusinessProfile {
   subscription_plan?: string
   subscription_expires_at?: string
   photos?: string[]
-  video_url?: string
-  mux_asset_id?: string
-  mux_playback_id?: string
-  mux_upload_id?: string
-  video_status?: string
   is_premium?: boolean
   premium_expires_at?: string
   badges?: string[]

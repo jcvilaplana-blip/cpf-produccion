@@ -13,7 +13,6 @@ import {
   MessageCircle,
   Check,
   X,
-  Video,
   Calendar,
   FileText,
   Users,
@@ -44,7 +43,6 @@ interface ApplicationWithWorker {
     bio: string | null
     specialties: string[] | null
     job_category: string | null
-    mux_playback_id: string | null
   } | null
 }
 
@@ -217,14 +215,6 @@ export function JobApplicationsContent({
                         <Button asChild variant="outline" size="sm" className="h-8 text-xs bg-transparent">
                           <Link href={`/profile/${app.worker_id}`}>Ver Perfil</Link>
                         </Button>
-                        {app.worker?.mux_playback_id && (
-                          <Button asChild variant="outline" size="sm" className="h-8 text-xs bg-transparent">
-                            <Link href={`/profile/${app.worker_id}`}>
-                              <Video className="h-3 w-3 mr-1" />
-                              Video
-                            </Link>
-                          </Button>
-                        )}
                         <Button
                           variant="outline"
                           size="sm"

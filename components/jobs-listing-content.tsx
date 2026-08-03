@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react" 
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,8 @@ import Image from "next/image"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { useLanguage } from "@/lib/i18n/language-context"
+import { CityAutocomplete } from "@/components/city-autocomplete"
+import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
 
 interface Job {
   id: string
@@ -73,6 +75,21 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(8) // 4 rows x 2 columns
 
+  // Seed filters from the search wizard (/search) via URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const jobType = params.get("jobType")
+    const companyType = params.get("companyType")
+    const location = params.get("location")
+    const salary = params.get("salary")
+    const q = params.get("q")
+    if (jobType) setJobTypeFilter(jobType)
+    if (companyType) setCompanyTypeFilter(companyType)
+    if (location) setLocationFilter(location)
+    if (salary) setSalaryFilter(salary)
+    if (q) setSearchQuery(q)
+  }, [])
+
   const allJobs = useMemo(() => {
     const flashJobsConverted: Job[] = flashOffers.map((offer) => ({
       id: offer.id,
@@ -106,14 +123,6 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
     const types = new Set<string>()
     allJobs.forEach((job) => {
       if (job.jobType) types.add(job.jobType)
-    })
-    return Array.from(types).sort()
-  }, [allJobs])
-
-  const companyTypes = useMemo(() => {
-    const types = new Set<string>()
-    allJobs.forEach((job) => {
-      if (job.business.type) types.add(job.business.type)
     })
     return Array.from(types).sort()
   }, [allJobs])
@@ -254,7 +263,7 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t("filters.allCompanyTypes")}</SelectItem>
-                        {companyTypes.map((type) => (
+                        {BUSINESS_VENUE_TYPES.map((type) => (
                           <SelectItem key={type} value={type}>
                             {type}
                           </SelectItem>
@@ -265,15 +274,11 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">{t("filters.location")}</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder={t("filters.locationPlaceholder")}
-                        value={locationFilter}
-                        onChange={(e) => setLocationFilter(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                    <CityAutocomplete
+                      value={locationFilter}
+                      onChange={setLocationFilter}
+                      placeholder={t("filters.locationPlaceholder")}
+                    />
                   </div>
 
                   <div className="space-y-2">

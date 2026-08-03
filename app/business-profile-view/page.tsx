@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { BusinessProfileViewContent } from "@/components/business-profile-view-content"
 import { createClient } from "@/lib/supabase/client"
@@ -12,7 +12,7 @@ export default function BusinessProfileViewPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     const loadUserData = async () => {

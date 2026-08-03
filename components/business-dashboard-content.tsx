@@ -31,7 +31,7 @@ import {
   MapPin,
 } from "lucide-react"
 import type { Profile } from "@/lib/types"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
 import { BottomNavigation } from "@/components/bottom-navigation"
 
@@ -84,13 +84,9 @@ export function BusinessDashboardContent({
   jobs,
 }: BusinessDashboardContentProps) {
   const router = useRouter()
+  const { logout } = useAuth()
 
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
-  }
+  const handleLogout = logout
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pt-14">

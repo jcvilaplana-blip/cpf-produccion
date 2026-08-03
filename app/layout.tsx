@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer"
 import { ScrollToTop } from "@/components/scroll-to-top"
 
 import { LanguageProvider } from "@/lib/i18n/language-context"
+import { AuthProvider } from "@/components/providers/auth-provider"
 import { NotificationProvider } from "@/lib/notifications/notification-context"
 import { NotificationTrigger } from "@/components/notification-trigger"
 import "./globals.css"
@@ -69,14 +70,16 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex flex-col min-h-screen`}>
         <LanguageProvider>
-          <NotificationProvider>
-            <TopNavigation />
-            <main className="flex-1 pb-20 md:pb-0">{children}</main>
-            <Footer />
-            <GlobalBottomNavigation />
-            <ScrollToTop />
-            <NotificationTrigger />
-          </NotificationProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <TopNavigation />
+              <main className="flex-1 pb-20 md:pb-0">{children}</main>
+              <Footer />
+              <GlobalBottomNavigation />
+              <ScrollToTop />
+              <NotificationTrigger />
+            </NotificationProvider>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

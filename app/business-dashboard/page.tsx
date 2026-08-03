@@ -23,7 +23,6 @@ interface Candidate {
   job_category: string | null
   location: string | null
   rating: number | null
-  mux_playback_id: string | null
   specialties: string[] | null
   experience_years: number | null
 }
@@ -43,10 +42,16 @@ export default function BusinessDashboardPage() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!isAuthenticated || !user) {
+    // Only bounce to login when we're SURE there's no session. `user` needs
+    // the profile row to have loaded too, which can lag behind (or, rarely,
+    // fail/time out) even for a genuinely authenticated visitor - treating
+    // "profile not loaded yet" the same as "logged out" was sending real,
+    // signed-in users back to the login page after a long spinner.
+    if (!isAuthenticated) {
       router.push("/auth/login")
       return
     }
+    if (!user) return
     if (user.userType === "worker") { router.push("/dashboard"); return }
     if (user.userType === "admin") { router.push("/admin"); return }
     if (user.userType !== "business") { router.push("/auth/login"); return }
@@ -58,7 +63,7 @@ export default function BusinessDashboardPage() {
       const supabase = createClient()
       const { data: candidatesData } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, job_category, location, rating, mux_playback_id, specialties, experience_years")
+        .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years")
         .eq("user_type", "worker")
         .order("rating", { ascending: false })
 
@@ -219,11 +224,6 @@ export default function BusinessDashboardPage() {
                             <AvatarImage src={candidate.avatar_url || undefined} alt={candidate.display_name || ""} />
                             <AvatarFallback className="bg-[#01A89E]/10 text-[#01A89E]">{(candidate.display_name || "C")[0]}</AvatarFallback>
                           </Avatar>
-                          {candidate.mux_playback_id && (
-                            <div className="absolute -bottom-1 -right-1 bg-[#F48221] text-white rounded-full p-0.5">
-                              <Play className="h-2.5 w-2.5" />
-                            </div>
-                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
