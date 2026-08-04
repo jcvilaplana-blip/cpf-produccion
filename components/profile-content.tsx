@@ -4,9 +4,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -24,8 +21,6 @@ import {
   Upload,
   Video,
   FileText,
-  Plus,
-  X,
   Languages,
 } from "lucide-react"
 import Link from "next/link"
@@ -35,7 +30,6 @@ import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import type { Profile, BusinessProfile } from "@/lib/types"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createClient } from "@/lib/supabase/client"
 
 interface ProfileContentProps {
   user: any
@@ -70,12 +64,6 @@ export function ProfileContent({
 }: ProfileContentProps) {
   const router = useRouter()
   const { language, setLanguage, t } = useLanguage()
-  const [error, setError] = useState<string | null>(null)
-  
-  // Profile viewing only - editing is done on /profile/edit page
-  const isEditing = false
-  const isSaving = false
-  const setIsEditing = () => {}
 
   const [formData, setFormData] = useState({
     displayName: profile?.display_name || "Santiago García",
@@ -93,87 +81,6 @@ export function ProfileContent({
     certifications: [] as string[],
     references: "",
   })
-
-  const [newSkill, setNewSkill] = useState("")
-  const [newLanguage, setNewLanguage] = useState("")
-  const [newCertification, setNewCertification] = useState("")
-
-  const handleSave = async () => {
-    setIsSaving(true)
-    setError(null)
-    const supabase = createClient()
-
-    try {
-      // Update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          display_name: formData.displayName,
-          phone: formData.phone,
-          location: formData.location,
-          bio: profile?.user_type === "business" ? formData.companyDescription : formData.bio,
-          specialties: formData.skills,
-          certificates: formData.certifications,
-          availability_status: formData.availability,
-        })
-        .eq("id", user.id)
-
-      if (profileError) throw profileError
-
-      // Update business profile if business user
-      if (profile?.user_type === "business") {
-        const { error: bizError } = await supabase
-          .from("business_profiles")
-          .update({
-            company_name: formData.companyName,
-            company_description: formData.companyDescription,
-            website: formData.website,
-          })
-          .eq("id", user.id)
-
-        if (bizError) throw bizError
-      }
-
-      setIsEditing(false)
-    } catch (err: any) {
-      setError(err.message || "Error al guardar los cambios")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const addSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
-      setFormData({ ...formData, skills: [...formData.skills, newSkill.trim()] })
-      setNewSkill("")
-    }
-  }
-
-  const removeSkill = (skill: string) => {
-    setFormData({ ...formData, skills: formData.skills.filter((s) => s !== skill) })
-  }
-
-  const addLanguage = () => {
-    if (newLanguage.trim() && !formData.languages.includes(newLanguage.trim())) {
-      setFormData({ ...formData, languages: [...formData.languages, newLanguage.trim()] })
-      setNewLanguage("")
-    }
-  }
-
-  const removeLanguage = (language: string) => {
-    setFormData({ ...formData, languages: formData.languages.filter((l) => l !== language) })
-  }
-
-  const addCertification = () => {
-    if (newCertification.trim() && !formData.certifications.includes(newCertification.trim())) {
-      setFormData({ ...formData, certifications: [...formData.certifications, newCertification.trim()] })
-      setNewCertification("")
-    }
-  }
-
-  const removeCertification = (cert: string) => {
-    setFormData({ ...formData, certifications: formData.certifications.filter((c) => c !== cert) })
-  }
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -219,14 +126,12 @@ export function ProfileContent({
                   {t("common.help")}
                 </Link>
               </Button>
-{!isEditing && (
-<Button variant="outline" size="sm" asChild>
-  <Link href={profile?.user_type === "business" ? "/business-profile/edit" : "/profile/edit"}>
-    <Edit className="h-4 w-4 mr-2" />
-    {t("common.edit")}
-  </Link>
-</Button>
-  )}
+              <Button variant="outline" size="sm" asChild>
+                <Link href={profile?.user_type === "business" ? "/business-profile/edit" : "/profile/edit"}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  {t("common.edit")}
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -254,213 +159,7 @@ export function ProfileContent({
               </div>
 
               <div className="flex-1 w-full">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">
-                        {profile?.user_type === "business" ? t("profile.contactName") : t("profile.fullName")}
-                      </Label>
-                      <Input
-                        id="displayName"
-                        value={formData.displayName}
-                        onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                      />
-                    </div>
-                    {profile?.user_type === "business" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="companyName">{t("profile.companyName")}</Label>
-                        <Input
-                          id="companyName"
-                          value={formData.companyName}
-                          onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        />
-                      </div>
-                    )}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">{t("profile.phone")}</Label>
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location">{t("profile.location")}</Label>
-                        <Input
-                          id="location"
-                          value={formData.location}
-                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {profile?.user_type === "business" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="website">{t("profile.website")}</Label>
-                        <Input
-                          id="website"
-                          value={formData.website}
-                          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                        />
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">
-                        {profile?.user_type === "business" ? t("profile.companyDescription") : t("profile.bio")}
-                      </Label>
-                      <Textarea
-                        id="bio"
-                        rows={4}
-                        value={profile?.user_type === "business" ? formData.companyDescription : formData.bio}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            [profile?.user_type === "business" ? "companyDescription" : "bio"]: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-
-                    {profile?.user_type === "worker" && (
-                      <>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="category">{t("profile.category")}</Label>
-                            <Input
-                              id="category"
-                              placeholder="ej: Camarero, Chef, Bartender"
-                              value={formData.category}
-                              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="yearsExperience">{t("profile.yearsExperience")}</Label>
-                            <Input
-                              id="yearsExperience"
-                              type="number"
-                              placeholder="ej: 5"
-                              value={formData.yearsExperience}
-                              onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>{t("profile.skills")}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={t("profile.addSkill")}
-                              value={newSkill}
-                              onChange={(e) => setNewSkill(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-                            />
-                            <Button type="button" onClick={addSkill} size="icon">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {formData.skills.map((skill) => (
-                              <Badge key={skill} variant="secondary" className="gap-1">
-                                {skill}
-                                <button onClick={() => removeSkill(skill)} className="ml-1 hover:text-destructive">
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>{t("profile.languages")}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={t("profile.addLanguage")}
-                              value={newLanguage}
-                              onChange={(e) => setNewLanguage(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addLanguage())}
-                            />
-                            <Button type="button" onClick={addLanguage} size="icon">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {formData.languages.map((language) => (
-                              <Badge key={language} variant="secondary" className="gap-1">
-                                {language}
-                                <button
-                                  onClick={() => removeLanguage(language)}
-                                  className="ml-1 hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="availability">{t("profile.availability")}</Label>
-                          <Input
-                            id="availability"
-                            placeholder="ej: Inmediata, A partir de..."
-                            value={formData.availability}
-                            onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>{t("profile.certifications")}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={t("profile.addCertification")}
-                              value={newCertification}
-                              onChange={(e) => setNewCertification(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCertification())}
-                            />
-                            <Button type="button" onClick={addCertification} size="icon">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {formData.certifications.map((cert) => (
-                              <Badge key={cert} variant="secondary" className="gap-1">
-                                {cert}
-                                <button
-                                  onClick={() => removeCertification(cert)}
-                                  className="ml-1 hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="references">{t("profile.references")}</Label>
-                          <Textarea
-                            id="references"
-                            rows={3}
-                            placeholder="Información de contacto de referencias profesionales"
-                            value={formData.references}
-                            onChange={(e) => setFormData({ ...formData, references: e.target.value })}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{error}</div>}
-                    <div className="flex gap-2">
-                      <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-primary/90">
-                        {isSaving ? t("profile.saving") : t("profile.saveChanges")}
-                      </Button>
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>
-                        {t("common.cancel")}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
+                <>
                     <div className="mb-3">
                       <h2 className="text-2xl font-bold mb-1">{formData.displayName}</h2>
                       {profile?.user_type === "business" && businessProfile?.company_name && (
@@ -598,11 +297,10 @@ export function ProfileContent({
                       </>
                     )}
                   </>
-                )}
               </div>
             </div>
 
-            {profile?.user_type === "worker" && !isEditing && (
+            {profile?.user_type === "worker" && (
               <div className="mt-6 pt-6 border-t">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold flex items-center gap-2 text-sm md:text-base">
@@ -626,7 +324,7 @@ export function ProfileContent({
               </div>
             )}
 
-            {profile?.user_type === "worker" && !isEditing && (
+            {profile?.user_type === "worker" && (
               <div className="mt-6 pt-6 border-t">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold flex items-center gap-2">
@@ -665,7 +363,7 @@ export function ProfileContent({
               </div>
             )}
 
-            {profile?.user_type === "worker" && !isEditing && (
+            {profile?.user_type === "worker" && (
               <div className="mt-6 pt-6 border-t">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold flex items-center gap-2">
@@ -690,7 +388,7 @@ export function ProfileContent({
         </Card>
 
         {/* Flash Offers Carousel */}
-        {profile?.user_type === "worker" && !isEditing && (
+        {profile?.user_type === "worker" && (
           <div className="mt-6 pt-6 border-t">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2 text-sm md:text-base">
