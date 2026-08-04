@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.camareroporfavor.app',
-  appName: 'CamareroPorFavor',
+  appName: 'CPF',
   webDir: 'out',
   plugins: {
     SplashScreen: {
