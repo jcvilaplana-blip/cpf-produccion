@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const { t } = useLanguage()
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,10 +31,31 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient()
-      
+
+      // The identifier field accepts either an email or a phone number.
+      // Phone numbers aren't a real Supabase auth identity, so resolve to
+      // the account's email server-side first, then sign in normally.
+      let loginEmail = identifier.trim()
+      if (!loginEmail.includes("@")) {
+        const res = await fetch("/api/auth/resolve-phone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: loginEmail }),
+        })
+        const { email: resolvedEmail } = await res.json()
+        if (!resolvedEmail) {
+          // Same generic error as a wrong password - don't reveal whether
+          // the phone number is registered.
+          setError(t("auth.incorrectPassword"))
+          setIsLoading(false)
+          return
+        }
+        loginEmail = resolvedEmail
+      }
+
       // Sign in with password
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginEmail,
         password,
       })
 
@@ -162,18 +183,26 @@ export default function LoginPage() {
               <form onSubmit={handleLogin}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="email">{t("auth.email")}</Label>
+                    <Label htmlFor="identifier">{t("auth.emailOrPhone")}</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder={t("auth.emailPlaceholder")}
+                      id="identifier"
+                      type="text"
+                      placeholder={t("auth.emailOrPhonePlaceholder")}
                       required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="password">{t("auth.password")}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">{t("auth.password")}</Label>
+                      <Link
+                        href="/auth/forgot-password"
+                        className="text-xs text-primary underline underline-offset-4"
+                      >
+                        {t("auth.forgotPassword")}
+                      </Link>
+                    </div>
                     <div className="relative">
                       <Input
                         id="password"

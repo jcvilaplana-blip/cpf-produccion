@@ -79,6 +79,8 @@ export const en = {
     loginTitle: "Login",
     loginSubtitle: "Enter your email to access your account",
     emailPlaceholder: "you@email.com",
+    emailOrPhone: "Email or phone number",
+    emailOrPhonePlaceholder: "you@email.com or 600 123 456",
     loggingIn: "Logging in...",
     orContinueWith: "Or continue with",
     continueWithGoogle: "Continue with Google",

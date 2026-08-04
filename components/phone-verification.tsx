@@ -12,6 +12,8 @@ interface PhoneVerificationProps {
   phone: string
   verified: boolean
   onVerified: () => void
+  /** Called when the user chooses to continue without SMS verification, shown only after a send failure (e.g. Firebase's reCAPTCHA/domain-authorization errors). */
+  onSkip?: () => void
 }
 
 // Turns a Spanish local number ("600 000 000") into E.164 ("+34600000000").
@@ -23,7 +25,7 @@ function toE164(raw: string): string {
   return `+34${digits}`
 }
 
-export function PhoneVerification({ phone, verified, onVerified }: PhoneVerificationProps) {
+export function PhoneVerification({ phone, verified, onVerified, onSkip }: PhoneVerificationProps) {
   const [step, setStep] = useState<"idle" | "sent">("idle")
   const [code, setCode] = useState("")
   const [sending, setSending] = useState(false)
@@ -103,6 +105,11 @@ export function PhoneVerification({ phone, verified, onVerified }: PhoneVerifica
         </div>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && step === "idle" && onSkip && (
+        <button type="button" onClick={onSkip} className="text-xs text-muted-foreground underline underline-offset-4">
+          Continuar sin verificar por ahora
+        </button>
+      )}
       <p className="text-[10px] leading-tight text-muted-foreground">
         Este sitio está protegido por reCAPTCHA y se aplican la{" "}
         <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">

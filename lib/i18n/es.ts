@@ -79,6 +79,8 @@ export const es = {
     loginTitle: "Iniciar Sesión",
     loginSubtitle: "Ingresa tu correo para acceder a tu cuenta",
     emailPlaceholder: "tu@email.com",
+    emailOrPhone: "Correo electrónico o teléfono",
+    emailOrPhonePlaceholder: "tu@email.com o 600 123 456",
     loggingIn: "Iniciando sesión...",
     orContinueWith: "O continúa con",
     continueWithGoogle: "Continuar con Google",

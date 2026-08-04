@@ -15,7 +15,7 @@ import { LegalTermsDialog } from "@/components/legal-terms-dialog"
 import {
   User, Briefcase, Languages, Calendar, Camera, CheckCircle2,
   ChevronRight, ChevronLeft, Upload, Building2, Lock, Loader2,
-  Eye, EyeOff, CreditCard,
+  Eye, EyeOff, CreditCard, X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -111,6 +111,7 @@ export function CreateProfileWizard() {
     customSubcategory: "",
     selectedCategories: [] as SelectedCategory[],
     phoneVerified: false,
+    phoneVerificationSkipped: false,
     experience: "",
     availability: "",
     languages: [{ name: "Español", level: "Nativo" }] as { name: string; level: string }[],
@@ -236,12 +237,12 @@ export function CreateProfileWizard() {
       if (isWorker) {
         if (!form.fullName.trim()) return "El nombre es obligatorio"
         if (!form.phone.trim()) return "El teléfono es obligatorio"
-        if (!form.phoneVerified) return "Verifica tu teléfono por SMS para continuar"
+        if (!form.phoneVerified && !form.phoneVerificationSkipped) return "Verifica tu teléfono por SMS para continuar"
         if (!form.location.trim()) return "La ubicación es obligatoria"
       } else {
         if (!form.companyName.trim()) return "El nombre de empresa es obligatorio"
         if (!form.phone.trim()) return "El teléfono es obligatorio"
-        if (!form.phoneVerified) return "Verifica tu teléfono por SMS para continuar"
+        if (!form.phoneVerified && !form.phoneVerificationSkipped) return "Verifica tu teléfono por SMS para continuar"
         if (!form.location.trim()) return "La ciudad es obligatoria"
         if (!form.categoryId) return "Selecciona el tipo de negocio"
       }
@@ -534,9 +535,19 @@ export function CreateProfileWizard() {
         <div className="container max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={120} height={40} style={{ width: "120px", height: "auto" }} />
-            <span className="text-sm text-muted-foreground font-medium">
-              {existingUserId ? `Paso ${Math.max(1, step - 2)} de ${totalSteps - 2}` : `Paso ${step} de ${totalSteps}`}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground font-medium">
+                {existingUserId ? `Paso ${Math.max(1, step - 2)} de ${totalSteps - 2}` : `Paso ${step} de ${totalSteps}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                aria-label="Cerrar y volver al inicio"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <Progress value={progress} className="h-1.5" />
         </div>
@@ -646,9 +657,9 @@ export function CreateProfileWizard() {
                     </div>
                     <div>
                       <Label htmlFor="phone">Teléfono *</Label>
-                      <Input id="phone" type="tel" placeholder="+34 600 000 000" value={form.phone} onChange={(e) => { update("phone", e.target.value); update("phoneVerified", false) }} className="mt-1.5" />
+                      <Input id="phone" type="tel" placeholder="+34 600 000 000" value={form.phone} onChange={(e) => { update("phone", e.target.value); update("phoneVerified", false); update("phoneVerificationSkipped", false) }} className="mt-1.5" />
                       <div className="mt-2">
-                        <PhoneVerification phone={form.phone} verified={form.phoneVerified} onVerified={() => update("phoneVerified", true)} />
+                        <PhoneVerification phone={form.phone} verified={form.phoneVerified} onVerified={() => update("phoneVerified", true)} onSkip={() => update("phoneVerificationSkipped", true)} />
                       </div>
                     </div>
                     <div>
@@ -698,9 +709,9 @@ export function CreateProfileWizard() {
                     )}
                     <div>
                       <Label htmlFor="bizPhone">Teléfono *</Label>
-                      <Input id="bizPhone" type="tel" placeholder="+34 600 000 000" value={form.phone} onChange={(e) => { update("phone", e.target.value); update("phoneVerified", false) }} className="mt-1.5" />
+                      <Input id="bizPhone" type="tel" placeholder="+34 600 000 000" value={form.phone} onChange={(e) => { update("phone", e.target.value); update("phoneVerified", false); update("phoneVerificationSkipped", false) }} className="mt-1.5" />
                       <div className="mt-2">
-                        <PhoneVerification phone={form.phone} verified={form.phoneVerified} onVerified={() => update("phoneVerified", true)} />
+                        <PhoneVerification phone={form.phone} verified={form.phoneVerified} onVerified={() => update("phoneVerified", true)} onSkip={() => update("phoneVerificationSkipped", true)} />
                       </div>
                     </div>
                     <div>
