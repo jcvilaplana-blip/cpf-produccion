@@ -26,12 +26,6 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
-  server: {
-    url: 'https://cpf.fullstark.es',
-    cleartext: false,
-    androidScheme: 'https',
-    iosScheme: 'https',
-  },
   android: {
     allowMixedContent: false,
     webContentsDebuggingEnabled: false,
