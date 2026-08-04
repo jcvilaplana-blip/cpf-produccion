@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 echo "==> Running next build..."
-npx next build
+node_modules/.bin/next build
 echo "==> Build complete!"

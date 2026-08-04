@@ -27,7 +27,7 @@ const config: CapacitorConfig = {
     },
   },
   server: {
-    url: 'https://camareroporfavor.com',
+    url: 'https://cpf.fullstark.es',
     cleartext: false,
     androidScheme: 'https',
     iosScheme: 'https',
