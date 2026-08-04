@@ -16,6 +16,7 @@ export interface Profile {
   avatar_url?: string
   rating: number
   total_ratings: number
+  rating_criteria_summary?: Record<string, number>
   is_active: boolean
   job_category?: JobCategory
   job_subcategory?: string

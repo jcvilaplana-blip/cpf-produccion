@@ -91,5 +91,49 @@ export async function GET(
     console.error("GET /api/profile/[id]: view tracking failed", err)
   }
 
-  return NextResponse.json({ data: { ...safeProfile, has_active_interview: hasActiveInterview, has_open_application: hasOpenApplication } })
+  const { data: ratingsData } = await supabase
+    .from("ratings")
+    .select("criteria")
+    .eq("to_user_id", id)
+    .not("criteria", "is", null)
+
+  const ratingCriteriaSummary: Record<string, number> = {}
+  if (ratingsData && Array.isArray(ratingsData)) {
+    const totals: Record<string, { sum: number; count: number }> = {}
+    ratingsData.forEach((rating) => {
+      const rawCriteria = rating.criteria
+      let criteria: Record<string, unknown> | null = null
+      if (typeof rawCriteria === "string") {
+        try {
+          criteria = JSON.parse(rawCriteria)
+        } catch {
+          criteria = null
+        }
+      } else if (rawCriteria && typeof rawCriteria === "object") {
+        criteria = rawCriteria as Record<string, unknown>
+      }
+
+      if (!criteria) return
+      Object.entries(criteria).forEach(([key, value]) => {
+        const numeric = typeof value === "number" ? value : Number(value)
+        if (!Number.isFinite(numeric)) return
+        if (!totals[key]) totals[key] = { sum: 0, count: 0 }
+        totals[key].sum += numeric
+        totals[key].count += 1
+      })
+    })
+
+    Object.entries(totals).forEach(([key, { sum, count }]) => {
+      ratingCriteriaSummary[key] = Math.round((sum / count) * 10) / 10
+    })
+  }
+
+  return NextResponse.json({
+    data: {
+      ...safeProfile,
+      has_active_interview: hasActiveInterview,
+      has_open_application: hasOpenApplication,
+      rating_criteria_summary: ratingCriteriaSummary,
+    },
+  })
 }

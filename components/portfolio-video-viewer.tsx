@@ -1,15 +1,35 @@
 "use client"
 
-import { useState } from "react"
-import { Play, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Pause, Play, X } from "lucide-react"
 
 interface PortfolioVideoViewerProps {
   videos: string[]
+  reel?: boolean
 }
 
-export function PortfolioVideoViewer({ videos = [] }: PortfolioVideoViewerProps) {
+export function PortfolioVideoViewer({ videos = [], reel = false }: PortfolioVideoViewerProps) {
   const [activeVideo, setActiveVideo] = useState<string | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const items = Array.isArray(videos) ? videos.filter(Boolean) : []
+
+  useEffect(() => {
+    if (!activeVideo || !videoRef.current) return
+    videoRef.current.pause()
+    setIsPlaying(false)
+  }, [activeVideo])
+
+  const togglePlayback = () => {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {})
+      setIsPlaying(true)
+    } else {
+      videoRef.current.pause()
+      setIsPlaying(false)
+    }
+  }
 
   if (items.length === 0) return null
 
@@ -34,7 +54,7 @@ export function PortfolioVideoViewer({ videos = [] }: PortfolioVideoViewerProps)
       </div>
 
       {activeVideo && (
-        <div className="fixed inset-0 z-[60] bg-black flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] bg-black flex items-center justify-center p-4">
           <button
             type="button"
             onClick={() => setActiveVideo(null)}
@@ -43,13 +63,24 @@ export function PortfolioVideoViewer({ videos = [] }: PortfolioVideoViewerProps)
           >
             <X className="w-6 h-6" />
           </button>
-          <video
-            src={activeVideo}
-            controls
-            autoPlay
-            playsInline
-            className="w-full h-full max-h-screen object-contain"
-          />
+          <div className="relative w-full max-w-3xl aspect-[9/16]">
+            <video
+              ref={videoRef}
+              src={activeVideo}
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-3xl bg-black"
+            />
+            <button
+              type="button"
+              onClick={togglePlayback}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="rounded-full bg-black/50 p-4">
+                {isPlaying ? <Pause className="h-6 w-6 text-white" /> : <Play className="h-6 w-6 text-white" />}
+              </div>
+            </button>
+          </div>
         </div>
       )}
     </>

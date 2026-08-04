@@ -408,6 +408,7 @@ export function CreateProfileWizard() {
               languages: form.languages,
               availability_status: form.availability,
               avatar_url: avatarUrl,
+              portfolio_videos: portfolioVideoUrls,
               bio: `${form.subcategory || form.category} con ${form.experience} años de experiencia`,
               is_active: true,
               phone_verified: form.phoneVerified,
@@ -427,35 +428,49 @@ export function CreateProfileWizard() {
           return
         }
 
-        // 4. Upload video to MUX if provided - needs a session (the /api/mux/upload
-        // route authenticates the caller), which isn't available until the user
-        // confirms their email. If we don't have one yet, skip and let them add
-        // the video later from their profile once logged in.
-        if (form.videoFile && userId && hasSession) {
-          try {
-            // Get MUX upload URL
-            const muxRes = await fetch("/api/mux/upload", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ profileType: "worker" }),
-            })
-            if (muxRes.ok) {
-              const muxData = await muxRes.json()
-              // Upload video directly to MUX
-              await fetch(muxData.uploadUrl, {
-                method: "PUT",
-                body: form.videoFile,
-                headers: { "Content-Type": form.videoFile.type },
-              })
-            }
-          } catch (e) {
-            console.error("Error uploading video to MUX:", e)
-            // Don't block profile creation if video upload fails
+        // 4. Upload videos via the general upload API and persist their URLs
+        const portfolioVideoUrls: string[] = []
+        const uploadVideo = async (videoFile: File | null) => {
+          if (!videoFile) return null
+
+          const uploadForm = new FormData()
+          uploadForm.append("file", videoFile)
+          uploadForm.append("type", "video")
+          uploadForm.append("userId", userId)
+
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm })
+          if (!uploadRes.ok) {
+            const errorData = await uploadRes.json().catch(() => ({ error: "Error al subir vídeo" }))
+            throw new Error(errorData.error || "Error al subir vídeo")
           }
+
+          const data = await uploadRes.json()
+          return data.url as string | null
         }
-        // Worker: go to success page (needs email verification)
-        const videoPending = form.videoFile && !hasSession
-        router.push(videoPending ? "/auth/sign-up-success?video_pending=1" : "/auth/sign-up-success")
+
+        try {
+          const mainVideoUrl = await uploadVideo(form.videoFile)
+          if (mainVideoUrl) portfolioVideoUrls.push(mainVideoUrl)
+
+          const extraVideoUrl2 = await uploadVideo(form.videoFile2)
+          if (extraVideoUrl2) portfolioVideoUrls.push(extraVideoUrl2)
+
+          const extraVideoUrl3 = await uploadVideo(form.videoFile3)
+          if (extraVideoUrl3) portfolioVideoUrls.push(extraVideoUrl3)
+        } catch (e: unknown) {
+          console.error("Error uploading profile videos:", e)
+          setSubmitError(e instanceof Error ? e.message : "Error al subir el vídeo")
+          setIsSubmitting(false)
+          return
+        }
+
+        // Worker: go to success page (video is uploaded and stored on profile)
+        const redirectUrl = "/auth/sign-up-success"
+        if (portfolioVideoUrls.length === 0 && form.videoFile) {
+          router.push(`${redirectUrl}?video_pending=1`)
+        } else {
+          router.push(redirectUrl)
+        }
 
       } else {
         // Business profile

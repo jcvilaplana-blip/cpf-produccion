@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,14 +10,17 @@ import {
   ArrowLeft, MapPin, Star, Briefcase, MessageCircle, Heart, CalendarCheck,
   Globe, Clock, Award, Image as ImageIcon, Video, Loader2, FileText, ChevronRight
 } from "lucide-react"
-import { useState } from "react"
 import useSWR from "swr"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
 import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
+import { RatingSummary } from "@/components/rating-summary"
 import { computeDisplayStatus } from "@/lib/profile-status"
+import { saveProfileAction } from "@/lib/actions"
+import { isProfileSaved } from "@/lib/supabase/queries"
+import { toast } from "sonner"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 interface ProfileDetailContentProps {
   id: string
@@ -24,9 +28,34 @@ interface ProfileDetailContentProps {
   viewerType?: "worker" | "business" | "admin" | null
 }
 
+const CONTRACT_TYPE_LABELS: Record<string, string> = {
+  full_time: "Completo",
+  part_time: "Parcial",
+  flash_offer: "Extra",
+  one_time_event: "Prácticas",
+  indefinite: "Indefinido",
+  temporal: "Temporal",
+  extra: "Extra",
+  parcial: "Parcial",
+  completo: "Completo",
+  practicas: "Prácticas",
+  "prácticas": "Prácticas",
+}
+
+const RATING_CRITERIA = [
+  { keys: ["punctuality", "puntualidad"], label: "Puntualidad" },
+  { keys: ["attitude", "actitud"], label: "Actitud y predisposición" },
+  { keys: ["learning_speed", "rapidez_aprendizaje"], label: "Rapidez de aprendizaje" },
+  { keys: ["problem_solving", "resolucion_problemas"], label: "Resolución de problemas" },
+  { keys: ["hygiene", "higiene"], label: "Higiene y presentación" },
+  { keys: ["team_adaptation", "adaptacion_equipo"], label: "Adaptación al equipo" },
+  { keys: ["contract_fulfillment", "cumplimiento_contrato"], label: "Cumplimiento del contrato" },
+]
+
 export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetailContentProps) {
   const router = useRouter()
-  const [liked, setLiked] = useState(false)
+  const [savedProfile, setSavedProfile] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
   const [showInterviewDialog, setShowInterviewDialog] = useState(false)
 
   // Fetch real profile data from Supabase
@@ -55,14 +84,27 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
 
   const isBusinessViewer = viewerType === "business" && viewerId !== id
 
-  const specialties = (() => {
+  useEffect(() => {
+    if (!isBusinessViewer || !viewerId) return
+    let mounted = true
+    const loadSaved = async () => {
+      const { isSaved } = await isProfileSaved(viewerId, id)
+      if (mounted) setSavedProfile(isSaved)
+    }
+    loadSaved()
+    return () => {
+      mounted = false
+    }
+  }, [isBusinessViewer, viewerId, id])
+
+  const specialties: string[] = (() => {
     try {
       if (Array.isArray(worker.specialties)) return worker.specialties
       if (typeof worker.specialties === "string") return JSON.parse(worker.specialties)
       return []
     } catch { return [] }
   })()
-  const languages = (() => {
+  const languages: string[] = (() => {
     try {
       let raw = worker.languages
       if (typeof raw === "string") raw = JSON.parse(raw)
@@ -72,15 +114,15 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
       )
     } catch { return [] }
   })()
-  const contractTypes = (() => {
+  const contractTypes: string[] = (() => {
     try {
       if (Array.isArray(worker.contract_type_sought)) return worker.contract_type_sought
       if (typeof worker.contract_type_sought === "string") return JSON.parse(worker.contract_type_sought)
       return []
     } catch { return [] }
   })()
-  const portfolioImages = Array.isArray(worker.portfolio_images) ? worker.portfolio_images : []
-  const portfolioVideos = Array.isArray(worker.portfolio_videos) ? worker.portfolio_videos : []
+  const portfolioImages: string[] = Array.isArray(worker.portfolio_images) ? worker.portfolio_images : []
+  const portfolioVideos: string[] = Array.isArray(worker.portfolio_videos) ? worker.portfolio_videos : []
   // First portfolio video doubles as the "vídeo de presentación" - a
   // distinct, featured slot instead of a parallel upload system.
   const presentationVideo = portfolioVideos[0] || null
@@ -88,6 +130,21 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
 
   const skills = Array.isArray(worker.skills) ? worker.skills : []
   const workExperience = Array.isArray(worker.work_experience) ? worker.work_experience : []
+  const certifications: string[] = Array.isArray(worker.certificates) ? worker.certificates : []
+  const badges: string[] = Array.isArray(worker.badges) ? worker.badges : []
+  const ratingCriteriaSummary: Record<string, number> = worker.rating_criteria_summary || {}
+  const roles = specialties.length > 0 ? specialties : worker.job_category ? [worker.job_category] : ["Sin categoría"]
+  const contractTypeNames = contractTypes
+    .map((ct) => CONTRACT_TYPE_LABELS[ct] || ct)
+    .filter(Boolean)
+  const activelySearching =
+    worker.availability_status === "available" || worker.has_open_application || worker.has_active_interview
+  const criteriaFields = RATING_CRITERIA.map((criteria) => ({
+    label: criteria.label,
+    value: criteria.keys
+      .map((key) => ratingCriteriaSummary[key])
+      .find((value) => typeof value === "number") as number | undefined,
+  }))
 
   const avail = computeDisplayStatus({
     selfReported: worker.availability_status,
@@ -98,6 +155,38 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
   const birthDate = worker.date_of_birth
     ? new Date(worker.date_of_birth).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
     : null
+
+  const handleToggleSave = async () => {
+    if (!viewerId) {
+      router.push(`/auth/login?redirect=/profile/${id}`)
+      return
+    }
+    if (!isBusinessViewer) {
+      toast.error("Solo empresas pueden guardar perfiles")
+      return
+    }
+
+    setSavingProfile(true)
+    const result = await saveProfileAction(id)
+    setSavingProfile(false)
+
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+
+    const saved = Boolean(result.saved)
+    setSavedProfile(saved)
+    toast.success(saved ? "Perfil guardado" : "Perfil eliminado de guardados")
+  }
+
+  const handleMessage = () => {
+    if (!viewerId) {
+      router.push(`/auth/login?redirect=/profile/${id}`)
+      return
+    }
+    router.push(`/messages?candidateId=${worker.id}&candidateName=${encodeURIComponent(worker.display_name)}`)
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -113,7 +202,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
 
         <div className="absolute top-4 left-4 z-10">
           <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-black/60 rounded-full" onClick={() => router.back()}>
@@ -122,16 +211,19 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
         </div>
 
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-          <Button
-            variant="ghost" size="icon"
-            className={`rounded-full ${liked ? "bg-red-500 text-white" : "bg-black/40 text-white hover:bg-black/60"}`}
-            onClick={() => setLiked(!liked)}
-          >
-            <Heart className={`h-5 w-5 ${liked ? "fill-white" : ""}`} />
-          </Button>
+          {isBusinessViewer && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full ${savedProfile ? "bg-red-500 text-white" : "bg-black/40 text-white hover:bg-black/60"}`}
+              onClick={handleToggleSave}
+              disabled={savingProfile}
+            >
+              <Heart className={`h-5 w-5 ${savedProfile ? "fill-white" : ""}`} />
+            </Button>
+          )}
         </div>
 
-        {/* Status badges */}
         <div className="absolute top-14 left-4 flex flex-col gap-1.5 z-10">
           {worker.is_premium && (
             <Badge className="bg-[#F5A623]/90 text-white border-0 text-xs px-2.5 py-1">
@@ -142,202 +234,279 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
 
         <div className="absolute bottom-4 left-4 right-4 z-10 text-white">
           <h1 className="text-2xl font-bold">{worker.display_name}</h1>
-          <p className="text-white/80 text-sm">{worker.job_category || "Sin categoría"}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {roles.map((role: string, index: number) => (
+              <Badge key={index} className="bg-white/15 text-white border-0 text-[11px] py-1 px-2">
+                {role}
+              </Badge>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Quick stats */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <Badge className={`${avail.color} border-0 text-xs px-2.5 py-1`}>{avail.label}</Badge>
-          {worker.rating > 0 && (
-            <Link href={`/profile/${id}/ratings`} className="flex items-center gap-1">
-              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-lg">{worker.rating}</span>
-              <span className="text-xs text-muted-foreground">({worker.total_ratings || 0})</span>
-            </Link>
-          )}
-          {worker.location && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-4 w-4" /><span className="text-sm">{worker.location}</span>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Ubicación</p>
+                <p className="mt-1 text-base font-semibold">{worker.location || "No indicada"}</p>
+              </div>
+              <Badge className={`${avail.color} border-0 text-xs px-2.5 py-1`}>{avail.label}</Badge>
             </div>
-          )}
-          {worker.experience_years > 0 && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Briefcase className="h-4 w-4" /><span className="text-sm">{worker.experience_years} años exp.</span>
-            </div>
-          )}
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Años de experiencia</p>
+              <p className="mt-2 text-xl font-semibold">{worker.experience_years ? `${worker.experience_years} años` : "Sin datos"}</p>
+            </CardContent>
+          </Card>
+          <Link href={`/profile/${id}/ratings`} className="block">
+            <Card className="h-full hover:border-primary transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Valoraciones</p>
+                    <p className="mt-2 text-xl font-semibold">{worker.rating > 0 ? worker.rating.toFixed(1) : "—"}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm text-muted-foreground">{worker.total_ratings || 0}</span>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">Solo establecimientos que han contratado al trabajador pueden valorar</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tipo de contrato buscado</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {contractTypeNames.length > 0 ? (
+                  contractTypeNames.map((contractType) => (
+                    <Badge key={contractType} variant="secondary" className="rounded-full px-3 py-1">
+                      {contractType}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No especificado</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-0 text-xs px-2.5 py-1">Buscando activamente</Badge>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {activelySearching
+                  ? "El candidato está activo en la plataforma y responde rápidamente a ofertas."
+                  : "Actualmente no hay actividad reciente en su búsqueda."}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">Criterios de valoración</h3>
+                <p className="text-sm text-muted-foreground">1 a 5 estrellas según empresas que han contratado</p>
+              </div>
+              <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Real</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {criteriaFields.map((criteria) => (
+                <div key={criteria.label} className="rounded-3xl border border-[#E5E7EB] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">{criteria.label}</p>
+                    <span className="text-sm text-muted-foreground">{criteria.value ? criteria.value.toFixed(1) : "—"}</span>
+                  </div>
+                  <div className="mt-3">
+                    <RatingSummary rating={criteria.value || 0} totalRatings={0} showDetails={false} size="sm" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Valoración media real de empresas</p>
+                <p className="mt-2 text-2xl font-semibold">{worker.rating > 0 ? worker.rating.toFixed(1) : "Sin datos"}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm text-muted-foreground">{worker.total_ratings || 0} valoraciones</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-3 sm:grid-cols-2">
           {isBusinessViewer && (
             <Button
-              className="flex-1 h-12 rounded-xl font-bold bg-[#01A89E] hover:bg-[#018F86] text-white"
+              className="h-14 rounded-2xl font-semibold bg-[#01A89E] hover:bg-[#018F86] text-white"
               onClick={() => setShowInterviewDialog(true)}
             >
-              <CalendarCheck className="h-4 w-4 mr-2" /> Solicitar Entrevista
+              <CalendarCheck className="h-4 w-4 mr-2" /> Solicitar entrevista
             </Button>
           )}
           <Button
             variant="outline"
-            className="flex-1 h-12 rounded-xl font-bold"
-            onClick={() => router.push(`/messages?candidateId=${worker.id}&candidateName=${encodeURIComponent(worker.display_name)}`)}
+            className="h-14 rounded-2xl font-semibold"
+            onClick={handleMessage}
           >
-            <MessageCircle className="h-4 w-4 mr-2" /> Hacer Preguntas
+            <MessageCircle className="h-4 w-4 mr-2" /> Enviar mensaje
           </Button>
         </div>
 
-        {/* Bio */}
-        {worker.bio && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-2">Sobre mí</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{worker.bio}</p>
-          </CardContent></Card>
-        )}
-
-        {/* Specialties */}
-        {specialties.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3">Especialidades</h3>
-            <div className="flex flex-wrap gap-2">
-              {specialties.map((s: string, i: number) => (
-                <Badge key={i} variant="secondary" className="rounded-full px-3 py-1 bg-[#01A89E]/10 text-[#01A89E] border-0">{s}</Badge>
-              ))}
-            </div>
-          </CardContent></Card>
-        )}
-
-        {/* Skills / destrezas - distinct from role-based "Especialidades" above */}
-        {skills.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3">Destrezas</h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.map((s: string, i: number) => (
-                <Badge key={i} variant="outline" className="rounded-full px-3 py-1">{s}</Badge>
-              ))}
-            </div>
-          </CardContent></Card>
-        )}
-
-        {/* Work experience */}
-        {workExperience.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <Briefcase className="h-4 w-4 text-[#01A89E]" /> Experiencia
-            </h3>
-            <div className="space-y-3">
-              {workExperience.map((exp: any, i: number) => (
-                <div key={i} className="border-l-2 border-[#01A89E]/30 pl-3">
-                  <p className="text-sm font-semibold">{exp.position}{exp.company ? ` · ${exp.company}` : ""}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {exp.startDate || "?"} - {exp.current ? "Actualidad" : exp.endDate || "?"}
-                  </p>
-                  {exp.description && <p className="text-xs text-muted-foreground mt-1">{exp.description}</p>}
-                </div>
-              ))}
-            </div>
-          </CardContent></Card>
-        )}
-
-        {/* Details */}
-        <Card><CardContent className="p-4 space-y-3">
-          <h3 className="font-semibold mb-2">Detalles</h3>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-muted-foreground block">Categoría</span><span className="font-medium">{worker.job_category || "-"}</span></div>
-            <div><span className="text-muted-foreground block">Experiencia</span><span className="font-medium">{worker.experience_years ? `${worker.experience_years} años` : "-"}</span></div>
-            <div><span className="text-muted-foreground block">Ubicación</span><span className="font-medium">{worker.location || "-"}</span></div>
-            <div><span className="text-muted-foreground block">Fecha de nacimiento</span><span className="font-medium">{birthDate || "-"}</span></div>
-            <div><span className="text-muted-foreground block">Nivel</span><span className="font-medium">{worker.level ? `Nivel ${worker.level}` : "-"}</span></div>
-            <div><span className="text-muted-foreground block">Puntos</span><span className="font-medium">{worker.points ?? "-"}</span></div>
-            <div><span className="text-muted-foreground block">Valoración</span><span className="font-medium flex items-center gap-1">{worker.rating || "-"} {worker.rating > 0 && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}</span></div>
-          </div>
-        </CardContent></Card>
-
-        {/* Ratings link */}
-        <Link href={`/profile/${id}/ratings`}>
-          <Card className="hover:bg-muted/50 transition-colors">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-[#01A89E]" />
-                <span className="font-semibold text-sm">Ver todas las valoraciones</span>
+        {certifications.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Certificados verificados</h3>
+              <div className="flex flex-wrap gap-2">
+                {certifications.map((cert, index) => (
+                  <Badge key={index} variant="secondary" className="rounded-full px-3 py-1">
+                    {typeof cert === "string" ? cert : JSON.stringify(cert)}
+                  </Badge>
+                ))}
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-        </Link>
-
-        {/* Languages */}
-        {languages.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-2 flex items-center gap-1.5">
-              <Globe className="h-4 w-4 text-[#01A89E]" /> Idiomas
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {languages.map((l: string, i: number) => (
-                <Badge key={i} variant="outline" className="rounded-full px-3 py-1">{l}</Badge>
-              ))}
-            </div>
-          </CardContent></Card>
         )}
 
-        {/* Contract types */}
-        {contractTypes.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-2 flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-[#01A89E]" /> Tipo de contrato buscado
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {contractTypes.map((ct: string, i: number) => (
-                <Badge key={i} variant="secondary" className="rounded-full px-3 py-1">{ct}</Badge>
-              ))}
-            </div>
-          </CardContent></Card>
+        {badges.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Insignias</h3>
+              <div className="flex flex-wrap gap-2">
+                {badges.map((badge, index) => (
+                  <Badge key={index} className="rounded-full px-3 py-1 bg-[#F5A623]/10 text-[#A16207] border-0">
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* CV */}
-        {worker.cv_url && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <FileText className="h-4 w-4 text-[#01A89E]" /> Currículum
-            </h3>
-            <Button asChild variant="outline" className="w-full rounded-xl">
-              <a href={worker.cv_url} target="_blank" rel="noopener noreferrer">
-                {worker.cv_filename || "Descargar CV"}
-              </a>
-            </Button>
-          </CardContent></Card>
-        )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Nivel de gamificación</p>
+              <p className="mt-2 text-2xl font-semibold">{worker.level ? `Nivel ${worker.level}` : "—"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Puntos acumulados</p>
+              <p className="mt-2 text-2xl font-semibold">{worker.points != null ? `${worker.points} pts` : "—"}</p>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Presentation video - the first portfolio video, featured separately */}
-        {presentationVideo && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-[#01A89E]" /> Vídeo de presentación
-            </h3>
-            <PortfolioVideoViewer videos={[presentationVideo]} />
-          </CardContent></Card>
-        )}
-
-        {/* Remaining portfolio videos */}
-        {otherVideos.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-[#01A89E]" /> Portfolio de vídeos ({otherVideos.length}/2)
-            </h3>
-            <PortfolioVideoViewer videos={otherVideos} />
-          </CardContent></Card>
-        )}
-
-        {/* Portfolio images */}
         {portfolioImages.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <ImageIcon className="h-4 w-4 text-[#01A89E]" /> Portfolio ({portfolioImages.length}/3)
-            </h3>
-            <PortfolioImageViewer images={portfolioImages} />
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-[#01A89E]" />
+                  <h3 className="font-semibold">Galería</h3>
+                </div>
+                <span className="text-xs text-muted-foreground">{portfolioImages.length} imágenes</span>
+              </div>
+              <PortfolioImageViewer images={portfolioImages} />
+            </CardContent>
+          </Card>
         )}
+
+        {presentationVideo && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Video className="h-4 w-4 text-[#01A89E]" />
+                <h3 className="font-semibold">Vídeo de presentación</h3>
+              </div>
+              <PortfolioVideoViewer videos={[presentationVideo]} reel />
+            </CardContent>
+          </Card>
+        )}
+
+        {worker.bio && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Sobre mí</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{worker.bio}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {workExperience.length > 0 && (
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold">Experiencia</h3>
+              <div className="space-y-3">
+                {workExperience.map((exp: any, i: number) => (
+                  <div key={i} className="rounded-3xl border border-[#E5E7EB] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{exp.position}{exp.company ? ` · ${exp.company}` : ""}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{exp.startDate || "?"} - {exp.current ? "Actualidad" : exp.endDate || "?"}</p>
+                      </div>
+                      <Badge className="bg-[#01A89E]/10 text-[#0F766E] border-0 text-xs py-1 px-2">
+                        {exp.current ? "Actual" : "Anterior"}
+                      </Badge>
+                    </div>
+                    {exp.description && <p className="mt-3 text-sm text-muted-foreground">{exp.description}</p>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tipo de contrato buscado</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {contractTypeNames.length > 0 ? contractTypeNames.map((contractType: string) => (
+                    <Badge key={contractType} variant="secondary" className="rounded-full px-3 py-1">
+                      {contractType}
+                    </Badge>
+                  )) : (
+                    <span className="text-sm text-muted-foreground">Sin datos</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Búsqueda activa</p>
+                <div className="mt-2">
+                  <Badge className="bg-[#01A89E]/10 text-[#0F766E] border-0 text-sm px-3 py-1">
+                    {activelySearching ? "Sí, activo" : "No activo"}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {activelySearching ? "El candidato revisa ofertas y responde rápido." : "No hay señales recientes de búsqueda activa."}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {isBusinessViewer && (
