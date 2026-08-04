@@ -16,22 +16,29 @@ import {
   ArrowRight,
   Crown,
   MessageCircle,
+  Bell,
+  Gift,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { SmartSearch } from "@/components/smart-search"
 import { createClient } from "@/lib/supabase/client"
+import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
 
 type Job = {
   id: string
   title: string
   location: string
+  city?: string | null
   category: string
+  position?: string | null
   contract_type: string
   salary_min: number | null
   salary_max: number | null
   is_flash: boolean
+  is_highlighted?: boolean | null
   flash_expires_at: string | null
   created_at: string
+  matchPercent?: number
   business: {
     display_name: string
     avatar_url: string | null
@@ -48,6 +55,7 @@ interface CandidateDashboardContentProps {
   userName: string
   userAvatar: string | null
   myCategory: string | null
+  candidateMatchInput: MatchCandidateInput
   initialJobs: Job[]
   initialCategories: Category[]
   initialUnreadCount: number
@@ -58,6 +66,7 @@ export function CandidateDashboardContent({
   userName,
   userAvatar,
   myCategory,
+  candidateMatchInput,
   initialJobs,
   initialCategories,
   initialUnreadCount,
@@ -85,8 +94,8 @@ export function CandidateDashboardContent({
           supabase
             .from("jobs")
             .select(`
-              id, title, location, category, contract_type,
-              salary_min, salary_max, is_flash, flash_expires_at, created_at,
+              id, title, location, city, category, position, contract_type,
+              salary_min, salary_max, is_flash, is_highlighted, flash_expires_at, created_at,
               business:profiles!jobs_business_id_fkey(display_name, avatar_url)
             `)
             .eq("is_active", true)
@@ -95,7 +104,14 @@ export function CandidateDashboardContent({
           supabase.from("categories").select("id, name").order("name"),
           supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", userId).eq("read", false),
         ])
-        if (jobsData) setJobs(jobsData)
+        if (jobsData) {
+          setJobs(
+            jobsData.map((job) => ({
+              ...job,
+              matchPercent: computeMatchScore(candidateMatchInput, job).percent,
+            }))
+          )
+        }
         if (catsData) setCategories(catsData)
         if (unread !== null) setUnreadCount(unread)
       } catch {
@@ -114,17 +130,26 @@ export function CandidateDashboardContent({
       window.removeEventListener("focus", onFocus)
       document.removeEventListener("visibilitychange", onVisibility)
     }
-  }, [userId])
+  }, [userId, candidateMatchInput])
 
-  const filteredJobs = jobs.filter((job) => {
-    const matchesSearch =
-      !searchQuery ||
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.category?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || job.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  const filteredJobs = jobs
+    .filter((job) => {
+      const matchesSearch =
+        !searchQuery ||
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCategory = selectedCategory === "all" || job.category === selectedCategory
+      return matchesSearch && matchesCategory
+    })
+    // Flash first, then highlighted, then best profile match, then most recent.
+    .sort((a, b) => {
+      if (a.is_flash !== b.is_flash) return a.is_flash ? -1 : 1
+      if (!!a.is_highlighted !== !!b.is_highlighted) return a.is_highlighted ? -1 : 1
+      const matchDiff = (b.matchPercent || 0) - (a.matchPercent || 0)
+      if (matchDiff !== 0) return matchDiff
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 
   const activeFlash = jobs.filter(
     (job) => job.is_flash && (!job.flash_expires_at || new Date(job.flash_expires_at) > new Date())
@@ -149,6 +174,16 @@ export function CandidateDashboardContent({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px] bg-[#F48221]/10 text-[#F48221] border-[#F48221]/30">Beta</Badge>
+              <Button asChild variant="ghost" size="icon">
+                <Link href="/notifications">
+                  <Bell className="h-5 w-5" />
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="icon">
+                <Link href="/rewards">
+                  <Gift className="h-5 w-5" />
+                </Link>
+              </Button>
               <Button asChild variant="ghost" size="icon" className="relative">
                 <Link href="/subscribe">
                   <Crown className="h-5 w-5 text-[#F48221]" />
@@ -322,6 +357,13 @@ export function CandidateDashboardContent({
                           <div className="flex flex-wrap gap-1 mt-2">
                             {job.category && <Badge variant="secondary" className="text-[10px]">{job.category}</Badge>}
                             {job.contract_type && <Badge variant="outline" className="text-[10px]">{job.contract_type}</Badge>}
+                            {job.is_flash && <Badge className="bg-[#F97316] text-white text-[10px]">FLASH</Badge>}
+                            {job.is_highlighted && <Badge className="bg-[#F48221] text-white text-[10px]">Destacada</Badge>}
+                            {typeof job.matchPercent === "number" && job.matchPercent > 0 && (
+                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[10px]">
+                                {job.matchPercent}% coincidencia
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8">

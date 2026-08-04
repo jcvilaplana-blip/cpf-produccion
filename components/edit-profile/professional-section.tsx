@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Briefcase, Loader2 } from "lucide-react" 
+import { Briefcase, Loader2, Sparkles, Lock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,14 @@ import { createClient } from "@/lib/supabase/client"
 type Category = { id: string; name: string }
 type Subcategory = { id: string; name: string; category_id: string }
 
+const MATCH_ALERT_STEPS = [
+  { value: 100, label: "100% - coincidencia total" },
+  { value: 75, label: "75% o más" },
+  { value: 50, label: "50% o más" },
+  { value: 25, label: "25% o más" },
+  { value: 0, label: "Cualquier coincidencia" },
+]
+
 interface ProfessionalSectionProps {
   jobCategory: string; setJobCategory: (v: string) => void
   subcategory: string; setSubcategory: (v: string) => void
@@ -21,6 +29,8 @@ interface ProfessionalSectionProps {
   contractTypes: string[]; toggleContractType: (v: string) => void
   salaryMin: string; setSalaryMin: (v: string) => void
   salaryMax: string; setSalaryMax: (v: string) => void
+  matchAlertThreshold: number; setMatchAlertThreshold: (v: number) => void
+  isPremium: boolean
 }
 
 export function ProfessionalSection(p: ProfessionalSectionProps) {
@@ -131,6 +141,34 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
                 }`}
               >
                 {ct.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#F48221]" />
+            Avisarme cuando una oferta coincida al menos
+            {!p.isPremium && <Lock className="w-3 h-3 text-muted-foreground" />}
+          </Label>
+          {!p.isPremium && (
+            <p className="text-xs text-muted-foreground mb-2">Función exclusiva para candidatos premium.</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {MATCH_ALERT_STEPS.map((step) => (
+              <button
+                key={step.value}
+                type="button"
+                disabled={!p.isPremium}
+                onClick={() => p.setMatchAlertThreshold(step.value)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  p.matchAlertThreshold === step.value
+                    ? "bg-[#F48221] text-white border-[#F48221]"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-[#F48221]"
+                }`}
+              >
+                {step.label}
               </button>
             ))}
           </div>

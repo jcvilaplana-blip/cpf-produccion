@@ -180,9 +180,9 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                     </div>
                     <Badge
                       variant={job.is_active ? "default" : "secondary"}
-                      className={job.is_active ? "bg-green-600" : ""}
+                      className={job.is_active ? "bg-green-600" : job.is_flash ? "bg-amber-500 text-white" : ""}
                     >
-                      {job.is_active ? "Activa" : "Inactiva"}
+                      {job.is_active ? "Activa" : job.is_flash ? "Pago pendiente" : "Inactiva"}
                     </Badge>
                   </div>
                 </CardHeader>

@@ -15,6 +15,7 @@ import { ArrowLeft, Briefcase, MapPin, Euro, Clock, Users, CheckCircle2, Zap, Im
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { AddressAutofill } from "@/components/address-autofill"
+import { LANGUAGE_LIST } from "@/lib/profile-constants"
 
 interface Category {
   id: string
@@ -53,6 +54,15 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
   const [flashImage, setFlashImage] = useState<File | null>(null)
   const [flashImagePreview, setFlashImagePreview] = useState<string | null>(null)
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
+  const [uniformRequired, setUniformRequired] = useState(false)
+  const [tpvRequired, setTpvRequired] = useState(false)
+  const [languagesRequired, setLanguagesRequired] = useState<string[]>([])
+
+  const toggleLanguage = (lang: string) => {
+    setLanguagesRequired((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    )
+  }
 
   // Fields that use uncontrolled inputs (read via FormData on submit) still
   // need an initial value once the job loads - track them via state so we
@@ -60,6 +70,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
   const [initial, setInitial] = useState({
     title: "", description: "", workType: "full_time", schedule: "",
     salaryMin: "", salaryMax: "", experience: "none", requirements: "", benefits: "",
+    vacancies: "1", startDate: "",
   })
 
   useEffect(() => {
@@ -102,6 +113,8 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
         experience: job.experience_required || "none",
         requirements: job.requirements || "",
         benefits: job.benefits || "",
+        vacancies: job.vacancies?.toString() || "1",
+        startDate: job.start_date ? job.start_date.substring(0, 10) : "",
       })
       setLocation(job.city || job.location || "")
       if (job.latitude && job.longitude) setLocationCoords({ lat: job.latitude, lng: job.longitude })
@@ -109,6 +122,9 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
       setSelectedSubcategoryName(job.position || "")
       setIsFlash(!!job.is_flash)
       setExistingImageUrl(job.image_url || null)
+      setUniformRequired(!!job.uniform_required)
+      setTpvRequired(!!job.tpv_required)
+      setLanguagesRequired(job.languages_required || [])
 
       if (job.is_flash && job.flash_expires_at) {
         const hoursLeft = (new Date(job.flash_expires_at).getTime() - Date.now()) / (1000 * 60 * 60)
@@ -206,6 +222,11 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
           experience_required: formData.get("experience") as string,
           requirements: formData.get("requirements") as string,
           benefits: formData.get("benefits") as string,
+          vacancies: Number(formData.get("vacancies")) || 1,
+          start_date: (formData.get("startDate") as string) || null,
+          uniform_required: uniformRequired,
+          languages_required: languagesRequired,
+          tpv_required: tpvRequired,
           is_flash: isFlash,
           flash_expires_at: isFlash
             ? new Date(Date.now() + Number(flashDurationHours) * 60 * 60 * 1000).toISOString()
@@ -479,6 +500,17 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
                 <Label htmlFor="schedule">Horario</Label>
                 <Input id="schedule" name="schedule" placeholder="Ej: Lunes a Viernes, 9:00 - 17:00" defaultValue={initial.schedule} />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vacancies">Nº de Vacantes</Label>
+                  <Input id="vacancies" name="vacancies" type="number" min={1} defaultValue={initial.vacancies} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Fecha de Incorporación</Label>
+                  <Input id="startDate" name="startDate" type="date" defaultValue={initial.startDate} />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -533,9 +565,39 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <Label htmlFor="uniformRequired" className="font-normal">Uniforme requerido</Label>
+                <Switch id="uniformRequired" checked={uniformRequired} onCheckedChange={setUniformRequired} />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <Label htmlFor="tpvRequired" className="font-normal">Uso de TPV requerido</Label>
+                <Switch id="tpvRequired" checked={tpvRequired} onCheckedChange={setTpvRequired} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Idiomas requeridos</Label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGE_LIST.map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => toggleLanguage(lang)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        languagesRequired.includes(lang)
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-foreground border-border"
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="requirements">Otros Requisitos</Label>
-                <Textarea id="requirements" name="requirements" placeholder="Ej: Idiomas, certificaciones, habilidades específicas..." rows={3} defaultValue={initial.requirements} />
+                <Textarea id="requirements" name="requirements" placeholder="Ej: certificaciones, habilidades específicas..." rows={3} defaultValue={initial.requirements} />
               </div>
             </CardContent>
           </Card>

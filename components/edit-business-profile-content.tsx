@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import type { BusinessProfile } from "@/lib/types"
 import { CityAutocomplete } from "@/components/city-autocomplete"
 import { AddressAutofill } from "@/components/address-autofill"
+import { updateBusinessProfileAction } from "@/lib/actions"
 
 interface Category {
   id: string
@@ -45,6 +46,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
   const [formData, setFormData] = useState({
     company_name: "",
     company_description: "",
+    service_description: "",
     phone: "",
     address: "",
     city: "",
@@ -53,6 +55,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
     subcategory_id: "",
     company_logo_url: "",
     photos: [] as string[],
+    video_url: "",
     email: "",
     latitude: null as number | null,
     longitude: null as number | null,
@@ -61,9 +64,11 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
   // Media states
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -82,6 +87,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
         setFormData({
           company_name: bp.company_name || "",
           company_description: bp.company_description || "",
+          service_description: bp.service_description || "",
           phone: bp.phone || "",
           address: bp.address || "",
           city: bp.city || "",
@@ -90,6 +96,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
           subcategory_id: bp.subcategory_id || "",
           company_logo_url: bp.company_logo_url || "",
           photos: bp.photos || [],
+          video_url: bp.video_url || "",
           email: bp.email || "",
           latitude: bp.latitude ?? null,
           longitude: bp.longitude ?? null,
@@ -178,6 +185,36 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
     setFormData({ ...formData, photos: formData.photos.filter((_, i) => i !== index) })
   }
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("video/")) {
+      toast.error("El archivo debe ser un vídeo")
+      return
+    }
+    setUploadingVideo(true)
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append("file", file)
+      formDataUpload.append("type", "business-video")
+      const res = await fetch("/api/upload", { method: "POST", body: formDataUpload })
+      if (res.ok) {
+        const { url } = await res.json()
+        setFormData((prev) => ({ ...prev, video_url: url }))
+        toast.success("Vídeo subido")
+      } else {
+        toast.error("Error al subir el vídeo")
+      }
+    } catch {
+      toast.error("Error al subir el vídeo")
+    } finally {
+      setUploadingVideo(false)
+      if (videoInputRef.current) videoInputRef.current.value = ""
+    }
+  }
+
+  const removeVideo = () => setFormData({ ...formData, video_url: "" })
+
   const handleSave = async () => {
     if (!formData.company_name) {
       toast.error("El nombre de la empresa es requerido")
@@ -197,6 +234,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
           id: userId,
           company_name: formData.company_name,
           company_description: formData.company_description,
+          service_description: formData.service_description || null,
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
@@ -208,11 +246,22 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
           business_type: selectedCategory?.name || null,
           company_logo_url: formData.company_logo_url || null,
           photos: formData.photos,
+          video_url: formData.video_url || null,
           email: formData.email || null,
           updated_at: new Date().toISOString(),
         })
 
       if (error) throw error
+
+      // This form upserts business_profiles directly rather than going
+      // through updateBusinessProfileAction, so run its gamification side
+      // effects (perfil-completo bonus/badges) as a best-effort follow-up -
+      // the row is already fresh in the DB by this point.
+      try {
+        await updateBusinessProfileAction({})
+      } catch {
+        // best-effort
+      }
 
       // Update profile location/phone
       await supabase.from("profiles").update({
@@ -300,6 +349,16 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
                 value={formData.company_description}
                 onChange={(e) => setFormData({ ...formData, company_description: e.target.value })}
                 rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de servicio y perfil de cliente habitual</Label>
+              <Textarea
+                placeholder="Ej: Servicio informal de barra, clientela joven de fin de semana..."
+                value={formData.service_description}
+                onChange={(e) => setFormData({ ...formData, service_description: e.target.value })}
+                rows={3}
               />
             </div>
 
@@ -416,6 +475,41 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
               )}
             </div>
             <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+          </CardContent>
+        </Card>
+
+        {/* Video */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-[#01A89E]/10 to-transparent pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="w-4 h-4 text-[#01A89E]" />
+              Vídeo del Negocio
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            {formData.video_url ? (
+              <div className="relative rounded-xl overflow-hidden bg-black">
+                <video src={formData.video_url} controls className="w-full aspect-video" />
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 p-1 rounded-full text-white"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => videoInputRef.current?.click()}
+                disabled={uploadingVideo}
+                className="w-full aspect-video border-2 border-dashed border-gray-300 hover:border-[#01A89E] rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
+              >
+                {uploadingVideo ? <Loader2 className="w-6 h-6 text-[#01A89E] animate-spin" /> : <Upload className="w-6 h-6 text-gray-400" />}
+                <span className="text-xs text-gray-400">Subir vídeo del local</span>
+              </button>
+            )}
+            <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
           </CardContent>
         </Card>
 

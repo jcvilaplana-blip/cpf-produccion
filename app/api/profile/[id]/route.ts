@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from "@/lib/supabase/server"
+import { awardPoints, POINTS } from "@/lib/gamification/award-points"
 
 // GET public profile by ID - no auth required
 export async function GET(
@@ -31,5 +33,63 @@ export async function GET(
   // Remove sensitive fields
   const { is_admin, ...safeProfile } = profile
 
-  return NextResponse.json({ data: safeProfile })
+  // "Estado laboral" 5º/4º valor (En entrevista / En contacto) - calculado
+  // aquí, no autoinformado, para que no se pueda falsear (ver lib/profile-status.ts).
+  let hasActiveInterview = false
+  let hasOpenApplication = false
+  if (profile.user_type === "worker") {
+    const [{ count: interviewCount }, { count: applicationCount }] = await Promise.all([
+      supabase.from("interview_requests").select("id", { count: "exact", head: true }).eq("worker_id", id).in("status", ["pending", "confirmed"]),
+      supabase.from("applications").select("id", { count: "exact", head: true }).eq("worker_id", id).in("status", ["pending", "interview"]),
+    ])
+    hasActiveInterview = (interviewCount || 0) > 0
+    hasOpenApplication = (applicationCount || 0) > 0
+  }
+
+  // Best-effort: log the view + "10 distinct profiles in a day" bonus. Uses
+  // the cookie-based server client only to identify the viewer (this route
+  // itself stays public/no-auth-required for the profile read above).
+  try {
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const sessionClient = await createServerClient()
+      const { data: { user: viewer } } = await sessionClient.auth.getUser()
+      if (viewer && viewer.id !== id) {
+        const serviceClient = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY)
+        await serviceClient.from("profile_views").insert({ viewer_id: viewer.id, viewed_profile_id: id })
+
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        const { data: todaysViews } = await serviceClient
+          .from("profile_views")
+          .select("viewed_profile_id")
+          .eq("viewer_id", viewer.id)
+          .gte("created_at", todayStart.toISOString())
+        const distinctCount = new Set((todaysViews || []).map((v) => v.viewed_profile_id)).size
+
+        if (distinctCount === 10) {
+          const { count: alreadyAwardedToday } = await serviceClient
+            .from("points_ledger")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", viewer.id)
+            .eq("reason", "daily_profile_views")
+            .gte("created_at", todayStart.toISOString())
+          if (!alreadyAwardedToday) {
+            const { data: viewerProfile } = await serviceClient.from("profiles").select("user_type").eq("id", viewer.id).single()
+            await awardPoints(
+              serviceClient,
+              viewer.id,
+              POINTS.dailyProfileViewBonus,
+              "daily_profile_views",
+              undefined,
+              viewerProfile?.user_type === "business" ? "business" : "worker"
+            )
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("GET /api/profile/[id]: view tracking failed", err)
+  }
+
+  return NextResponse.json({ data: { ...safeProfile, has_active_interview: hasActiveInterview, has_open_application: hasOpenApplication } })
 }

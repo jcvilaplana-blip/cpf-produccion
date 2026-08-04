@@ -15,30 +15,43 @@ function getStripe() {
 }
 
 const FEATURE_PRICES = {
-  highlight_profile: 99, // 0.99€ in cents
-  view_matches: 99,      // 0.99€ in cents
-  boost_visibility: 199, // 1.99€ in cents
+  highlight_profile: 99,  // 0.99€ in cents
+  view_matches: 99,       // 0.99€ in cents
+  boost_visibility: 199,  // 1.99€ in cents
+  flash_job: 500,         // 5€ flat per flash offer, regardless of vacancy count
+  highlight_job: 250,     // 2.5€ to highlight an existing offer for 24h
 }
 
 const FEATURE_NAMES = {
   highlight_profile: "Destacar Perfil (7 días)",
   view_matches: "Ver Empresas Interesadas",
   boost_visibility: "Impulsar Visibilidad",
+  flash_job: "Oferta Flash",
+  highlight_job: "Destacar Oferta (24h)",
 }
 
 const FEATURE_VALIDITY_DAYS = {
   highlight_profile: 7,
   view_matches: 30, // Access for 30 days
   boost_visibility: 3,
+  flash_job: 2,     // covers the longest flash duration option (48h)
+  highlight_job: 1, // 24h
 }
 
 export async function POST(request: Request) {
   try {
-    const { featureType, userId } = await request.json()
+    const { featureType, userId, jobId, flashDurationHours } = await request.json()
 
     if (!featureType || !userId) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    if ((featureType === "flash_job" || featureType === "highlight_job") && !jobId) {
+      return NextResponse.json(
+        { error: "jobId is required for job-related features" },
         { status: 400 }
       )
     }
@@ -79,6 +92,7 @@ export async function POST(request: Request) {
         currency: "eur",
         status: "pending",
         valid_until: validUntil.toISOString(),
+        job_id: jobId || null,
       })
       .select()
       .single()
@@ -118,6 +132,8 @@ export async function POST(request: Request) {
         micropayment_id: micropayment.id,
         user_id: userId,
         feature_type: featureType,
+        ...(jobId ? { job_id: jobId } : {}),
+        ...(flashDurationHours ? { flash_duration_hours: String(flashDurationHours) } : {}),
       },
     })
 

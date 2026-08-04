@@ -10,7 +10,7 @@ function getServiceRoleClient() {
 interface NotifyUserOptions {
   title: string
   body: string
-  type: "oferta" | "aviso" | "otro" | "entrevista"
+  type: "oferta" | "aviso" | "otro" | "entrevista" | "interes"
   link?: string
   createdBy?: string
 }

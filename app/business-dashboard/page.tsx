@@ -11,10 +11,12 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import {
-  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, Play, Loader2, Building2, Zap, ListChecks,
+  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Play, Loader2, Building2, Zap, ListChecks, Gift,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
+import { checkInterviewRemindersAction } from "@/lib/actions"
+import { computeBestMatchScore, type MatchJobInput } from "@/lib/matching"
 
 interface Candidate {
   id: string
@@ -25,6 +27,8 @@ interface Candidate {
   rating: number | null
   specialties: string[] | null
   experience_years: number | null
+  contract_type_sought: string[] | null
+  matchPercent?: number | null
 }
 
 export default function BusinessDashboardPage() {
@@ -61,20 +65,61 @@ export default function BusinessDashboardPage() {
 
     const loadData = async () => {
       const supabase = createClient()
-      const { data: candidatesData } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years")
-        .eq("user_type", "worker")
-        .order("rating", { ascending: false })
+      const [{ data: candidatesData }, { data: activeJobsData }, { count }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years, contract_type_sought")
+          .eq("user_type", "worker")
+          .order("rating", { ascending: false }),
+        supabase
+          .from("jobs")
+          .select("city, location, contract_type, category, position")
+          .eq("business_id", user.id)
+          .eq("is_active", true),
+        supabase
+          .from("jobs")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", user.id),
+      ])
 
-      if (candidatesData) setCandidates(candidatesData)
+      if (candidatesData) {
+        const activeJobs: MatchJobInput[] = (activeJobsData || []).map((j) => ({
+          city: j.city,
+          location: j.location,
+          contractType: j.contract_type,
+          category: j.category,
+          position: j.position,
+        }))
 
-      const { count } = await supabase
-        .from("jobs")
-        .select("id", { count: "exact", head: true })
-        .eq("business_id", user.id)
+        // "Filtros del negocio" (2.1) = derivados de sus ofertas activas: si
+        // el negocio tiene alguna oferta abierta, ordenamos a los candidatos
+        // por su mejor coincidencia contra cualquiera de ellas; si no tiene
+        // ninguna, se mantiene el orden actual por rating.
+        const withMatch = candidatesData.map((c) => ({
+          ...c,
+          matchPercent:
+            activeJobs.length > 0
+              ? computeBestMatchScore(
+                  {
+                    location: c.location,
+                    contractTypeSought: c.contract_type_sought,
+                    jobCategory: c.job_category,
+                    specialties: c.specialties,
+                  },
+                  activeJobs
+                )?.percent ?? 0
+              : null,
+        }))
+
+        if (activeJobs.length > 0) {
+          withMatch.sort((a, b) => (b.matchPercent || 0) - (a.matchPercent || 0))
+        }
+        setCandidates(withMatch)
+      }
+
       setMyJobsCount(count || 0)
       setLoading(false)
+      checkInterviewRemindersAction().catch(() => {})
     }
 
     loadData()
@@ -116,7 +161,13 @@ export default function BusinessDashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" size="icon">
-                <Link href="/messages"><Bell className="h-5 w-5" /></Link>
+                <Link href="/notifications"><Bell className="h-5 w-5" /></Link>
+              </Button>
+              <Button asChild variant="ghost" size="icon">
+                <Link href="/rewards"><Gift className="h-5 w-5" /></Link>
+              </Button>
+              <Button asChild variant="ghost" size="icon">
+                <Link href="/messages"><MessageCircle className="h-5 w-5" /></Link>
               </Button>
               <Avatar className="h-9 w-9">
                 <AvatarImage src={userAvatar} alt={userName} />
@@ -235,7 +286,14 @@ export default function BusinessDashboardPage() {
                               </div>
                             )}
                           </div>
-                          {candidate.job_category && <p className="text-xs text-[#01A89E] font-medium">{candidate.job_category}</p>}
+                          <div className="flex items-center gap-1.5">
+                            {candidate.job_category && <p className="text-xs text-[#01A89E] font-medium">{candidate.job_category}</p>}
+                            {typeof candidate.matchPercent === "number" && candidate.matchPercent > 0 && (
+                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[9px] px-1.5 py-0">
+                                {candidate.matchPercent}% coincide con tus ofertas
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             {candidate.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{candidate.location}</span>}
                             {candidate.experience_years && <span>{candidate.experience_years} años exp.</span>}

@@ -118,6 +118,10 @@ export default function AdminPage() {
   const { data: langsData } = useSWR(langsKey, fetcher)
   const pmKey = section === "payment-methods" ? "/api/admin/payment-methods" : null
   const { data: pmData } = useSWR(pmKey, fetcher)
+  const jobPaymentsKey = section === "job-payments" ? "/api/admin/job-payments" : null
+  const { data: jobPaymentsData, mutate: mutateJobPayments } = useSWR(jobPaymentsKey, fetcher)
+  const pointsLedgerKey = section === "points-ledger" ? `/api/admin/points-ledger?search=${debouncedSearch}` : null
+  const { data: pointsLedgerData } = useSWR(pointsLedgerKey, fetcher)
   const plansKey = section === "plans" ? "/api/admin/plans" : null
   const { data: plansData } = useSWR(plansKey, fetcher)
 
@@ -141,11 +145,25 @@ export default function AdminPage() {
   const languages = langsData?.data || []
   const paymentMethods = pmData?.data || []
   const plans = plansData?.data || []
+  const jobPayments = jobPaymentsData?.data || []
+  const pointsLedger = pointsLedgerData?.data || []
+  const completedReferrals = pointsLedgerData?.completedReferrals ?? 0
 
   // ===== HANDLERS =====
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.href = "/auth/login"
+  }
+
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null)
+  const handleReactivateJobPayment = async (id: string) => {
+    setReactivatingId(id)
+    try {
+      const res = await fetch(`/api/admin/micropayments/${id}/activate`, { method: "POST" })
+      if (res.ok) mutateJobPayments()
+    } finally {
+      setReactivatingId(null)
+    }
   }
 
   const handleSendNotification = async () => {
@@ -215,10 +233,12 @@ export default function AdminPage() {
     { key: "email", label: "Email", editable: false, render: (v) => <span className="text-sm text-muted-foreground">{v || "Sin email"}</span> },
     { key: "password", label: "Nueva Contraseña", editable: true, createOnly: false, type: "password" },
     { key: "phone", label: "Teléfono", editable: true },
+    { key: "date_of_birth", label: "Fecha de nacimiento", editable: true },
     { key: "location", label: "Ubicación", editable: true },
     { key: "bio", label: "Bio", type: "textarea", editable: true },
     { key: "job_category", label: "Categoría profesional", type: "category", editable: true },
     { key: "specialties", label: "Especialidades", type: "subcategories", editable: true },
+    { key: "skills", label: "Destrezas (JSON)", type: "json", editable: true },
     { key: "experience_years", label: "Años experiencia", type: "number", editable: true },
     { key: "availability_status", label: "Disponibilidad", editable: true, type: "select", options: [{ value: "available", label: "Disponible" }, { value: "busy", label: "Ocupado" }, { value: "not_looking", label: "No busca" }] },
     { key: "contract_type_sought", label: "Tipo de contrato", type: "select", editable: true, options: [{ value: "full_time", label: "Tiempo completo" }, { value: "part_time", label: "Tiempo parcial" }, { value: "temporary", label: "Temporal" }, { value: "freelance", label: "Freelance" }, { value: "internship", label: "Prácticas" }] },
@@ -230,12 +250,14 @@ export default function AdminPage() {
     { key: "points", label: "Puntos", type: "number", editable: true },
     { key: "level", label: "Nivel", type: "number", editable: true },
     { key: "rating", label: "Rating", type: "number", editable: true },
+    { key: "badges", label: "Insignias (JSON) — incl. 'Perfil del Mes'", type: "json", editable: true },
   ]
 
   const businessColumns: ColumnDef[] = [
     // -- Visual / Media (solo imagenes, NO video para empresas) --
     { key: "company_logo_url", label: "Logo de Empresa", type: "avatar", editable: true },
     { key: "photos", label: "Fotos del Negocio (max 5)", type: "images", editable: true, maxImages: 5 },
+    { key: "video_url", label: "Vídeo del Negocio", type: "video", editable: true },
     // -- Basic info --
     { key: "company_name", label: "Empresa", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin nombre"}</span> },
     { key: "email", label: "Email", editable: true },
@@ -255,6 +277,9 @@ export default function AdminPage() {
     { key: "subscription_plan", label: "Plan suscripción", editable: true, type: "select", options: [{ value: "free", label: "Gratuito" }, { value: "basic", label: "Básico" }, { value: "premium", label: "Premium" }] },
     { key: "points", label: "Puntos", type: "number", editable: true },
     { key: "level", label: "Nivel", type: "number", editable: true },
+    { key: "flash_credits", label: "Créditos Oferta Flash", type: "number", editable: true },
+    { key: "highlight_credits", label: "Créditos Destacar", type: "number", editable: true },
+    { key: "badges", label: "Insignias (JSON) — incl. 'Formador'/'Rotación Baja'", type: "json", editable: true },
   ]
 
   const jobColumns: ColumnDef[] = [
@@ -273,6 +298,7 @@ export default function AdminPage() {
     { key: "salary_max", label: "Salario max", type: "number", editable: true },
     { key: "salary_display", label: "Salario visible", editable: true },
     { key: "vacancies", label: "Vacantes", type: "number", editable: true },
+    { key: "start_date", label: "Fecha incorporación (ISO)", editable: true },
     { key: "languages_required", label: "Idiomas requeridos (JSON)", type: "json", editable: true },
     { key: "uniform_required", label: "Uniforme", type: "boolean", editable: true },
     { key: "tpv_required", label: "TPV requerido", type: "boolean", editable: true },
@@ -359,10 +385,10 @@ export default function AdminPage() {
     notifications: "Notificaciones",
     plans: "Planes de Suscripción",
     countries: "Países", cities: "Ciudades", languages: "Idiomas",
-    "payment-methods": "Métodos de Pago", apis: "APIs e Integraciones", settings: "Configuración",
+    "payment-methods": "Métodos de Pago", "job-payments": "Pagos de Ofertas", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
   }
 
-  const showSearch = !["dashboard", "settings", "apis", "notifications"].includes(section)
+  const showSearch = !["dashboard", "settings", "apis", "notifications", "job-payments"].includes(section)
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -719,6 +745,96 @@ export default function AdminPage() {
           {/* ========== PAYMENT METHODS ========== */}
           {section === "payment-methods" && (
             <AdminCrudTable title="Metodos de Pago" icon={<CreditCard className="h-5 w-5 text-green-600" />} data={paymentMethods} columns={pmColumns} endpoint="/api/admin/payment-methods" swrKey={pmKey!} emptyText="No hay metodos de pago" createDefaults={{ provider: "", display_name: "", is_active: true, config: {} }} />
+          )}
+
+          {/* ========== JOB PAYMENTS (Flash / Destacar ledger) ========== */}
+          {section === "job-payments" && (
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500">
+                Registro de cobros de Ofertas Flash (5€) y Destacar Oferta (2,5€). Solo lectura — se activan
+                automáticamente vía el webhook de Stripe; usa "Reactivar" si un pago se quedó pendiente porque el
+                webhook nunca llegó.
+              </p>
+              {jobPayments.length === 0 ? (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">No hay pagos de ofertas todavía</CardContent></Card>
+              ) : (
+                <div className="space-y-2">
+                  {jobPayments.map((mp: any) => (
+                    <Card key={mp.id} className="bg-white">
+                      <CardContent className="p-4 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold truncate">{mp.job_title || "Oferta eliminada"}</p>
+                            <Badge className="text-[9px] px-1.5 py-0 border-0 bg-slate-100 text-slate-600">
+                              {mp.feature_type === "flash_job" ? "Flash" : "Destacar"}
+                            </Badge>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {mp.business_name || "Negocio desconocido"} · {new Date(mp.created_at).toLocaleString("es-ES")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-sm font-semibold tabular-nums">{(mp.amount_cents / 100).toFixed(2)}€</span>
+                          <Badge
+                            className={`text-[9px] px-2 py-0.5 border-0 capitalize ${
+                              mp.status === "completed"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : mp.status === "failed"
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {mp.status}
+                          </Badge>
+                          {mp.status === "pending" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-[10px] h-7"
+                              disabled={reactivatingId === mp.id}
+                              onClick={() => handleReactivateJobPayment(mp.id)}
+                            >
+                              {reactivatingId === mp.id ? "Reactivando..." : "Reactivar"}
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========== POINTS LEDGER + REFERRALS ========== */}
+          {section === "points-ledger" && (
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500">
+                Log de puntos (motor de gamificación) y referidos completados: <strong>{completedReferrals}</strong> amigos
+                registrados han completado su perfil gracias a un código de invitación.
+              </p>
+              {pointsLedger.length === 0 ? (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">Sin movimientos de puntos todavía</CardContent></Card>
+              ) : (
+                <div className="space-y-1.5">
+                  {pointsLedger.map((entry: any) => (
+                    <Card key={entry.id} className="bg-white">
+                      <CardContent className="p-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{entry.user_display_name}</p>
+                          <p className="text-[10px] text-slate-500">
+                            {entry.reason} · {new Date(entry.created_at).toLocaleString("es-ES")}
+                          </p>
+                        </div>
+                        <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${entry.points >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          {entry.points >= 0 ? "+" : ""}{entry.points}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* ========== APIS ========== */}

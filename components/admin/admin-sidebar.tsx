@@ -22,6 +22,8 @@ export type AdminSection =
   | "countries" | "cities"
   | "languages"
   | "payment-methods"
+  | "job-payments"
+  | "points-ledger"
   | "apis"
   | "settings"
 
@@ -82,6 +84,13 @@ const menuGroups: MenuGroup[] = [
     label: "Pagos",
     items: [
       { id: "payment-methods", label: "Métodos de Pago", icon: CreditCard },
+      { id: "job-payments", label: "Pagos de Ofertas", icon: DollarSign },
+    ],
+  },
+  {
+    label: "Gamificación",
+    items: [
+      { id: "points-ledger", label: "Puntos y Referidos", icon: Crown },
     ],
   },
   {

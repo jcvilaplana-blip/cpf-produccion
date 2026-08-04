@@ -19,6 +19,7 @@ import { MediaSection } from "@/components/edit-profile/media-section"
 import { PersonalSection } from "@/components/edit-profile/personal-section"
 import { ProfessionalSection } from "@/components/edit-profile/professional-section"
 import { SkillsSection } from "@/components/edit-profile/skills-section"
+import { DestrezasSection } from "@/components/edit-profile/destrezas-section"
 import { LanguagesSection } from "@/components/edit-profile/languages-section"
 import { ExperienceSection } from "@/components/edit-profile/experience-section"
 import { EducationSection } from "@/components/edit-profile/education-section"
@@ -26,6 +27,7 @@ import { CvSection } from "@/components/edit-profile/cv-section"
 import { PortfolioSection } from "@/components/edit-profile/portfolio-section"
 import { PortfolioVideosSection } from "@/components/edit-profile/portfolio-videos-section"
 import { PremiumFeaturesCard } from "@/components/premium-features-card"
+import { ReferralCard } from "@/components/edit-profile/referral-card"
 
 interface EditProfileContentProps {
   profile: Profile | null
@@ -56,9 +58,11 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
   const [contractTypes, setContractTypes] = useState<string[]>([])
   const [salaryMin, setSalaryMin] = useState("")
   const [salaryMax, setSalaryMax] = useState("")
+  const [matchAlertThreshold, setMatchAlertThreshold] = useState(100)
 
   // --- lists ---
   const [skills, setSkills] = useState<string[]>([])
+  const [destrezas, setDestrezas] = useState<string[]>([])
   const [languages, setLanguages] = useState<LanguageEntry[]>([])
   const [workExperience, setWorkExperience] = useState<WorkExperience[]>([])
   const [education, setEducation] = useState<Education[]>([])
@@ -85,6 +89,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     setDisplayName(profile.display_name || "")
     setEmail(userEmail || "")
     setPhone(profile.phone || "")
+    setDateOfBirth(profile.date_of_birth || "")
     setLocation(profile.location || "")
     setBio(profile.bio || "")
     setJobCategory(profile.job_category || "")
@@ -115,6 +120,8 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     const rawSkills = profile.specialties
     if (rawSkills) setSkills(Array.isArray(rawSkills) ? rawSkills : [])
 
+    if (profile.skills) setDestrezas(Array.isArray(profile.skills) ? profile.skills : [])
+
     const rawLangs = profile.languages
     if (rawLangs && Array.isArray(rawLangs)) {
       setLanguages(
@@ -126,8 +133,14 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
       )
     }
 
+    // work_experience is its own column now (post-025 migration); certificates
+    // holds only education. Still tolerate old-shaped entries in either field
+    // in case a row wasn't backfilled.
+    const rawWorkExperience = parseJsonField((profile as any).work_experience)
     const rawCerts = parseJsonField(profile.certificates)
-    const exp: WorkExperience[] = []
+    const exp: WorkExperience[] = rawWorkExperience.map((c: any) => ({
+      id: generateId(), company: c.company || "", position: c.position || "", startDate: c.startDate || "", endDate: c.endDate || "", current: c.current || false, description: c.description || "",
+    }))
     const edu: Education[] = []
     rawCerts.forEach((c: any) => {
       if (c.company || c.position) {
@@ -142,6 +155,10 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     const rawContract = profile.contract_type_sought
     if (rawContract) {
       setContractTypes(Array.isArray(rawContract) ? rawContract : typeof rawContract === "string" ? rawContract.split(",") : [])
+    }
+
+    if (typeof profile.match_alert_threshold === "number") {
+      setMatchAlertThreshold(profile.match_alert_threshold)
     }
   }, [profile, userEmail])
 
@@ -186,6 +203,10 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     setContractTypes(contractTypes.includes(val) ? contractTypes.filter((c) => c !== val) : [...contractTypes, val])
   }
 
+  const toggleDestreza = (val: string) => {
+    setDestrezas(destrezas.includes(val) ? destrezas.filter((d) => d !== val) : [...destrezas, val])
+  }
+
   // --- save ---
   const handleSave = async () => {
     setSaving(true)
@@ -227,6 +248,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         is_active: isActive,
         display_name: displayName,
         phone,
+        date_of_birth: dateOfBirth || null,
         location,
         bio,
         avatar_url: finalAvatarUrl,
@@ -235,12 +257,15 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         custom_subcategory: customSubcategory || null,
         experience_years: experienceYears ? Number(experienceYears) : null,
         availability_status: availability,
+        contract_type_sought: contractTypes,
+        match_alert_threshold: matchAlertThreshold,
         specialties: skills,
+        skills: destrezas,
         languages: languages.filter((l) => l.language).map((l) => ({ language: l.language, level: l.level })),
-        certificates: [
-          ...workExperience.map((e) => ({ company: e.company, position: e.position, startDate: e.startDate, endDate: e.endDate, current: e.current, description: e.description })),
-          ...education.map((e) => ({ institution: e.institution, title: e.title, year: e.year })),
-        ],
+        // Work history now lives in its own column (see profile-detail-content.tsx
+        // "Experiencia" card) - certificates keeps only education entries.
+        work_experience: workExperience.map((e) => ({ company: e.company, position: e.position, startDate: e.startDate, endDate: e.endDate, current: e.current, description: e.description })),
+        certificates: education.map((e) => ({ institution: e.institution, title: e.title, year: e.year })),
         // CV fields
         cv_url: cvUrl || null,
         cv_filename: cvFileName || null,
@@ -364,9 +389,13 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
           contractTypes={contractTypes} toggleContractType={toggleContractType}
           salaryMin={salaryMin} setSalaryMin={setSalaryMin}
           salaryMax={salaryMax} setSalaryMax={setSalaryMax}
+          matchAlertThreshold={matchAlertThreshold} setMatchAlertThreshold={setMatchAlertThreshold}
+          isPremium={!!profile?.is_premium}
         />
 
         <SkillsSection skills={skills} addSkill={addSkill} removeSkill={removeSkill} />
+
+        <DestrezasSection skills={destrezas} toggleSkill={toggleDestreza} />
 
         <LanguagesSection
           languages={languages}
@@ -407,6 +436,8 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
           onCvUploaded={handleCvUploaded}
           onRemoveCv={handleRemoveCv}
         />
+
+        <ReferralCard referralCode={profile?.referral_code} />
 
         {/* Premium Features - Highlight profile & View matches */}
         <PremiumFeaturesCard />

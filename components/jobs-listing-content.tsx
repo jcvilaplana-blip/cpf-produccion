@@ -33,6 +33,8 @@ interface Job {
     type?: string
   }
   isFlash?: boolean
+  isHighlighted?: boolean
+  matchPercent?: number
   expiresAt?: string
 }
 
@@ -90,34 +92,19 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
     if (q) setSearchQuery(q)
   }, [])
 
+  // `jobs` already includes flash offers (server-side query no longer
+  // excludes is_flash) so they get real "visibilidad prioritaria" in the
+  // main grid instead of only living in the carousel below. Sort ladder:
+  // flash -> highlighted -> best profile match -> most recent.
   const allJobs = useMemo(() => {
-    const flashJobsConverted: Job[] = flashOffers.map((offer) => ({
-      id: offer.id,
-      title: offer.title,
-      description: offer.description,
-      location: offer.location,
-      salary_min: offer.salary,
-      salary_max: offer.salary,
-      is_active: true,
-      created_at: offer.postedAt,
-      business_id: offer.business.id,
-      jobType: offer.jobType,
-      business: {
-        display_name: offer.business.name,
-        avatar_url: offer.business.logo,
-        type: "Varios",
-      },
-      isFlash: true,
-      expiresAt: offer.expiresAt,
-    }))
-
-    // Sort: flash offers first, then by date
-    return [...flashJobsConverted, ...jobs].sort((a, b) => {
-      if (a.isFlash && !b.isFlash) return -1
-      if (!a.isFlash && b.isFlash) return 1
+    return [...jobs].sort((a, b) => {
+      if (!!a.isFlash !== !!b.isFlash) return a.isFlash ? -1 : 1
+      if (!!a.isHighlighted !== !!b.isHighlighted) return a.isHighlighted ? -1 : 1
+      const matchDiff = (b.matchPercent || 0) - (a.matchPercent || 0)
+      if (matchDiff !== 0) return matchDiff
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [jobs, flashOffers])
+  }, [jobs])
 
   const jobTypes = useMemo(() => {
     const types = new Set<string>()
@@ -127,9 +114,7 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
     return Array.from(types).sort()
   }, [allJobs])
 
-  const regularJobs = allJobs.filter((job) => !job.isFlash)
-
-  const filteredJobs = regularJobs.filter((job) => {
+  const filteredJobs = allJobs.filter((job) => {
     const matchesSearch =
       searchQuery === "" ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -403,6 +388,16 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                       fill
                       className="object-cover"
                     />
+                    {job.isFlash && (
+                      <Badge className="absolute top-1 left-1 bg-[#F97316] text-white text-[9px] px-1 py-0 h-4 gap-0.5">
+                        <Zap className="h-2 w-2" /> Flash
+                      </Badge>
+                    )}
+                    {!job.isFlash && job.isHighlighted && (
+                      <Badge className="absolute top-1 left-1 bg-[#F48221] text-white text-[9px] px-1 py-0 h-4">
+                        Destacada
+                      </Badge>
+                    )}
                   </div>
                   <CardContent className="p-0.5">
                     <h3 className="font-semibold text-sm line-clamp-1 leading-tight mb-0.5">{job.title}</h3>
@@ -429,6 +424,11 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                       {job.jobType && (
                         <Badge variant="outline" className="text-xs w-full justify-center py-0 h-4 mt-0.5">
                           {job.jobType}
+                        </Badge>
+                      )}
+                      {typeof job.matchPercent === "number" && job.matchPercent > 0 && (
+                        <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-xs w-full justify-center py-0 h-4 mt-0.5">
+                          {job.matchPercent}% coincidencia
                         </Badge>
                       )}
                     </div>

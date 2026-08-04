@@ -38,6 +38,13 @@ export interface Profile {
   // Experience
   experience_years?: number
   contract_type_sought?: string[]
+  match_alert_threshold?: number
+  date_of_birth?: string
+  skills?: string[]
+  work_experience?: Array<{ company: string; position: string; startDate: string; endDate: string; current: boolean; description: string }>
+  referral_code?: string
+  referred_by?: string | null
+  profile_theme?: string | null
   languages?: Array<{ language: string; level: string }> | string[]
   created_at: string
   updated_at: string
@@ -88,6 +95,9 @@ export interface Job {
   is_highlighted?: boolean
   flash_expires_at?: string
   highlight_expires_at?: string
+  uniform_required?: boolean
+  languages_required?: string[]
+  tpv_required?: boolean
   is_active: boolean
   views: number
   created_at: string

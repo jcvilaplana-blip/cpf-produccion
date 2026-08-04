@@ -12,7 +12,7 @@ export interface NotificationPayload {
   title: string
   message: string
   link?: string
-  type?: "interview" | "message" | "job" | "application" | "general"
+  type?: "interview" | "message" | "job" | "application" | "general" | "interest"
   data?: Record<string, any>
 }
 
@@ -21,6 +21,7 @@ const POLL_INTERVAL_MS = 30000
 function mapDbTypeToPayloadType(dbType: string): NotificationPayload["type"] {
   if (dbType === "oferta") return "job"
   if (dbType === "entrevista") return "interview"
+  if (dbType === "interes") return "interest"
   return "general"
 }
 

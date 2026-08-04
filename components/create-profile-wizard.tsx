@@ -56,6 +56,22 @@ const slideVariants = {
 export function CreateProfileWizard() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  // ?ref=<referral_code> resolved to the referrer's profile id (referred_by
+  // is a uuid FK, not the code itself). Public profiles are readable
+  // unauthenticated (same as /api/profile/[id]), so this lookup works
+  // before the visitor has signed up.
+  const [referrerId, setReferrerId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref")
+    if (!ref) return
+    supabase
+      .from("profiles")
+      .select("id")
+      .eq("referral_code", ref)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setReferrerId(data.id) })
+  }, [supabase])
 
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(1)
@@ -396,6 +412,8 @@ export function CreateProfileWizard() {
               phone_verified: form.phoneVerified,
               profile_completed: true,
               rol: 2,
+              referral_code: Math.random().toString(36).slice(2, 10),
+              referred_by: referrerId,
               updated_at: new Date().toISOString(),
             },
           }),
@@ -472,6 +490,8 @@ export function CreateProfileWizard() {
               phone_verified: form.phoneVerified,
               profile_completed: true,
               rol: 3,
+              referral_code: Math.random().toString(36).slice(2, 10),
+              referred_by: referrerId,
               updated_at: new Date().toISOString(),
             },
           }),

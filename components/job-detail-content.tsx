@@ -27,7 +27,7 @@ import Image from "next/image"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/i18n/language-context"
-import { applyToJobAction, saveJobAction } from "@/lib/actions"
+import { applyToJobAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
 import { toast } from "sonner"
 import type { Profile } from "@/lib/types"
 
@@ -56,6 +56,8 @@ interface JobData {
   vacancies?: number
   is_flash?: boolean
   flash_expires_at?: string
+  is_highlighted?: boolean
+  highlight_expires_at?: string
   business: {
     display_name: string
     avatar_url: string | null
@@ -107,6 +109,7 @@ export function JobDetailContent({
   const [hasApplied, setHasApplied] = useState(initialHasApplied)
   const [isApplying, setIsApplying] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isHighlighting, setIsHighlighting] = useState(false)
 
   const handleApply = async () => {
     if (!userId) {
@@ -162,6 +165,46 @@ export function JobDetailContent({
 
   const timeRemaining = job.is_flash ? getTimeRemaining() : null
   const isBusinessOwner = userId === job.business_id
+  const isCurrentlyHighlighted = Boolean(
+    job.is_highlighted && job.highlight_expires_at && new Date(job.highlight_expires_at) > new Date()
+  )
+
+  const handleHighlight = async () => {
+    if (!userId) return
+    setIsHighlighting(true)
+    try {
+      // Spend a highlight credit (earned via canje de puntos) if available,
+      // before falling back to a real Stripe charge.
+      const creditResult = await activateHighlightWithCreditAction(job.id)
+      if (creditResult.success) {
+        toast.success("Oferta destacada durante 24h")
+        router.refresh()
+        setIsHighlighting(false)
+        return
+      }
+      if (creditResult.error && creditResult.error !== "no_credit") {
+        toast.error(creditResult.error)
+        setIsHighlighting(false)
+        return
+      }
+
+      const res = await fetch("/api/micropayments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featureType: "highlight_job", userId, jobId: job.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.checkoutUrl) {
+        toast.error(data.error || "Error al iniciar el pago")
+        setIsHighlighting(false)
+        return
+      }
+      window.location.href = data.checkoutUrl
+    } catch {
+      toast.error("Error al iniciar el pago")
+      setIsHighlighting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pt-14">
@@ -418,6 +461,21 @@ export function JobDetailContent({
                   <Link href={`/jobs/${job.id}/applications`}>Ver Candidatos</Link>
                 </Button>
               </div>
+              {!job.is_flash && (
+                <Button
+                  variant="outline"
+                  className="w-full border-[#F48221]/40 text-[#F48221] hover:bg-[#F48221]/5 disabled:opacity-60"
+                  onClick={handleHighlight}
+                  disabled={isCurrentlyHighlighted || isHighlighting}
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  {isCurrentlyHighlighted
+                    ? "Ya destacada"
+                    : isHighlighting
+                      ? "Redirigiendo al pago..."
+                      : "Destacar oferta 24h - 2,5€"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}

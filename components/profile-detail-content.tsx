@@ -14,6 +14,7 @@ import useSWR from "swr"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
 import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
+import { computeDisplayStatus } from "@/lib/profile-status"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -80,13 +81,23 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
   })()
   const portfolioImages = Array.isArray(worker.portfolio_images) ? worker.portfolio_images : []
   const portfolioVideos = Array.isArray(worker.portfolio_videos) ? worker.portfolio_videos : []
+  // First portfolio video doubles as the "vídeo de presentación" - a
+  // distinct, featured slot instead of a parallel upload system.
+  const presentationVideo = portfolioVideos[0] || null
+  const otherVideos = portfolioVideos.slice(1)
 
-  const availabilityMap: Record<string, { label: string; color: string }> = {
-    available: { label: "Disponible", color: "bg-emerald-100 text-emerald-700" },
-    busy: { label: "Ocupado", color: "bg-amber-100 text-amber-700" },
-    not_looking: { label: "No busca empleo", color: "bg-slate-100 text-slate-600" },
-  }
-  const avail = availabilityMap[worker.availability_status] || { label: "No indicado", color: "bg-slate-100 text-slate-600" }
+  const skills = Array.isArray(worker.skills) ? worker.skills : []
+  const workExperience = Array.isArray(worker.work_experience) ? worker.work_experience : []
+
+  const avail = computeDisplayStatus({
+    selfReported: worker.availability_status,
+    hasActiveInterview: Boolean(worker.has_active_interview),
+    hasOpenApplication: Boolean(worker.has_open_application),
+  })
+
+  const birthDate = worker.date_of_birth
+    ? new Date(worker.date_of_birth).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
+    : null
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -197,6 +208,38 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
           </CardContent></Card>
         )}
 
+        {/* Skills / destrezas - distinct from role-based "Especialidades" above */}
+        {skills.length > 0 && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3">Destrezas</h3>
+            <div className="flex flex-wrap gap-2">
+              {skills.map((s: string, i: number) => (
+                <Badge key={i} variant="outline" className="rounded-full px-3 py-1">{s}</Badge>
+              ))}
+            </div>
+          </CardContent></Card>
+        )}
+
+        {/* Work experience */}
+        {workExperience.length > 0 && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4 text-[#01A89E]" /> Experiencia
+            </h3>
+            <div className="space-y-3">
+              {workExperience.map((exp: any, i: number) => (
+                <div key={i} className="border-l-2 border-[#01A89E]/30 pl-3">
+                  <p className="text-sm font-semibold">{exp.position}{exp.company ? ` · ${exp.company}` : ""}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {exp.startDate || "?"} - {exp.current ? "Actualidad" : exp.endDate || "?"}
+                  </p>
+                  {exp.description && <p className="text-xs text-muted-foreground mt-1">{exp.description}</p>}
+                </div>
+              ))}
+            </div>
+          </CardContent></Card>
+        )}
+
         {/* Details */}
         <Card><CardContent className="p-4 space-y-3">
           <h3 className="font-semibold mb-2">Detalles</h3>
@@ -204,6 +247,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
             <div><span className="text-muted-foreground block">Categoría</span><span className="font-medium">{worker.job_category || "-"}</span></div>
             <div><span className="text-muted-foreground block">Experiencia</span><span className="font-medium">{worker.experience_years ? `${worker.experience_years} años` : "-"}</span></div>
             <div><span className="text-muted-foreground block">Ubicación</span><span className="font-medium">{worker.location || "-"}</span></div>
+            <div><span className="text-muted-foreground block">Fecha de nacimiento</span><span className="font-medium">{birthDate || "-"}</span></div>
             <div><span className="text-muted-foreground block">Nivel</span><span className="font-medium">{worker.level ? `Nivel ${worker.level}` : "-"}</span></div>
             <div><span className="text-muted-foreground block">Puntos</span><span className="font-medium">{worker.points ?? "-"}</span></div>
             <div><span className="text-muted-foreground block">Valoración</span><span className="font-medium flex items-center gap-1">{worker.rating || "-"} {worker.rating > 0 && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}</span></div>
@@ -265,13 +309,23 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
           </CardContent></Card>
         )}
 
-        {/* Portfolio videos */}
-        {portfolioVideos.length > 0 && (
+        {/* Presentation video - the first portfolio video, featured separately */}
+        {presentationVideo && (
           <Card><CardContent className="p-4">
             <h3 className="font-semibold mb-3 flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-[#01A89E]" /> Vídeos ({portfolioVideos.length}/3)
+              <Video className="h-4 w-4 text-[#01A89E]" /> Vídeo de presentación
             </h3>
-            <PortfolioVideoViewer videos={portfolioVideos} />
+            <PortfolioVideoViewer videos={[presentationVideo]} />
+          </CardContent></Card>
+        )}
+
+        {/* Remaining portfolio videos */}
+        {otherVideos.length > 0 && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-1.5">
+              <Video className="h-4 w-4 text-[#01A89E]" /> Portfolio de vídeos ({otherVideos.length}/2)
+            </h3>
+            <PortfolioVideoViewer videos={otherVideos} />
           </CardContent></Card>
         )}
 

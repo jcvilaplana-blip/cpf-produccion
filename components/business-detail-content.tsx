@@ -9,9 +9,14 @@ import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { requestToWorkHereAction } from "@/lib/actions"
+import { toast } from "sonner"
+import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
+import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
 import {
   ArrowLeft, MapPin, Star, Briefcase, CheckCircle, MessageCircle, Heart,
-  Send, X, Loader2, Phone, Globe, Clock,
+  Send, X, Loader2, Phone, Globe, Clock, Sparkles,
+  Image as ImageIcon, Video as VideoIcon,
 } from "lucide-react"
 
 interface BusinessData {
@@ -31,6 +36,10 @@ interface BusinessData {
   address?: string
   company_description?: string
   service_description?: string
+  photos?: string[]
+  video_url?: string | null
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export function BusinessDetailContent({ id }: { id: string }) {
@@ -44,6 +53,9 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const [jobs, setJobs] = useState<any[]>([])
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [isPremiumWorker, setIsPremiumWorker] = useState(false)
+  const [requestingToWork, setRequestingToWork] = useState(false)
+  const [requestedToWork, setRequestedToWork] = useState(false)
 
   const loadBusiness = useCallback(async () => {
     setLoading(true)
@@ -61,6 +73,10 @@ export function BusinessDetailContent({ id }: { id: string }) {
           description: bp.company_description || bp.service_description || "", source: "supabase",
           phone: bp.phone || profile?.phone, website: bp.website, city: bp.city, address: bp.address,
           company_description: bp.company_description, service_description: bp.service_description,
+          photos: Array.isArray(bp.photos) ? bp.photos : [],
+          video_url: bp.video_url || null,
+          latitude: bp.latitude || null,
+          longitude: bp.longitude || null,
         })
         setJobs(jobsData || [])
         setLoading(false)
@@ -79,16 +95,34 @@ export function BusinessDetailContent({ id }: { id: string }) {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (!user) return
-      const { data } = await supabase
-        .from("saved_businesses")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("business_id", id)
-        .maybeSingle()
-      setIsFavorite(!!data)
+      const [{ data: saved }, { data: profile }] = await Promise.all([
+        supabase.from("saved_businesses").select("id").eq("user_id", user.id).eq("business_id", id).maybeSingle(),
+        supabase.from("profiles").select("user_type, is_premium, premium_expires_at").eq("id", user.id).single(),
+      ])
+      setIsFavorite(!!saved)
+      const premiumActive =
+        profile?.user_type === "worker" &&
+        profile?.is_premium &&
+        (!profile?.premium_expires_at || new Date(profile.premium_expires_at) > new Date())
+      setIsPremiumWorker(!!premiumActive)
     }
     checkFavorite()
   }, [id])
+
+  const handleRequestToWork = async () => {
+    setRequestingToWork(true)
+    try {
+      const result = await requestToWorkHereAction(id)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        setRequestedToWork(true)
+        toast.success("Le hemos avisado a la empresa de tu interés")
+      }
+    } finally {
+      setRequestingToWork(false)
+    }
+  }
 
   const handleToggleFavorite = async () => {
     setFavoriteLoading(true)
@@ -222,6 +256,18 @@ export function BusinessDetailContent({ id }: { id: string }) {
           </Button>
         </div>
 
+        {isPremiumWorker && (
+          <Button
+            variant="outline"
+            className="w-full h-12 rounded-xl font-bold text-sm border-[#F48221]/40 text-[#F48221] hover:bg-[#F48221]/5 disabled:opacity-60"
+            onClick={handleRequestToWork}
+            disabled={requestingToWork || requestedToWork}
+          >
+            <Sparkles className="h-5 w-5 mr-2" />
+            {requestedToWork ? "Interés enviado" : requestingToWork ? "Enviando..." : "Quiero trabajar aquí"}
+          </Button>
+        )}
+
         {showContactForm && (
           <Card className="border-[#01A89E]/30 bg-teal-50/50">
             <CardContent className="p-4">
@@ -247,7 +293,14 @@ export function BusinessDetailContent({ id }: { id: string }) {
           </Card>
         )}
 
-        <Card><CardContent className="p-4"><h3 className="font-semibold mb-2 text-base">Sobre la empresa</h3><p className="text-sm text-muted-foreground leading-relaxed">{business.description || business.company_description || business.service_description || "Empresa registrada en la plataforma CamareroPorFavor."}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><h3 className="font-semibold mb-2 text-base">Sobre la empresa</h3><p className="text-sm text-muted-foreground leading-relaxed">{business.description || business.company_description || "Empresa registrada en la plataforma CamareroPorFavor."}</p></CardContent></Card>
+
+        {business.service_description && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-2 text-base">Tipo de servicio</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{business.service_description}</p>
+          </CardContent></Card>
+        )}
 
         {(business.phone || business.website || business.address) && (
           <Card><CardContent className="p-4 space-y-3">
@@ -255,6 +308,43 @@ export function BusinessDetailContent({ id }: { id: string }) {
             {business.phone && <div className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" /><span>{business.phone}</span></div>}
             {business.website && <div className="flex items-center gap-3 text-sm"><Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" /><a href={business.website} target="_blank" rel="noopener noreferrer" className="text-[#01A89E] hover:underline truncate">{business.website}</a></div>}
             {business.address && <div className="flex items-center gap-3 text-sm"><MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" /><span>{business.address}</span></div>}
+          </CardContent></Card>
+        )}
+
+        {(business.address || business.location || business.city) && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 text-base">Ubicación</h3>
+            <div className="aspect-video w-full bg-muted rounded-lg overflow-hidden">
+              <iframe
+                src={
+                  business.latitude && business.longitude
+                    ? `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${business.latitude},${business.longitude}&zoom=15`
+                    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(
+                        business.address || business.location || business.city || business.display_name
+                      )}`
+                }
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </CardContent></Card>
+        )}
+
+        {business.photos && business.photos.length > 0 && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 text-base flex items-center gap-1.5"><ImageIcon className="h-4 w-4 text-[#01A89E]" /> Fotos del local</h3>
+            <PortfolioImageViewer images={business.photos} />
+          </CardContent></Card>
+        )}
+
+        {business.video_url && (
+          <Card><CardContent className="p-4">
+            <h3 className="font-semibold mb-3 text-base flex items-center gap-1.5"><VideoIcon className="h-4 w-4 text-[#01A89E]" /> Vídeo del local</h3>
+            <PortfolioVideoViewer videos={[business.video_url]} />
           </CardContent></Card>
         )}
 

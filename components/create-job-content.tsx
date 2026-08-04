@@ -15,6 +15,8 @@ import { ArrowLeft, Briefcase, MapPin, Euro, Clock, Users, CheckCircle2, Zap, Im
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { AddressAutofill } from "@/components/address-autofill"
+import { createJobAction, activateFlashWithCreditAction } from "@/lib/actions"
+import { LANGUAGE_LIST } from "@/lib/profile-constants"
 
 interface Category {
   id: string
@@ -49,6 +51,15 @@ export function CreateJobContent({ userId }: { userId: string }) {
   const [flashDurationHours, setFlashDurationHours] = useState("24")
   const [flashImage, setFlashImage] = useState<File | null>(null)
   const [flashImagePreview, setFlashImagePreview] = useState<string | null>(null)
+  const [uniformRequired, setUniformRequired] = useState(false)
+  const [tpvRequired, setTpvRequired] = useState(false)
+  const [languagesRequired, setLanguagesRequired] = useState<string[]>([])
+
+  const toggleLanguage = (lang: string) => {
+    setLanguagesRequired((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    )
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -113,14 +124,83 @@ export function CreateJobContent({ userId }: { userId: string }) {
         }
       }
 
-      const { error } = await supabase.from("jobs").insert({
-        business_id: userId,
+      const position = isOtroSelected && otroCustomText
+        ? otroCustomText
+        : selectedSubcategoryName || selectedCategoryName
+
+      if (isFlash) {
+        // Flash offers stay inactive/invisible until the 5€ charge is
+        // confirmed server-side by the Stripe webhook - never for free - so
+        // this path inserts directly (is_active:false) instead of going
+        // through createJobAction, whose match-alert fan-out only makes
+        // sense once a job is actually live.
+        const { data: insertedJob, error } = await supabase
+          .from("jobs")
+          .insert({
+            business_id: userId,
+            title: formData.get("title") as string,
+            description: formData.get("description") as string,
+            category: selectedCategoryName,
+            position,
+            city: location,
+            latitude: locationCoords?.lat || null,
+            longitude: locationCoords?.lng || null,
+            contract_type: formData.get("workType") as string,
+            work_schedule: formData.get("schedule") as string,
+            salary_min: Number(formData.get("salaryMin")) || null,
+            salary_max: Number(formData.get("salaryMax")) || null,
+            experience_required: formData.get("experience") as string,
+            requirements: formData.get("requirements") as string,
+            benefits: formData.get("benefits") as string,
+            is_active: false,
+            is_flash: true,
+            image_url: imageUrl,
+          })
+          .select("id")
+          .single()
+
+        if (error || !insertedJob) {
+          setFormError("Error al publicar la oferta: " + (error?.message || "error desconocido"))
+          return
+        }
+
+        // Spend a free-flash credit (earned via canje de puntos) instead of
+        // charging Stripe, if the business has one available.
+        const creditResult = await activateFlashWithCreditAction(insertedJob.id, Number(flashDurationHours))
+        if (creditResult.success) {
+          setShowSuccess(true)
+          setTimeout(() => router.push("/my-jobs"), 2000)
+          return
+        }
+        if (creditResult.error && creditResult.error !== "no_credit") {
+          setFormError(creditResult.error)
+          return
+        }
+
+        const res = await fetch("/api/micropayments/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            featureType: "flash_job",
+            userId,
+            jobId: insertedJob.id,
+            flashDurationHours: Number(flashDurationHours),
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data.checkoutUrl) {
+          setFormError(data.error || "Error al iniciar el pago de la oferta flash")
+          return
+        }
+        window.location.href = data.checkoutUrl
+        return
+      }
+
+      const result = await createJobAction({
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         category: selectedCategoryName,
-        position: isOtroSelected && otroCustomText
-          ? otroCustomText
-          : selectedSubcategoryName || selectedCategoryName,
+        position,
         city: location,
         latitude: locationCoords?.lat || null,
         longitude: locationCoords?.lng || null,
@@ -131,16 +211,16 @@ export function CreateJobContent({ userId }: { userId: string }) {
         experience_required: formData.get("experience") as string,
         requirements: formData.get("requirements") as string,
         benefits: formData.get("benefits") as string,
-        is_active: true,
-        is_flash: isFlash,
-        flash_expires_at: isFlash
-          ? new Date(Date.now() + Number(flashDurationHours) * 60 * 60 * 1000).toISOString()
-          : null,
         image_url: imageUrl,
+        vacancies: Number(formData.get("vacancies")) || 1,
+        start_date: (formData.get("startDate") as string) || null,
+        uniform_required: uniformRequired,
+        languages_required: languagesRequired,
+        tpv_required: tpvRequired,
       })
 
-      if (error) {
-        setFormError("Error al publicar la oferta: " + error.message)
+      if (result.error) {
+        setFormError("Error al publicar la oferta: " + result.error)
         return
       }
 
@@ -383,6 +463,17 @@ export function CreateJobContent({ userId }: { userId: string }) {
                 <Label htmlFor="schedule">Horario</Label>
                 <Input id="schedule" name="schedule" placeholder="Ej: Lunes a Viernes, 9:00 - 17:00" />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vacancies">Nº de Vacantes</Label>
+                  <Input id="vacancies" name="vacancies" type="number" min={1} defaultValue={1} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Fecha de Incorporación</Label>
+                  <Input id="startDate" name="startDate" type="date" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -437,9 +528,39 @@ export function CreateJobContent({ userId }: { userId: string }) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <Label htmlFor="uniformRequired" className="font-normal">Uniforme requerido</Label>
+                <Switch id="uniformRequired" checked={uniformRequired} onCheckedChange={setUniformRequired} />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <Label htmlFor="tpvRequired" className="font-normal">Uso de TPV requerido</Label>
+                <Switch id="tpvRequired" checked={tpvRequired} onCheckedChange={setTpvRequired} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Idiomas requeridos</Label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGE_LIST.map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => toggleLanguage(lang)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        languagesRequired.includes(lang)
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-foreground border-border"
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="requirements">Otros Requisitos</Label>
-                <Textarea id="requirements" name="requirements" placeholder="Ej: Idiomas, certificaciones, habilidades específicas..." rows={3} />
+                <Textarea id="requirements" name="requirements" placeholder="Ej: certificaciones, habilidades específicas..." rows={3} />
               </div>
             </CardContent>
           </Card>
