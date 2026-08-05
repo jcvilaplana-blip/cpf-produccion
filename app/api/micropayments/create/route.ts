@@ -22,6 +22,22 @@ function getStripe() {
   })
 }
 
+// Stripe activa "Managed Payments" por defecto en cuentas nuevas: con él Stripe
+// pasa a ser vendedor de registro, calcula y liquida el IVA, y por eso exige un
+// código fiscal en cada producto creado al vuelo. Sin desactivarlo la sesión NI
+// SE CREA -"the product tax code is missing"-, así que el botón de pagar fallaba
+// tanto en suscripciones como en micropagos.
+//
+// Se desactiva porque es lo que la aplicación asume hoy: precios como importe
+// final, sin desglose de IVA en ninguna pantalla, y CamareroPorFavor como quien
+// factura. Activarlo es una decisión fiscal, no técnica.
+//
+// El cast existe porque el SDK v19 todavía no tipa este campo, más reciente que
+// la versión de API que tenemos fijada; el endpoint sí lo acepta.
+const MANAGED_PAYMENTS_OFF = {
+  managed_payments: { enabled: false },
+} as unknown as Stripe.Checkout.SessionCreateParams
+
 const FEATURE_PRICES = {
   highlight_profile: 99,  // 0.99€ in cents
   view_matches: 99,       // 0.99€ in cents
@@ -118,6 +134,8 @@ export async function POST(request: Request) {
     const stripe = getStripe()
     
     const session = await stripe.checkout.sessions.create({
+      // Ver la nota junto a MANAGED_PAYMENTS_OFF.
+      ...MANAGED_PAYMENTS_OFF,
       payment_method_types: ["card"],
       line_items: [
         {

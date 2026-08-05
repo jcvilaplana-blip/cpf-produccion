@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createClient as createServiceClient } from "@supabase/supabase-js"
+import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js"
 import { activateFeature, type MicropaymentRow } from "@/lib/payments/activate-feature"
 import { notifyFlashOfferCandidates } from "@/lib/payments/flash-fanout"
 import { notifyMatchingCandidates } from "@/lib/matching/notify-match-alerts"
+import { notifyUser } from "@/lib/notifications/create-notification"
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
@@ -19,6 +20,102 @@ function getServiceRoleClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return null
   return createServiceClient(url, key)
+}
+
+// `ReturnType<typeof createServiceClient>` da SupabaseClient<unknown> y no
+// acepta el cliente real. Mismo caso que en las rutas de creación de perfil.
+type ServiceClient = SupabaseClient<any, any, any>
+
+/**
+ * Refleja en la base de datos una suscripción activa de Stripe.
+ *
+ * El usuario y el plan viajan como metadatos de la propia suscripción (los
+ * pone el checkout), no en una tabla de correspondencias: así las renovaciones
+ * y las bajas, que llegan meses después y solo traen la suscripción, siguen
+ * sabiendo a quién pertenecen sin necesidad de guardar identificadores de
+ * Stripe en el perfil.
+ */
+async function applySubscription(
+  supabase: ServiceClient,
+  subscription: Stripe.Subscription,
+  fallbackMetadata?: Record<string, string>
+) {
+  const metadata = { ...(fallbackMetadata || {}), ...(subscription.metadata || {}) }
+  const userId = metadata.user_id
+  const planId = metadata.plan_id
+  if (!userId || !planId) {
+    console.error("Stripe webhook: suscripción sin user_id/plan_id en metadatos", subscription.id)
+    return
+  }
+
+  // Hasta cuándo está pagado, según Stripe: más fiable que sumar 30 días.
+  const periodEnd = (subscription as any).current_period_end as number | undefined
+  const expiresAt = periodEnd
+    ? new Date(periodEnd * 1000).toISOString()
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  if (planId === "premium-worker") {
+    await supabase
+      .from("profiles")
+      .update({
+        is_premium: true,
+        premium_expires_at: expiresAt,
+        subscription_tier: planId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+  } else {
+    // Planes de empresa. "premium-business" además marca el perfil premium.
+    await supabase
+      .from("business_profiles")
+      .update({
+        subscription_plan: planId,
+        subscription_expires_at: expiresAt,
+        ...(planId === "premium-business"
+          ? { is_premium: true, premium_expires_at: expiresAt }
+          : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+  }
+
+  await notifyUser(userId, {
+    title: "Suscripción activada",
+    body: `Tu ${metadata.plan_name || "plan"} está activo hasta el ${new Date(expiresAt).toLocaleDateString("es-ES")}.`,
+    type: "aviso",
+    link: "/subscribe",
+  })
+}
+
+/** Baja o impago: se retira el plan, pero no se borra el historial. */
+async function cancelSubscription(supabase: ServiceClient, subscription: Stripe.Subscription) {
+  const metadata = subscription.metadata || {}
+  const userId = metadata.user_id
+  const planId = metadata.plan_id
+  if (!userId) return
+
+  if (planId === "premium-worker") {
+    await supabase
+      .from("profiles")
+      .update({ is_premium: false, subscription_tier: null, updated_at: new Date().toISOString() })
+      .eq("id", userId)
+  } else {
+    await supabase
+      .from("business_profiles")
+      .update({
+        subscription_plan: null,
+        is_premium: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+  }
+
+  await notifyUser(userId, {
+    title: "Suscripción finalizada",
+    body: "Tu plan ya no está activo. Puedes volver a suscribirte cuando quieras.",
+    type: "aviso",
+    link: "/subscribe",
+  })
 }
 
 // Real server-side payment verification. Previously this endpoint was a
@@ -46,6 +143,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
 
+  const supabase = getServiceRoleClient()
+  if (!supabase) {
+    console.error("Stripe webhook: service role client not configured")
+    return NextResponse.json({ error: "Server not configured" }, { status: 500 })
+  }
+
+  // --- Suscripciones -------------------------------------------------------
+  // Hasta ahora este endpoint solo miraba `micropayment_id` y devolvía
+  // "received" para todo lo demás: una empresa pagaba su plan y no se le
+  // activaba nada, porque el checkout de suscripción manda `plan_id`.
+  if (event.type === "invoice.paid") {
+    // Renovación mensual: extiende la vigencia sin volver a activar nada.
+    const invoice = event.data.object as Stripe.Invoice
+    const subscriptionId = typeof (invoice as any).subscription === "string"
+      ? (invoice as any).subscription
+      : (invoice as any).subscription?.id
+    if (subscriptionId) {
+      try {
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+        await applySubscription(supabase, subscription)
+      } catch (err) {
+        console.error("Stripe webhook: no se pudo renovar la suscripción", err)
+      }
+    }
+    return NextResponse.json({ received: true })
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as Stripe.Subscription
+    await cancelSubscription(supabase, subscription)
+    return NextResponse.json({ received: true })
+  }
+
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription
+    // Impagos y cancelaciones dejan la suscripción en un estado que ya no da
+    // derecho al plan.
+    if (["canceled", "unpaid", "incomplete_expired"].includes(subscription.status)) {
+      await cancelSubscription(supabase, subscription)
+    } else if (subscription.status === "active" || subscription.status === "trialing") {
+      await applySubscription(supabase, subscription)
+    }
+    return NextResponse.json({ received: true })
+  }
+
   if (event.type !== "checkout.session.completed") {
     return NextResponse.json({ received: true })
   }
@@ -54,15 +196,28 @@ export async function POST(request: Request) {
   const metadata = session.metadata || {}
   const micropaymentId = metadata.micropayment_id
 
-  if (!micropaymentId) {
-    console.error("Stripe webhook: checkout.session.completed with no micropayment_id in metadata")
+  // Alta de suscripción: el checkout la crea, y aquí se refleja en la BD.
+  if (!micropaymentId && metadata.plan_id) {
+    const subscriptionId = typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id
+    try {
+      if (subscriptionId) {
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+        await applySubscription(supabase, subscription, metadata)
+      }
+    } catch (err) {
+      console.error("Stripe webhook: no se pudo activar la suscripción", err)
+      // 500 para que Stripe reintente: el cobro se hizo y el plan tiene que
+      // acabar activándose.
+      return NextResponse.json({ error: "activation failed" }, { status: 500 })
+    }
     return NextResponse.json({ received: true })
   }
 
-  const supabase = getServiceRoleClient()
-  if (!supabase) {
-    console.error("Stripe webhook: service role client not configured")
-    return NextResponse.json({ error: "Server not configured" }, { status: 500 })
+  if (!micropaymentId) {
+    console.error("Stripe webhook: checkout.session.completed sin micropayment_id ni plan_id")
+    return NextResponse.json({ received: true })
   }
 
   const { data: micropayment } = await supabase
