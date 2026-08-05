@@ -544,6 +544,17 @@ export async function saveProfileAction(workerId: string) {
 // =====================================================
 
 export async function updateProfileAction(updates: Record<string, unknown>) {
+  try {
+    return await updateProfile(updates)
+  } catch (err) {
+    // Any throw here reaches the browser as an opaque server-action failure,
+    // so convert it into a message the edit screen can actually show.
+    console.error("updateProfileAction failed:", err)
+    return { error: err instanceof Error ? err.message : "Error al guardar el perfil" }
+  }
+}
+
+async function updateProfile(updates: Record<string, unknown>) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "No autenticado" }

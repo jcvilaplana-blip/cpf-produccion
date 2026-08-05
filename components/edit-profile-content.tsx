@@ -276,7 +276,15 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
       }
 
       const result = await updateProfileAction(updates)
-      if (result.error) {
+
+      // A server action that fails to reach the server (deploy skew, expired
+      // session, proxy error) can resolve to null/undefined - reading .error
+      // off it used to throw and surface as the opaque "Error inesperado".
+      if (!result) {
+        setSaveError(
+          "No se pudo contactar con el servidor. Recarga la página e inténtalo de nuevo."
+        )
+      } else if (result.error) {
         // Translate common errors to Spanish
         const errorMsg = result.error
           .replace("Could not find", "No se encontro")
@@ -289,7 +297,10 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         setTimeout(() => setSaveSuccess(false), 3000)
       }
     } catch (err) {
-      setSaveError("Error inesperado al guardar el perfil")
+      // Never swallow the cause: without it this screen is undebuggable.
+      console.error("handleSave failed:", err)
+      const detail = err instanceof Error ? err.message : String(err)
+      setSaveError(`Error al guardar el perfil: ${detail}`)
     }
     setSaving(false)
   }
