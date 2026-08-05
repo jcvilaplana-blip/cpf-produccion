@@ -161,6 +161,49 @@ export function MessagesContent({
     loadApplication()
   }, [selectedConversation, profile, supabase, user.id, loadActiveInterview])
 
+  // El seguimiento tiene que decir lo mismo en los dos chats. Sin esto, quien
+  // contrata o cancela ve desaparecer el bloque al instante, pero al otro le
+  // sigue apareciendo -con botones que ya no valen- hasta que recarga.
+  // Escucha la entrevista y la candidatura de esta conversación.
+  useEffect(() => {
+    const applicationId = activeApplication?.id
+    if (!applicationId) return
+
+    const channel = supabase
+      .channel(`process:${applicationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "interview_requests",
+          filter: `application_id=eq.${applicationId}`,
+        },
+        // loadActiveInterview solo devuelve pending/confirmed, así que en
+        // cuanto pasa a contratado, no contratado o cancelada queda en null y
+        // el bloque se retira solo en ambos lados.
+        () => loadActiveInterview(applicationId)
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "applications",
+          filter: `id=eq.${applicationId}`,
+        },
+        (payload) => {
+          const status = (payload.new as { status?: string })?.status
+          if (status) setActiveApplication((prev) => (prev ? { ...prev, status } : prev))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, activeApplication?.id, loadActiveInterview])
+
   const handleApplicationStatusChange = async (newStatus: string) => {
     if (!activeApplication) return
     setIsUpdatingStatus(true)
@@ -311,6 +354,18 @@ export function MessagesContent({
 
     setIsSending(false)
   }
+
+  // Qué justifica mostrar el bloque de seguimiento. Se calcula por contenido y
+  // no por "existe una candidatura": tras cerrar el proceso -contratado, no
+  // contratado o entrevista cancelada- la candidatura sigue existiendo, y
+  // usarla como condición dejaba una franja gris vacía sobre el campo de
+  // escribir. Lo mismo le pasaba al candidato con una candidatura pendiente,
+  // porque esos botones son solo del establecimiento.
+  const applicationStatus = activeApplication?.status
+  const showsBusinessActions =
+    profile?.user_type === "business" && ["pending", "interview"].includes(applicationStatus || "")
+  const showsRating = applicationStatus === "accepted"
+  const hasProcessInfo = Boolean(activeInterview) || showsBusinessActions || showsRating
 
   const filteredConversations = conversations.filter((conv) =>
     conv.other_participant?.display_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -623,7 +678,7 @@ export function MessagesContent({
                       tener que subir el scroll del chat. El contenedor solo
                       aparece si hay algo que mostrar, para no dejar una
                       franja vacía en las conversaciones sin proceso. */}
-                  {selectedConversation && (activeApplication || activeInterview) && (
+                  {selectedConversation && hasProcessInfo && (
                   <div className="border-t bg-muted/20 px-3 py-2 space-y-2 max-h-[42vh] overflow-y-auto shrink-0">
                   {/* Interview / hire confirmation + mutual rating */}
                   {selectedConversation && activeApplication && (
