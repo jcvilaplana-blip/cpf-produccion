@@ -11,6 +11,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { RatingDialog } from "@/components/rating-dialog"
+import { BUSINESS_RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 
 interface BusinessRatingsContentProps {
   businessId: string
@@ -24,6 +25,7 @@ interface ReviewRow {
   created_at: string
   reviewer_name: string
   reviewer_avatar: string | null
+  criteria: Record<string, number> | null
 }
 
 export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRatingsContentProps) {
@@ -54,7 +56,7 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
 
       const { data: ratingsData } = await supabase
         .from("ratings")
-        .select("id, score, comment, created_at, from_user_id")
+        .select("id, score, comment, created_at, from_user_id, criteria")
         .eq("to_user_id", businessId)
         .order("created_at", { ascending: false })
 
@@ -74,6 +76,10 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
             created_at: r.created_at,
             reviewer_name: reviewerMap.get(r.from_user_id)?.display_name || "Usuario",
             reviewer_avatar: reviewerMap.get(r.from_user_id)?.avatar_url || null,
+            criteria:
+              typeof r.criteria === "string"
+                ? (() => { try { return JSON.parse(r.criteria) } catch { return null } })()
+                : (r.criteria as Record<string, number> | null),
           }))
         )
 
@@ -123,6 +129,19 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
   }
 
   const filteredReviews = filter === "all" ? reviews : reviews.filter((r) => r.score === filter)
+
+  // Media por criterio. Se calcula aquí, de las reseñas ya cargadas, en lugar
+  // de pedir otro endpoint: los datos necesarios ya están en memoria.
+  const criteriaAverages = BUSINESS_RATING_CRITERIA.map((criterion) => {
+    const values = reviews
+      .map((review) => readCriterion(review.criteria, criterion))
+      .filter((value): value is number => typeof value === "number")
+    if (values.length === 0) return null
+    return {
+      label: criterion.label,
+      value: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10,
+    }
+  }).filter(Boolean) as { label: string; value: number }[]
 
   const renderStars = (score: number) =>
     Array.from({ length: 5 }, (_, i) => (
@@ -214,6 +233,29 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
             </div>
           </CardContent>
         </Card>
+
+        {/* Medias por criterio. Solo aparece cuando hay valoraciones con
+            desglose: una lista de guiones no informa de nada. */}
+        {criteriaAverages.length > 0 && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h3 className="font-semibold mb-3">Criterios de valoración</h3>
+              <div className="divide-y">
+                {criteriaAverages.map((row) => (
+                  <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <p className="min-w-0 flex-1 text-sm text-muted-foreground">{row.label}</p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex items-center gap-0.5">{renderStars(Math.round(row.value))}</div>
+                      <span className="w-8 text-right text-sm font-semibold tabular-nums">
+                        {row.value.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {reviews.length > 0 && (
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">

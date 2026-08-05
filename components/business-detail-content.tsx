@@ -13,10 +13,11 @@ import { requestToWorkHereAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
 import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
+import { BUSINESS_RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 import {
   ArrowLeft, MapPin, Star, Briefcase, CheckCircle, MessageCircle, Heart,
   Send, X, Loader2, Phone, Globe, Clock, Sparkles,
-  Image as ImageIcon, Video as VideoIcon,
+  Image as ImageIcon, Video as VideoIcon, ChevronRight,
 } from "lucide-react"
 
 interface BusinessData {
@@ -25,6 +26,7 @@ interface BusinessData {
   type: string
   location: string
   rating: number
+  totalRatings: number
   activeJobs: number
   logo: string
   verified: boolean
@@ -51,6 +53,9 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [jobs, setJobs] = useState<any[]>([])
+  // Medias por criterio de las valoraciones que le han dejado los candidatos.
+  const [criteriaSummary, setCriteriaSummary] = useState<Record<string, number>>({})
+  const [ratingsTotal, setRatingsTotal] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [isPremiumWorker, setIsPremiumWorker] = useState(false)
@@ -64,11 +69,25 @@ export function BusinessDetailContent({ id }: { id: string }) {
       const { data: bp } = await supabase.from("business_profiles").select("*").eq("id", id).single()
       if (bp) {
         const { data: profile } = await supabase.from("profiles").select("display_name, location, rating, total_ratings, phone").eq("id", id).single()
+
+        // El mismo endpoint que usa el perfil del candidato: agrega los
+        // criterios de cualquier perfil, sea trabajador o establecimiento.
+        fetch(`/api/profile/${id}/ratings`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((payload) => {
+            if (!payload?.data) return
+            setCriteriaSummary(payload.data.criteria_summary || {})
+            setRatingsTotal(payload.data.total || 0)
+          })
+          .catch(() => {})
         const { data: jobsData } = await supabase.from("jobs").select("*").eq("business_id", id).eq("is_active", true).order("created_at", { ascending: false })
         setBusiness({
           id: bp.id, display_name: bp.company_name || profile?.display_name || "Empresa",
           type: bp.business_type || "General", location: bp.city || bp.address || profile?.location || "Espana",
-          rating: profile?.rating || 4.5, activeJobs: jobsData?.length || 0,
+          // Sin valoraciones, 0: antes ponía 4.5 por defecto y el perfil
+          // mostraba una nota que nadie había dado.
+          rating: profile?.rating ?? 0,
+          totalRatings: profile?.total_ratings ?? 0, activeJobs: jobsData?.length || 0,
           logo: bp.company_logo_url || "/images/companies/el-gourmet.jpg", verified: bp.verified || false,
           description: bp.company_description || bp.service_description || "", source: "supabase",
           phone: bp.phone || profile?.phone, website: bp.website, city: bp.city, address: bp.address,
@@ -210,9 +229,56 @@ export function BusinessDetailContent({ id }: { id: string }) {
       </div>
 
       <div className="px-4 py-4 space-y-4">
+        {/* Criterios de valoración, como en el perfil del candidato pero con
+            los que un trabajador puede juzgar de un local. Solo aparece si
+            alguien ha valorado: una lista de guiones no aporta nada. */}
+        {(() => {
+          const rows = BUSINESS_RATING_CRITERIA
+            .map((criterion) => ({ label: criterion.label, value: readCriterion(criteriaSummary, criterion) }))
+            .filter((row) => typeof row.value === "number")
+          if (rows.length === 0) return null
+          return (
+            <div className="rounded-2xl border bg-card p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-[15px] font-semibold">Criterios de valoración</h3>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+                  {ratingsTotal} {ratingsTotal === 1 ? "valoración" : "valoraciones"}
+                </span>
+              </div>
+              <div className="divide-y">
+                {rows.map((row) => (
+                  <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{row.label}</p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3.5 w-3.5 ${i < Math.round(row.value!) ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="w-7 text-right text-[13px] font-semibold tabular-nums">
+                        {row.value!.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href={`/business/${id}/ratings`}
+                className="mt-3 flex items-center justify-between rounded-xl bg-muted/60 px-4 py-2.5 text-sm font-medium"
+              >
+                Ver todas las reseñas
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            </div>
+          )
+        })()}
+
         <div className="flex items-center justify-around bg-muted/50 rounded-2xl py-3 px-2">
           <Link href={`/business/${id}/ratings`} className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity">
-            <div className="flex items-center gap-1"><Star className="h-5 w-5 fill-yellow-400 text-yellow-400" /><span className="font-bold text-lg">{business.rating}</span></div>
+            <div className="flex items-center gap-1"><Star className="h-5 w-5 fill-yellow-400 text-yellow-400" /><span className="font-bold text-lg">{business.totalRatings > 0 ? business.rating.toFixed(1) : "—"}</span></div>
             <span className="text-xs text-muted-foreground">Valoración</span>
           </Link>
           <div className="w-px h-8 bg-border" />
