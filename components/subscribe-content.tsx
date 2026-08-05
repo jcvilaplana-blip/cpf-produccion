@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { PaymentSummaryDialog } from "@/components/payment-summary-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,17 +42,26 @@ export function SubscribeContent({
     }
   }, [redsysData])
 
-  const handleSubscribe = async (planId: string, planName: string, priceInCents: number) => {
-    if (planId === "free") return
+  // Pulsar el plan ya no va directo a la pasarela: primero se muestra el
+  // desglose (servicio + IVA + total) y solo al confirmar se abre Stripe.
+  const [summaryPlan, setSummaryPlan] = useState<{ id: string; name: string; priceInCents: number } | null>(null)
 
+  const handleSubscribe = (planId: string, planName: string, priceInCents: number) => {
+    if (planId === "free") return
+    setSummaryPlan({ id: planId, name: planName, priceInCents })
+  }
+
+  const startCheckout = async () => {
+    if (!summaryPlan) return
     setIsLoading(true)
-    setLoadingPlanId(planId)
+    setLoadingPlanId(summaryPlan.id)
 
     try {
+      // Solo se manda el id: el precio lo pone el servidor desde su catálogo.
       const response = await fetch("/api/payments/stripe/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, planName, amount: priceInCents }),
+        body: JSON.stringify({ planId: summaryPlan.id }),
       })
 
       const data = await response.json()
@@ -66,6 +76,7 @@ export function SubscribeContent({
       alert(error instanceof Error ? error.message : "Error al iniciar el proceso de pago")
       setIsLoading(false)
       setLoadingPlanId(null)
+      setSummaryPlan(null)
     }
   }
 
@@ -250,6 +261,20 @@ export function SubscribeContent({
           <input type="hidden" name="Ds_MerchantParameters" value={redsysData.Ds_MerchantParameters} />
           <input type="hidden" name="Ds_Signature" value={redsysData.Ds_Signature} />
         </form>
+      )}
+
+      {/* Desglose del importe antes de ir a la pasarela */}
+      {summaryPlan && (
+        <PaymentSummaryDialog
+          open={Boolean(summaryPlan)}
+          onOpenChange={(open) => { if (!open) setSummaryPlan(null) }}
+          concept={summaryPlan.name}
+          detail="Suscripción mensual"
+          totalCents={summaryPlan.priceInCents}
+          recurring
+          loading={isLoading}
+          onConfirm={startCheckout}
+        />
       )}
     </div>
   )

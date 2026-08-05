@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { breakdownFromTotal, VAT_LABEL } from "@/lib/tax"
 import Stripe from "stripe"
 
 // Initialize Stripe lazily to avoid build-time errors
@@ -28,9 +29,9 @@ function getStripe() {
 // SE CREA -"the product tax code is missing"-, así que el botón de pagar fallaba
 // tanto en suscripciones como en micropagos.
 //
-// Se desactiva porque es lo que la aplicación asume hoy: precios como importe
-// final, sin desglose de IVA en ninguna pantalla, y CamareroPorFavor como quien
-// factura. Activarlo es una decisión fiscal, no técnica.
+// Se desactiva porque CamareroPorFavor es quien factura y liquida el IVA: el
+// desglose se calcula aquí (lib/tax.ts) y viaja como una línea propia del
+// cobro, en lugar de delegar el impuesto en Stripe como vendedor de registro.
 //
 // El cast existe porque el SDK v19 todavía no tipa este campo, más reciente que
 // la versión de API que tenemos fijada; el endpoint sí lo acepta.
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
       )
     }
 
+    // FEATURE_PRICES es el importe final con IVA incluido; aquí se desglosa.
     const price = FEATURE_PRICES[featureType as keyof typeof FEATURE_PRICES]
     const name = FEATURE_NAMES[featureType as keyof typeof FEATURE_NAMES]
     const validityDays = FEATURE_VALIDITY_DAYS[featureType as keyof typeof FEATURE_VALIDITY_DAYS]
@@ -103,6 +105,8 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
 
     // Calculate valid_until date
+    const { baseCents, vatCents, totalCents } = breakdownFromTotal(price)
+
     const validUntil = new Date()
     validUntil.setDate(validUntil.getDate() + validityDays)
 
@@ -112,7 +116,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         feature_type: featureType,
-        amount_cents: price,
+        amount_cents: totalCents,
         currency: "eur",
         status: "pending",
         valid_until: validUntil.toISOString(),
@@ -137,6 +141,8 @@ export async function POST(request: Request) {
       // Ver la nota junto a MANAGED_PAYMENTS_OFF.
       ...MANAGED_PAYMENTS_OFF,
       payment_method_types: ["card"],
+      // Servicio e IVA como líneas separadas, para que el desglose se vea
+      // también en la pantalla de Stripe y no solo en el resumen previo.
       line_items: [
         {
           price_data: {
@@ -145,7 +151,15 @@ export async function POST(request: Request) {
               name: `CamareroPorFavor - ${name}`,
               description: `Acceso a ${name} por ${validityDays} días`,
             },
-            unit_amount: price,
+            unit_amount: baseCents,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "eur",
+            product_data: { name: VAT_LABEL },
+            unit_amount: vatCents,
           },
           quantity: 1,
         },

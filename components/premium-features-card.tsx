@@ -1,6 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { PaymentSummaryDialog } from "@/components/payment-summary-dialog"
+import { formatEuros } from "@/lib/tax"
+
+// Mismo importe que FEATURE_PRICES en app/api/micropayments/create/route.ts.
+// El servidor es quien decide el cobro; esto solo es lo que se enseña.
+const HIGHLIGHT_PROFILE_PRICE_CENTS = 99
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -66,6 +72,9 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
   }
 
   // Handle highlight profile purchase
+  // Antes de la pasarela se muestra el desglose del importe.
+  const [showSummary, setShowSummary] = useState(false)
+
   const handleHighlightProfile = async () => {
     if (!user?.id) return
     setLoading("highlight")
@@ -200,14 +209,14 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
               ) : (
                 <Button
                   size="sm"
-                  onClick={handleHighlightProfile}
+                  onClick={() => setShowSummary(true)}
                   disabled={loading === "highlight"}
                   className="bg-[#01A89E] hover:bg-[#01A89E]/90"
                 >
                   {loading === "highlight" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>0,99€</>
+                    <>{formatEuros(HIGHLIGHT_PROFILE_PRICE_CENTS)}</>
                   )}
                 </Button>
               )}
@@ -313,6 +322,17 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Desglose (servicio + IVA + total) antes de abrir Stripe */}
+      <PaymentSummaryDialog
+        open={showSummary}
+        onOpenChange={setShowSummary}
+        concept="Destacar mi perfil"
+        detail="Aparece primero en las búsquedas durante 7 días"
+        totalCents={HIGHLIGHT_PROFILE_PRICE_CENTS}
+        loading={loading === "highlight"}
+        onConfirm={handleHighlightProfile}
+      />
     </>
   )
 }
