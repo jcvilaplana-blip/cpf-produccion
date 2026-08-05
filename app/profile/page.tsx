@@ -66,12 +66,20 @@ export default function ProfilePage() {
         if (appsData) setApplications(appsData)
       }
 
-      const { data: ratingsData } = await supabase
-        .from("ratings")
-        .select("*")
-        .eq("rated_user_id", userId)
-        .order("created_at", { ascending: false })
-      if (ratingsData) setRatings(ratingsData)
+      // Vía la API de valoraciones en lugar de consultar la tabla a pelo: ya
+      // resuelve quién escribió cada reseña (la tabla solo guarda su id) y
+      // devuelve la forma que espera ProfileContent. Antes filtraba por
+      // `rated_user_id`, una columna que no existe -las valoraciones propias
+      // salían siempre vacías- y tampoco traía al reseñador.
+      try {
+        const res = await fetch(`/api/profile/${userId}/ratings`)
+        if (res.ok) {
+          const { data } = await res.json()
+          setRatings(data?.reviews || [])
+        }
+      } catch {
+        // Sin valoraciones visibles, pero el resto del perfil carga igual.
+      }
 
       setLoadingData(false)
     }

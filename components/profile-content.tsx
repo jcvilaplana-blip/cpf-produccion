@@ -536,17 +536,20 @@ export function ProfileContent({
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={rating.rater.avatar_url || "/placeholder.svg"} />
+                        <AvatarImage src={rating.reviewer_avatar || undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {rating.rater.display_name[0]}
+                          {(rating.reviewer_name || "?")[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">{rating.rater.display_name}</h4>
-                          <div className="flex items-center gap-1">{renderStars(rating.rating)}</div>
+                          <h4 className="font-semibold">{rating.reviewer_name || "Empresa"}</h4>
+                          <div className="flex items-center gap-1">{renderStars(rating.score)}</div>
                         </div>
-                        {rating.review && <p className="text-sm text-muted-foreground">{rating.review}</p>}
+                        {rating.job_title && (
+                          <p className="text-xs text-muted-foreground mb-1">Oferta: {rating.job_title}</p>
+                        )}
+                        {rating.comment && <p className="text-sm text-muted-foreground">{rating.comment}</p>}
                         <p className="text-xs text-muted-foreground mt-2">
                           {new Date(rating.created_at).toLocaleDateString("es-ES")}
                         </p>
