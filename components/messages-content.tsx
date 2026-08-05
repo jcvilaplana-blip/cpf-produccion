@@ -482,6 +482,7 @@ export function MessagesContent({
           onOpenChange={setShowRatingDialog}
           ratedUserId={selectedConversation.other_participant?.id || ""}
           ratedUserName={selectedConversation.other_participant?.display_name || "Usuario"}
+          ratedUserType={selectedConversation.other_participant?.user_type as "worker" | "business" | undefined}
           jobId={activeApplication.job_id}
           onSuccess={() => setAlreadyRated(true)}
         />

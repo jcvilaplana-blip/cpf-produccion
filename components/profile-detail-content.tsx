@@ -15,6 +15,7 @@ import useSWR from "swr"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
 import { computeDisplayStatus } from "@/lib/profile-status"
+import { RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 import { saveProfileAction } from "@/lib/actions"
 import { isProfileSaved } from "@/lib/supabase/queries"
 import { cn } from "@/lib/utils"
@@ -43,15 +44,6 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
   "prácticas": "Prácticas",
 }
 
-const RATING_CRITERIA = [
-  { keys: ["punctuality", "puntualidad"], label: "Puntualidad" },
-  { keys: ["attitude", "actitud"], label: "Actitud y predisposición" },
-  { keys: ["learning_speed", "rapidez_aprendizaje"], label: "Rapidez de aprendizaje" },
-  { keys: ["problem_solving", "resolucion_problemas"], label: "Resolución de problemas" },
-  { keys: ["hygiene", "higiene"], label: "Higiene y presentación" },
-  { keys: ["team_adaptation", "adaptacion_equipo"], label: "Adaptación al equipo" },
-  { keys: ["contract_fulfillment", "cumplimiento_contrato"], label: "Cumplimiento del contrato" },
-]
 
 /** Parses a DB column that may arrive as an array, a JSON string, or null. */
 function parseList(raw: unknown): any[] {
@@ -298,9 +290,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
 
   const criteriaFields = RATING_CRITERIA.map((criteria) => ({
     label: criteria.label,
-    value: criteria.keys
-      .map((key) => ratingCriteriaSummary[key])
-      .find((value) => typeof value === "number") as number | undefined,
+    value: readCriterion(ratingCriteriaSummary, criteria),
   }))
 
   const rating: number = typeof worker.rating === "number" ? worker.rating : 0

@@ -8,18 +8,10 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Star, Users, Loader2, MessageSquareQuote, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-const RATING_CRITERIA = [
-  { keys: ["punctuality", "puntualidad"], label: "Puntualidad" },
-  { keys: ["attitude", "actitud"], label: "Actitud y predisposición" },
-  { keys: ["learning_speed", "rapidez_aprendizaje"], label: "Rapidez de aprendizaje" },
-  { keys: ["problem_solving", "resolucion_problemas"], label: "Resolución de problemas" },
-  { keys: ["hygiene", "higiene"], label: "Higiene y presentación" },
-  { keys: ["team_adaptation", "adaptacion_equipo"], label: "Adaptación al equipo" },
-  { keys: ["contract_fulfillment", "cumplimiento_contrato"], label: "Cumplimiento del contrato" },
-]
 
 interface Review {
   id: string
@@ -74,9 +66,7 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
 
   const criteriaFields = RATING_CRITERIA.map((criteria) => ({
     label: criteria.label,
-    value: criteria.keys
-      .map((key) => criteriaSummary[key])
-      .find((value) => typeof value === "number") as number | undefined,
+    value: readCriterion(criteriaSummary, criteria),
   })).filter((c) => typeof c.value === "number")
 
   const roles: string[] = (() => {
@@ -310,9 +300,7 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
                 {review.criteria && Object.keys(review.criteria).length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3">
                     {RATING_CRITERIA.map((criteria) => {
-                      const value = criteria.keys
-                        .map((key) => review.criteria?.[key])
-                        .find((v) => typeof v === "number")
+                      const value = readCriterion(review.criteria, criteria)
                       if (typeof value !== "number") return null
                       return (
                         <span

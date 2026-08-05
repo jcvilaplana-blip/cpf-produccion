@@ -281,6 +281,9 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
           onOpenChange={setShowRatingDialog}
           ratedUserId={businessId}
           ratedUserName={business.name}
+          // Aquí el valorado es siempre un establecimiento: los siete criterios
+          // describen a un trabajador y no aplican.
+          ratedUserType="business"
           jobId={eligibleJobId}
           onSuccess={() => setAlreadyRated(true)}
         />
