@@ -31,6 +31,16 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    // Capgo sirve los assets web desde un bundle local que él gestiona, y
+    // `server.url` le dice al webview que cargue desde un servidor remoto: los
+    // dos compiten por lo mismo y el resultado es una pantalla en blanco.
+    // Aquí sobra además: al cargar del servidor, cada despliegue web llega
+    // solo, sin necesidad de actualizaciones OTA.
+    CapacitorUpdater: {
+      autoUpdate: false,
+      autoDeleteFailed: false,
+      resetWhenUpdate: false,
+    },
   },
   // The native bundle in `out/` is a static export, and scripts/build-native.mjs
   // has to stub every server component in it (they cannot be exported), so the
