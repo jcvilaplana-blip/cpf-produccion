@@ -1,5 +1,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
+// A qué servidor apunta la app móvil. Se puede sobreescribir sin tocar código:
+//   CAPACITOR_SERVER_URL=https://camareroporfavor.com npm run cap:sync
+// Al migrar al servidor definitivo hay que cambiar este valor (o exportar la
+// variable): si no, la app instalada seguirá cargando el de desarrollo.
+const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://cpf.fullstark.es';
+
 const config: CapacitorConfig = {
   appId: 'com.camareroporfavor.app',
   appName: 'CPF',
@@ -32,7 +38,7 @@ const config: CapacitorConfig = {
   // is what makes server components, API routes and dynamic routes work in the
   // app. Do not remove this block: without it the APK shows only the footer.
   server: {
-    url: 'https://cpf.fullstark.es',
+    url: SERVER_URL,
     cleartext: false,
     androidScheme: 'https',
     iosScheme: 'https',

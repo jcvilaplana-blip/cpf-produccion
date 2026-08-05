@@ -18,6 +18,9 @@ yarn-error.log*
 
 # env files
 .env*
+# ...salvo la plantilla, que no lleva secretos y hace falta para montar
+# un servidor nuevo (.env.local sí queda fuera del repositorio).
+!.env.example
 
 # vercel
 .vercel
