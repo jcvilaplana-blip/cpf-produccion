@@ -418,160 +418,6 @@ export function MessagesContent({
             )}
           </div>
 
-          {/* Interview / hire confirmation + mutual rating */}
-          {selectedConversation && activeApplication && (
-            <div className="flex flex-wrap items-center gap-2 px-1 pb-3 pt-1">
-              {profile?.user_type === "business" &&
-                ["pending", "interview"].includes(activeApplication.status) && (
-                  <>
-                    {activeApplication.status === "pending" && !activeInterview && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => setShowInterviewDialog(true)}
-                      >
-                        <CalendarCheck className="h-3 w-3 mr-1" />
-                        Citar entrevista
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs bg-green-600 hover:bg-green-700"
-                      disabled={isUpdatingStatus}
-                      onClick={() => handleApplicationStatusChange("accepted")}
-                    >
-                      <Check className="h-3 w-3 mr-1" />
-                      Confirmar contratación
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs text-destructive"
-                      disabled={isUpdatingStatus}
-                      onClick={() => handleApplicationStatusChange("rejected")}
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Rechazar
-                    </Button>
-                  </>
-                )}
-              {activeApplication.status === "accepted" && !alreadyRated && (
-                <Button
-                  size="sm"
-                  className="h-7 text-xs bg-primary hover:bg-primary/90"
-                  onClick={() => setShowRatingDialog(true)}
-                >
-                  <Star className="h-3 w-3 mr-1" />
-                  Valorar a {selectedConversation.other_participant?.display_name}
-                </Button>
-              )}
-              {activeApplication.status === "accepted" && alreadyRated && (
-                <Badge variant="outline" className="h-7 text-xs px-2 flex items-center gap-1 border-0 bg-emerald-50 text-emerald-700">
-                  <Check className="h-3 w-3" />
-                  Ya has valorado esta contratación
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Active interview request banner */}
-          {selectedConversation && activeInterview && (
-            <div className="mx-1 mb-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs space-y-1.5">
-              <div className="flex items-center gap-1.5 font-medium">
-                <CalendarCheck className="h-3.5 w-3.5 text-[#01A89E]" />
-                Entrevista {activeInterview.status === "pending" ? "propuesta" : "confirmada"}:{" "}
-                {new Date(activeInterview.scheduled_at).toLocaleString("es-ES", {
-                  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                })}{" "}
-                · {INTERVIEW_TYPE_LABELS[activeInterview.interview_type]}
-                {activeInterview.interview_type === "other" && activeInterview.other_type_detail
-                  ? ` (${activeInterview.other_type_detail})`
-                  : ""}
-              </div>
-              {activeInterview.rescheduled_count ? (
-                <p className="text-[11px] text-amber-700">
-                  Fecha cambiada {activeInterview.rescheduled_count}{" "}
-                  {activeInterview.rescheduled_count === 1 ? "vez" : "veces"}
-                  {activeInterview.reschedule_reason ? ` · ${activeInterview.reschedule_reason}` : ""}
-                </p>
-              ) : null}
-
-              <div className="flex flex-wrap gap-2">
-                {/* Confirmar: siempre lo hace quien NO propuso la fecha vigente. */}
-                {activeInterview.status === "pending" &&
-                  activeInterview.last_proposed_by !== user.id && (
-                    <Button
-                      size="sm"
-                      className="h-6 text-[11px] bg-green-600 hover:bg-green-700"
-                      disabled={isUpdatingInterview}
-                      onClick={() => handleInterviewResponse("confirmed")}
-                    >
-                      Confirmar
-                    </Button>
-                  )}
-                {activeInterview.status === "pending" &&
-                  activeInterview.last_proposed_by === user.id && (
-                    <span className="text-[11px] text-muted-foreground py-1">
-                      Esperando confirmación de la otra parte
-                    </span>
-                  )}
-
-                {/* Cancelar y reprogramar: ambos roles, mientras siga viva. */}
-                {["pending", "confirmed"].includes(activeInterview.status) && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 text-[11px]"
-                      onClick={() => setInterviewDialog({ open: true, mode: "reschedule" })}
-                    >
-                      <CalendarClock className="h-3 w-3 mr-1" />
-                      Cambiar fecha
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 text-[11px] text-destructive"
-                      onClick={() => setInterviewDialog({ open: true, mode: "cancel" })}
-                    >
-                      Cancelar
-                    </Button>
-                  </>
-                )}
-
-                {/* Cierre tras celebrarse: solo el establecimiento. */}
-                {activeInterview.status === "confirmed" && profile?.user_type === "business" && (
-                  <div className="w-full mt-1 pt-2 border-t">
-                    <p className="text-[11px] text-muted-foreground mb-1.5">
-                      Cuando termine la entrevista, indica el resultado:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        className="h-7 text-[11px] bg-green-600 hover:bg-green-700"
-                        disabled={isUpdatingInterview}
-                        onClick={() => handleInterviewResolve("approved")}
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Candidato contratado
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-[11px]"
-                        disabled={isUpdatingInterview}
-                        onClick={() => handleInterviewResolve("not_hired")}
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        No contratado
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
@@ -771,6 +617,170 @@ export function MessagesContent({
                     )}
                   </div>
 
+                  {/* Seguimiento del proceso: candidatura y entrevista.
+                      Va aquí, pegado al campo de escribir, y no en la
+                      cabecera: así queda siempre a la vista de los dos sin
+                      tener que subir el scroll del chat. El contenedor solo
+                      aparece si hay algo que mostrar, para no dejar una
+                      franja vacía en las conversaciones sin proceso. */}
+                  {selectedConversation && (activeApplication || activeInterview) && (
+                  <div className="border-t bg-muted/20 px-3 py-2 space-y-2 max-h-[42vh] overflow-y-auto shrink-0">
+                  {/* Interview / hire confirmation + mutual rating */}
+                  {selectedConversation && activeApplication && (
+                    <div className="flex flex-wrap items-center gap-2 px-1 pb-3 pt-1">
+                      {profile?.user_type === "business" &&
+                        ["pending", "interview"].includes(activeApplication.status) && (
+                          <>
+                            {activeApplication.status === "pending" && !activeInterview && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => setShowInterviewDialog(true)}
+                              >
+                                <CalendarCheck className="h-3 w-3 mr-1" />
+                                Citar entrevista
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                              disabled={isUpdatingStatus}
+                              onClick={() => handleApplicationStatusChange("accepted")}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Confirmar contratación
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs text-destructive"
+                              disabled={isUpdatingStatus}
+                              onClick={() => handleApplicationStatusChange("rejected")}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Rechazar
+                            </Button>
+                          </>
+                        )}
+                      {activeApplication.status === "accepted" && !alreadyRated && (
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-primary hover:bg-primary/90"
+                          onClick={() => setShowRatingDialog(true)}
+                        >
+                          <Star className="h-3 w-3 mr-1" />
+                          Valorar a {selectedConversation.other_participant?.display_name}
+                        </Button>
+                      )}
+                      {activeApplication.status === "accepted" && alreadyRated && (
+                        <Badge variant="outline" className="h-7 text-xs px-2 flex items-center gap-1 border-0 bg-emerald-50 text-emerald-700">
+                          <Check className="h-3 w-3" />
+                          Ya has valorado esta contratación
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Active interview request banner */}
+                  {selectedConversation && activeInterview && (
+                    <div className="mx-1 mb-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <CalendarCheck className="h-3.5 w-3.5 text-[#01A89E]" />
+                        Entrevista {activeInterview.status === "pending" ? "propuesta" : "confirmada"}:{" "}
+                        {new Date(activeInterview.scheduled_at).toLocaleString("es-ES", {
+                          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                        })}{" "}
+                        · {INTERVIEW_TYPE_LABELS[activeInterview.interview_type]}
+                        {activeInterview.interview_type === "other" && activeInterview.other_type_detail
+                          ? ` (${activeInterview.other_type_detail})`
+                          : ""}
+                      </div>
+                      {activeInterview.rescheduled_count ? (
+                        <p className="text-[11px] text-amber-700">
+                          Fecha cambiada {activeInterview.rescheduled_count}{" "}
+                          {activeInterview.rescheduled_count === 1 ? "vez" : "veces"}
+                          {activeInterview.reschedule_reason ? ` · ${activeInterview.reschedule_reason}` : ""}
+                        </p>
+                      ) : null}
+
+                      <div className="flex flex-wrap gap-2">
+                        {/* Confirmar: siempre lo hace quien NO propuso la fecha vigente. */}
+                        {activeInterview.status === "pending" &&
+                          activeInterview.last_proposed_by !== user.id && (
+                            <Button
+                              size="sm"
+                              className="h-6 text-[11px] bg-green-600 hover:bg-green-700"
+                              disabled={isUpdatingInterview}
+                              onClick={() => handleInterviewResponse("confirmed")}
+                            >
+                              Confirmar
+                            </Button>
+                          )}
+                        {activeInterview.status === "pending" &&
+                          activeInterview.last_proposed_by === user.id && (
+                            <span className="text-[11px] text-muted-foreground py-1">
+                              Esperando confirmación de la otra parte
+                            </span>
+                          )}
+
+                        {/* Cancelar y reprogramar: ambos roles, mientras siga viva. */}
+                        {["pending", "confirmed"].includes(activeInterview.status) && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-[11px]"
+                              onClick={() => setInterviewDialog({ open: true, mode: "reschedule" })}
+                            >
+                              <CalendarClock className="h-3 w-3 mr-1" />
+                              Cambiar fecha
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-[11px] text-destructive"
+                              onClick={() => setInterviewDialog({ open: true, mode: "cancel" })}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
+
+                        {/* Cierre tras celebrarse: solo el establecimiento. */}
+                        {activeInterview.status === "confirmed" && profile?.user_type === "business" && (
+                          <div className="w-full mt-1 pt-2 border-t">
+                            <p className="text-[11px] text-muted-foreground mb-1.5">
+                              Cuando termine la entrevista, indica el resultado:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                className="h-7 text-[11px] bg-green-600 hover:bg-green-700"
+                                disabled={isUpdatingInterview}
+                                onClick={() => handleInterviewResolve("approved")}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Candidato contratado
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[11px]"
+                                disabled={isUpdatingInterview}
+                                onClick={() => handleInterviewResolve("not_hired")}
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                No contratado
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  </div>
+                  )}
                   {/* Message Input */}
                   <div className="p-3 border-t bg-card">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
