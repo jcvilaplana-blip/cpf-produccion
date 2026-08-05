@@ -45,7 +45,10 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
-    webContentsDebuggingEnabled: false,
+    // Permite inspeccionar el webview desde chrome://inspect. Sin esto, un
+    // fallo de carga dentro de la app es una pantalla en blanco sin ninguna
+    // pista. Estamos en desarrollo; PONER A false antes de publicar en Play.
+    webContentsDebuggingEnabled: true,
     appendUserAgent: 'CamareroPorFavor-App',
   },
   ios: {
