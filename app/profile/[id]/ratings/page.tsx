@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   description: "Valoraciones y comentarios del candidato",
 }
 
-export default function CandidateRatingsPage({ params }: { params: { id: string } }) {
-  return <CandidateRatingsContent candidateId={params.id} />
+export default async function CandidateRatingsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <CandidateRatingsContent candidateId={id} />
 }

@@ -26,6 +26,17 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
+  // The native bundle in `out/` is a static export, and scripts/build-native.mjs
+  // has to stub every server component in it (they cannot be exported), so the
+  // bundled pages render empty. Pointing the webview at the live Next.js server
+  // is what makes server components, API routes and dynamic routes work in the
+  // app. Do not remove this block: without it the APK shows only the footer.
+  server: {
+    url: 'https://cpf.fullstark.es',
+    cleartext: false,
+    androidScheme: 'https',
+    iosScheme: 'https',
+  },
   android: {
     allowMixedContent: false,
     webContentsDebuggingEnabled: false,

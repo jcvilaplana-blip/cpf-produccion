@@ -348,7 +348,7 @@ export function CreateProfileWizard() {
           return
         }
 
-        userId = authData.user?.id
+        userId = authData.user?.id ?? null
 
         // Email confirmation is mandatory, so signUp() never returns a
         // session here - don't assume one exists. Try anyway (in case
@@ -360,6 +360,9 @@ export function CreateProfileWizard() {
       }
 
       if (!userId) { setSubmitError("Error al crear la cuenta"); setIsSubmitting(false); return }
+      // `userId` is a `let`, so narrowing is lost inside the upload closures
+      // below - bind it to a const that stays typed as string.
+      const accountId: string = userId
 
       // 2. Upload avatar via the service-role-backed API route (works even
       // without a session, since the user isn't confirmed/logged in yet).
@@ -383,6 +386,45 @@ export function CreateProfileWizard() {
       // 3. Create profile
       if (isWorker) {
         const expYears = form.experience === "10+" ? 10 : form.experience === "5-10" ? 7 : form.experience === "3-5" ? 4 : form.experience === "1-2" ? 1 : 0
+
+        // Media has to be uploaded BEFORE the profile insert, otherwise the
+        // URLs never make it into the row and the public profile shows no
+        // gallery and no presentation video.
+        const uploadFile = async (file: File | null, type: "video" | "portfolio") => {
+          if (!file) return null
+          const uploadForm = new FormData()
+          uploadForm.append("file", file)
+          uploadForm.append("type", type)
+          uploadForm.append("userId", accountId)
+
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm })
+          if (!uploadRes.ok) {
+            const errorData = await uploadRes.json().catch(() => ({}))
+            throw new Error(errorData.error || `Error al subir ${type === "video" ? "el vídeo" : "la imagen"}`)
+          }
+          const data = await uploadRes.json()
+          return data.url as string | null
+        }
+
+        const portfolioVideoUrls: string[] = []
+        const portfolioImageUrls: string[] = []
+
+        try {
+          for (const video of [form.videoFile, form.videoFile2, form.videoFile3]) {
+            const url = await uploadFile(video, "video")
+            if (url) portfolioVideoUrls.push(url)
+          }
+          // Gallery: up to 6 images shown as a grid on the public profile
+          for (const image of form.galleryImages.slice(0, 6)) {
+            const url = await uploadFile(image, "portfolio")
+            if (url) portfolioImageUrls.push(url)
+          }
+        } catch (e: unknown) {
+          console.error("Error uploading profile media:", e)
+          setSubmitError(e instanceof Error ? e.message : "Error al subir los archivos")
+          setIsSubmitting(false)
+          return
+        }
 
         const res = await fetch("/api/profiles/create-worker", {
           method: "POST",
@@ -409,6 +451,7 @@ export function CreateProfileWizard() {
               availability_status: form.availability,
               avatar_url: avatarUrl,
               portfolio_videos: portfolioVideoUrls,
+              portfolio_images: portfolioImageUrls,
               bio: `${form.subcategory || form.category} con ${form.experience} años de experiencia`,
               is_active: true,
               phone_verified: form.phoneVerified,
@@ -428,49 +471,8 @@ export function CreateProfileWizard() {
           return
         }
 
-        // 4. Upload videos via the general upload API and persist their URLs
-        const portfolioVideoUrls: string[] = []
-        const uploadVideo = async (videoFile: File | null) => {
-          if (!videoFile) return null
-
-          const uploadForm = new FormData()
-          uploadForm.append("file", videoFile)
-          uploadForm.append("type", "video")
-          uploadForm.append("userId", userId)
-
-          const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm })
-          if (!uploadRes.ok) {
-            const errorData = await uploadRes.json().catch(() => ({ error: "Error al subir vídeo" }))
-            throw new Error(errorData.error || "Error al subir vídeo")
-          }
-
-          const data = await uploadRes.json()
-          return data.url as string | null
-        }
-
-        try {
-          const mainVideoUrl = await uploadVideo(form.videoFile)
-          if (mainVideoUrl) portfolioVideoUrls.push(mainVideoUrl)
-
-          const extraVideoUrl2 = await uploadVideo(form.videoFile2)
-          if (extraVideoUrl2) portfolioVideoUrls.push(extraVideoUrl2)
-
-          const extraVideoUrl3 = await uploadVideo(form.videoFile3)
-          if (extraVideoUrl3) portfolioVideoUrls.push(extraVideoUrl3)
-        } catch (e: unknown) {
-          console.error("Error uploading profile videos:", e)
-          setSubmitError(e instanceof Error ? e.message : "Error al subir el vídeo")
-          setIsSubmitting(false)
-          return
-        }
-
-        // Worker: go to success page (video is uploaded and stored on profile)
-        const redirectUrl = "/auth/sign-up-success"
-        if (portfolioVideoUrls.length === 0 && form.videoFile) {
-          router.push(`${redirectUrl}?video_pending=1`)
-        } else {
-          router.push(redirectUrl)
-        }
+        // Worker: media is already uploaded and stored on the profile row
+        router.push("/auth/sign-up-success")
 
       } else {
         // Business profile
@@ -958,6 +960,59 @@ export function CreateProfileWizard() {
                             </div>
                           )
                         })}
+                      </div>
+                    )}
+
+                    {/* Galería: hasta 6 imágenes, se muestran en grid en el perfil público */}
+                    {isWorker && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-base font-semibold">Galería de fotos (máx. 6)</Label>
+                          <span className="text-xs text-muted-foreground">{form.galleryImages.length}/6</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Fotos tuyas trabajando, montajes, presentaciones… Se mostrarán en tu perfil público.
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {form.galleryImages.map((image, index) => (
+                            <div key={index} className="relative aspect-square rounded-xl overflow-hidden border">
+                              <img
+                                src={URL.createObjectURL(image)}
+                                alt={`Galería ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                aria-label="Quitar imagen"
+                                onClick={() =>
+                                  update("galleryImages", form.galleryImages.filter((_, i) => i !== index))
+                                }
+                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                          {form.galleryImages.length < 6 && (
+                            <label className="aspect-square rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/40">
+                              <Upload className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-[11px] text-muted-foreground">Añadir</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || [])
+                                  if (files.length === 0) return
+                                  const room = 6 - form.galleryImages.length
+                                  update("galleryImages", [...form.galleryImages, ...files.slice(0, room)])
+                                  e.target.value = ""
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

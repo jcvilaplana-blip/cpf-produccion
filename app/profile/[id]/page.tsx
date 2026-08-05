@@ -13,7 +13,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const { id } = await params
 
   const supabase = await createClient()
-  const [{ data: user }, { data: profileData, error: profileError }] = await Promise.all([
+  // getUser() resolves to { data: { user } }, so the viewer is data.user - not
+  // data itself. Reading `.id` off the wrapper silently yielded undefined, which
+  // left viewerId/viewerType null for everyone and hid the business-only actions
+  // (guardar, solicitar entrevista) even from logged-in businesses.
+  const [{ data: authData }, { data: profileData, error: profileError }] = await Promise.all([
     supabase.auth.getUser(),
     supabase
       .from("profiles")
@@ -27,20 +31,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
     return notFound()
   }
 
+  const viewer = authData?.user ?? null
+
   let viewerType: "worker" | "business" | "admin" | null = null
-  if (user) {
+  if (viewer) {
     const { data: viewerProfile } = await supabase
       .from("profiles")
-      .select("user_type")
-      .eq("id", user.id)
+      .select("user_type, is_admin")
+      .eq("id", viewer.id)
       .single()
-    viewerType = viewerProfile?.user_type || null
+    viewerType = viewerProfile?.is_admin ? "admin" : viewerProfile?.user_type || null
   }
 
   return (
     <ProfileDetailContent
       id={id}
-      viewerId={user?.id || null}
+      viewerId={viewer?.id || null}
       viewerType={viewerType}
       initialProfile={profileData}
     />

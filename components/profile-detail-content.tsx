@@ -9,6 +9,7 @@ import {
   ArrowLeft, MapPin, Star, Briefcase, MessageCircle, Heart, CalendarCheck,
   Award, Image as ImageIcon, Loader2, ChevronRight, X, Play, Pause,
   BadgeCheck, Trophy, Sparkles, Radio, FileText, Zap,
+  Languages as LanguagesIcon, Download, CalendarDays, Video, Wrench,
 } from "lucide-react"
 import useSWR from "swr"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
@@ -257,12 +258,32 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   // The first portfolio video doubles as the "vídeo de presentación" uploaded
   // during candidate registration - a featured slot, not a parallel system.
   const presentationVideo = portfolioVideos[0] || null
+  const extraVideos = portfolioVideos.slice(1)
   const galleryImages = portfolioImages.slice(0, 6)
 
   const certifications: any[] = parseList(worker.certificates)
   const badges: any[] = parseList(worker.badges)
   const workExperience = parseList(worker.work_experience)
+  const skills: string[] = parseList(worker.skills).filter((s) => typeof s === "string")
+  const languages: string[] = parseList(worker.languages).map((l: any) =>
+    typeof l === "string" ? l : [l?.name || l?.language, l?.level].filter(Boolean).join(" · ")
+  ).filter(Boolean)
   const ratingCriteriaSummary: Record<string, number> = worker.rating_criteria_summary || {}
+
+  const age: number | null = (() => {
+    if (!worker.date_of_birth) return null
+    const birth = new Date(worker.date_of_birth)
+    if (Number.isNaN(birth.getTime())) return null
+    const now = new Date()
+    let years = now.getFullYear() - birth.getFullYear()
+    const monthDiff = now.getMonth() - birth.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) years -= 1
+    return years >= 0 && years < 120 ? years : null
+  })()
+
+  const memberSince = worker.created_at
+    ? new Date(worker.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+    : null
 
   const roles = specialties.length > 0 ? specialties : worker.job_category ? [worker.job_category] : []
   const contractTypeNames = contractTypes.map((ct) => CONTRACT_TYPE_LABELS[ct] || ct).filter(Boolean)
@@ -385,16 +406,9 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               {worker.display_name}
             </h1>
             {roles.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {roles.map((role) => (
-                  <span
-                    key={role}
-                    className="rounded-full bg-white/15 px-3 py-1 text-[13px] font-medium text-white ring-1 ring-inset ring-white/25 backdrop-blur-md"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
+              <p className="mt-1.5 text-[16px] font-medium leading-snug text-white/90 drop-shadow-sm">
+                {roles.join(" · ")}
+              </p>
             )}
           </div>
         </div>
@@ -687,6 +701,103 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
                     <p className="mt-2.5 text-[13px] leading-relaxed text-slate-600">{exp.description}</p>
                   )}
                 </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Idiomas */}
+        {languages.length > 0 && (
+          <Section icon={LanguagesIcon} title="Idiomas">
+            <div className="flex flex-wrap gap-2">
+              {languages.map((language) => (
+                <Badge
+                  key={language}
+                  className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[13px] font-medium text-blue-800"
+                >
+                  {language}
+                </Badge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Habilidades */}
+        {skills.length > 0 && (
+          <Section icon={Wrench} title="Habilidades">
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <Badge
+                  key={skill}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] font-medium text-slate-700"
+                >
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Ficha de datos */}
+        <Section icon={CalendarDays} title="Ficha del candidato">
+          <dl className="divide-y divide-slate-100">
+            {[
+              { label: "Edad", value: age !== null ? `${age} años` : null },
+              { label: "Categoría", value: worker.job_category },
+              { label: "Especialidad", value: worker.job_subcategory },
+              { label: "Ubicación", value: worker.location },
+              {
+                label: "Experiencia",
+                value: experienceYears !== null ? `${experienceYears} ${experienceYears === 1 ? "año" : "años"}` : null,
+              },
+              { label: "En la plataforma desde", value: memberSince },
+            ]
+              .filter((row) => row.value)
+              .map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <dt className="text-[14px] text-slate-500">{row.label}</dt>
+                  <dd className="text-right text-[14px] font-medium capitalize text-slate-900">{row.value}</dd>
+                </div>
+              ))}
+          </dl>
+        </Section>
+
+        {/* CV descargable */}
+        {worker.cv_url && (
+          <Section>
+            <a
+              href={worker.cv_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#01A89E]/10">
+                <FileText className="h-5 w-5 text-[#01A89E]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-slate-900">Currículum</span>
+                <span className="block truncate text-[12px] text-slate-500">
+                  {worker.cv_filename || "Descargar CV en PDF"}
+                </span>
+              </span>
+              <Download className="h-4 w-4 shrink-0 text-slate-400" />
+            </a>
+          </Section>
+        )}
+
+        {/* Vídeos adicionales */}
+        {extraVideos.length > 0 && (
+          <Section icon={Video} title="Más vídeos">
+            <div className="grid grid-cols-2 gap-2">
+              {extraVideos.map((videoUrl) => (
+                <video
+                  key={videoUrl}
+                  src={`${videoUrl}#t=0.1`}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="aspect-[9/16] w-full rounded-2xl bg-black object-cover"
+                />
               ))}
             </div>
           </Section>
