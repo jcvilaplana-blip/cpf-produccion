@@ -11,13 +11,14 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import {
-  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift,
+  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift, CalendarCheck,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
 import { checkInterviewRemindersAction } from "@/lib/actions"
 import { computeBestMatchScore, type MatchJobInput } from "@/lib/matching"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
+import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
 
 interface Candidate {
@@ -43,6 +44,7 @@ export default function BusinessDashboardPage() {
   const [loading, setLoading] = useState(true)
   const dataLoaded = useRef(false)
   const unreadCount = useUnreadMessages(user?.id)
+  const interviewStats = useInterviewStats(user?.id, "business")
 
   const userName = user?.displayName || "Empresa"
   const userAvatar = user?.avatarUrl
@@ -254,6 +256,28 @@ export default function BusinessDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Link href="/interviews" className="block">
+          <Card className="bg-violet-500/5 border-violet-500/20">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="bg-violet-500/10 p-2.5 rounded-xl">
+                <CalendarCheck className="h-6 w-6 text-violet-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xl font-bold">{interviewStats.completed}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Entrevistas realizadas
+                  {interviewStats.hired > 0 ? ` · ${interviewStats.hired} con contratación` : ""}
+                </p>
+              </div>
+              {interviewStats.upcoming > 0 && (
+                <Badge className="bg-violet-600 text-white border-0 text-[10px]">
+                  {interviewStats.upcoming} pendiente{interviewStats.upcoming === 1 ? "" : "s"}
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

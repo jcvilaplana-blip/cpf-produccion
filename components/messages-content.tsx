@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, CalendarCheck, Star, X } from "lucide-react"
+import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, CalendarCheck, CalendarClock, Star, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { BottomNavigation } from "@/components/bottom-navigation"
@@ -29,14 +29,19 @@ import { useRealtimeMessages, useRealtimeConversations } from "@/hooks/use-realt
 import { updateApplicationStatusAction, respondToInterviewRequestAction, resolveInterviewRequestAction, notifyNewMessageAction } from "@/lib/actions"
 import { RatingDialog } from "@/components/rating-dialog"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
+import { InterviewManageDialog } from "@/components/interview-manage-dialog"
 import { toast } from "sonner"
 
 interface ActiveInterview {
   id: string
-  status: "pending" | "confirmed" | "cancelled" | "approved"
+  status: "pending" | "confirmed" | "cancelled" | "approved" | "not_hired"
   scheduled_at: string
   interview_type: "call" | "in_person" | "video_call" | "other"
   other_type_detail: string | null
+  /** Quién propuso la fecha vigente: confirma siempre el otro. */
+  last_proposed_by: string | null
+  rescheduled_count: number | null
+  reschedule_reason: string | null
 }
 
 const INTERVIEW_TYPE_LABELS: Record<string, string> = {
@@ -90,11 +95,15 @@ export function MessagesContent({
   const [activeInterview, setActiveInterview] = useState<ActiveInterview | null>(null)
   const [showInterviewDialog, setShowInterviewDialog] = useState(false)
   const [isUpdatingInterview, setIsUpdatingInterview] = useState(false)
+  const [interviewDialog, setInterviewDialog] = useState<{ open: boolean; mode: "cancel" | "reschedule" }>({
+    open: false,
+    mode: "cancel",
+  })
 
   const loadActiveInterview = useCallback(async (applicationId: string) => {
     const { data } = await supabase
       .from("interview_requests")
-      .select("id, status, scheduled_at, interview_type, other_type_detail")
+      .select("id, status, scheduled_at, interview_type, other_type_detail, last_proposed_by, rescheduled_count, reschedule_reason")
       .eq("application_id", applicationId)
       .in("status", ["pending", "confirmed"])
       .order("created_at", { ascending: false })
@@ -183,15 +192,21 @@ export function MessagesContent({
     }
   }
 
-  const handleInterviewResolve = async (resolution: "approved" | "cancelled") => {
+  const handleInterviewResolve = async (resolution: "approved" | "not_hired") => {
     if (!activeInterview) return
     setIsUpdatingInterview(true)
     const result = await resolveInterviewRequestAction(activeInterview.id, resolution)
     setIsUpdatingInterview(false)
     if (result.error) { toast.error(result.error); return }
-    toast.success(resolution === "approved" ? "Contratación confirmada — ya podéis valoraros mutuamente" : "Proceso finalizado")
+    toast.success(
+      resolution === "approved"
+        ? "Contratación confirmada — ya podéis valoraros mutuamente"
+        : "Entrevista cerrada sin contratación"
+    )
     setActiveApplication((prev) => (prev ? { ...prev, status: resolution === "approved" ? "accepted" : "rejected" } : prev))
     setActiveInterview(null)
+    // Al contratar, la valoración es el paso siguiente: se abre sola.
+    if (resolution === "approved") setShowRatingDialog(true)
   }
 
   // Load messages when conversation is selected
@@ -474,26 +489,85 @@ export function MessagesContent({
                   ? ` (${activeInterview.other_type_detail})`
                   : ""}
               </div>
-              <div className="flex gap-2">
-                {activeInterview.status === "pending" && profile?.user_type !== "business" && (
-                  <>
-                    <Button size="sm" className="h-6 text-[11px] bg-green-600 hover:bg-green-700" disabled={isUpdatingInterview} onClick={() => handleInterviewResponse("confirmed")}>
+              {activeInterview.rescheduled_count ? (
+                <p className="text-[11px] text-amber-700">
+                  Fecha cambiada {activeInterview.rescheduled_count}{" "}
+                  {activeInterview.rescheduled_count === 1 ? "vez" : "veces"}
+                  {activeInterview.reschedule_reason ? ` · ${activeInterview.reschedule_reason}` : ""}
+                </p>
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                {/* Confirmar: siempre lo hace quien NO propuso la fecha vigente. */}
+                {activeInterview.status === "pending" &&
+                  activeInterview.last_proposed_by !== user.id && (
+                    <Button
+                      size="sm"
+                      className="h-6 text-[11px] bg-green-600 hover:bg-green-700"
+                      disabled={isUpdatingInterview}
+                      onClick={() => handleInterviewResponse("confirmed")}
+                    >
                       Confirmar
                     </Button>
-                    <Button size="sm" variant="outline" className="h-6 text-[11px] text-destructive" disabled={isUpdatingInterview} onClick={() => handleInterviewResponse("cancelled")}>
+                  )}
+                {activeInterview.status === "pending" &&
+                  activeInterview.last_proposed_by === user.id && (
+                    <span className="text-[11px] text-muted-foreground py-1">
+                      Esperando confirmación de la otra parte
+                    </span>
+                  )}
+
+                {/* Cancelar y reprogramar: ambos roles, mientras siga viva. */}
+                {["pending", "confirmed"].includes(activeInterview.status) && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[11px]"
+                      onClick={() => setInterviewDialog({ open: true, mode: "reschedule" })}
+                    >
+                      <CalendarClock className="h-3 w-3 mr-1" />
+                      Cambiar fecha
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[11px] text-destructive"
+                      onClick={() => setInterviewDialog({ open: true, mode: "cancel" })}
+                    >
                       Cancelar
                     </Button>
                   </>
                 )}
+
+                {/* Cierre tras celebrarse: solo el establecimiento. */}
                 {activeInterview.status === "confirmed" && profile?.user_type === "business" && (
-                  <>
-                    <Button size="sm" className="h-6 text-[11px] bg-green-600 hover:bg-green-700" disabled={isUpdatingInterview} onClick={() => handleInterviewResolve("approved")}>
-                      Aprobar (contratar)
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-6 text-[11px] text-destructive" disabled={isUpdatingInterview} onClick={() => handleInterviewResolve("cancelled")}>
-                      Cancelar
-                    </Button>
-                  </>
+                  <div className="w-full mt-1 pt-2 border-t">
+                    <p className="text-[11px] text-muted-foreground mb-1.5">
+                      Cuando termine la entrevista, indica el resultado:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 text-[11px] bg-green-600 hover:bg-green-700"
+                        disabled={isUpdatingInterview}
+                        onClick={() => handleInterviewResolve("approved")}
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        Candidato contratado
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[11px]"
+                        disabled={isUpdatingInterview}
+                        onClick={() => handleInterviewResolve("not_hired")}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        No contratado
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -509,6 +583,17 @@ export function MessagesContent({
           ratedUserName={selectedConversation.other_participant?.display_name || "Usuario"}
           jobId={activeApplication.job_id}
           onSuccess={() => setAlreadyRated(true)}
+        />
+      )}
+
+      {activeInterview && (
+        <InterviewManageDialog
+          open={interviewDialog.open}
+          onOpenChange={(open) => setInterviewDialog((prev) => ({ ...prev, open }))}
+          mode={interviewDialog.mode}
+          interviewId={activeInterview.id}
+          currentScheduledAt={activeInterview.scheduled_at}
+          onDone={() => activeApplication && loadActiveInterview(activeApplication.id)}
         />
       )}
 

@@ -18,12 +18,14 @@ import {
   MessageCircle,
   Bell,
   Gift,
+  CalendarCheck,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { SmartSearch } from "@/components/smart-search"
 import { createClient } from "@/lib/supabase/client"
 import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
+import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
 
 type Job = {
@@ -80,6 +82,7 @@ export function CandidateDashboardContent({
   // Se cuenta en vivo (realtime) partiendo del valor que ya trajo el servidor,
   // para que el badge reaccione al recibir y al leer sin recargar la página.
   const unreadCount = useUnreadMessages(userId, initialUnreadCount)
+  const interviewStats = useInterviewStats(userId, "worker")
   const jobListRef = useRef<HTMLDivElement>(null)
 
   const userInitial = userName[0] || "U"
@@ -295,11 +298,15 @@ export function CandidateDashboardContent({
             </Card>
           </Link>
 
-          <Link href="/categories">
-            <Card className="bg-green-500/5 border-green-500/20 hover:border-green-500/50 transition-colors">
+          <Link href="/interviews">
+            <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors">
               <CardContent className="p-3 text-center">
-                <p className="text-xl font-bold text-green-600">{categories.length}</p>
-                <p className="text-[10px] text-muted-foreground">Categorias</p>
+                <p className="text-xl font-bold text-violet-600 flex items-center justify-center gap-1.5">
+                  <CalendarCheck className="h-4 w-4" /> {interviewStats.completed}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Entrevistas{interviewStats.upcoming > 0 ? ` · ${interviewStats.upcoming} pend.` : ""}
+                </p>
               </CardContent>
             </Card>
           </Link>

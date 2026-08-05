@@ -415,6 +415,8 @@ export async function createInterviewRequestAction(
       other_type_detail: interviewType === "other" ? otherTypeDetail || null : null,
       scheduled_at: scheduledAt,
       notes: notes || null,
+      // La propone el establecimiento, así que confirma el candidato.
+      last_proposed_by: user.id,
     })
     .select()
     .single()
@@ -450,13 +452,24 @@ export async function respondToInterviewRequestAction(
 
   const { data: interview } = await supabase
     .from("interview_requests")
-    .select("id, application_id, business_id, worker_id, status")
+    .select("id, application_id, business_id, worker_id, status, last_proposed_by")
     .eq("id", interviewId)
     .single()
 
   if (!interview) return { error: "Entrevista no encontrada" }
-  if (interview.worker_id !== user.id) return { error: "No autorizado" }
+
+  const isBusiness = interview.business_id === user.id
+  const isWorker = interview.worker_id === user.id
+  if (!isBusiness && !isWorker) return { error: "No autorizado" }
   if (interview.status !== "pending") return { error: "Esta entrevista ya no está pendiente" }
+
+  // Confirma quien NO propuso la fecha vigente. Antes solo respondía el
+  // candidato, pero ahora también él puede reprogramar, y entonces le toca
+  // confirmar al establecimiento.
+  const proposer = interview.last_proposed_by || interview.business_id
+  if (proposer === user.id) {
+    return { error: "Has sido tú quien ha propuesto esta fecha: espera la respuesta de la otra parte" }
+  }
 
   const { error } = await supabase
     .from("interview_requests")
@@ -467,7 +480,7 @@ export async function respondToInterviewRequestAction(
 
   if (response === "cancelled") {
     await updateApplicationStatusAction(interview.application_id, "pending")
-  } else {
+  } else if (isWorker) {
     try {
       const serviceClient = getServiceRoleClient()
       if (serviceClient) {
@@ -479,17 +492,18 @@ export async function respondToInterviewRequestAction(
     }
   }
 
-  const { data: workerProfile } = await supabase
+  const { data: actorProfile } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("id", user.id)
     .single()
 
-  await notifyUser(interview.business_id, {
+  const otherId = isBusiness ? interview.worker_id : interview.business_id
+  await notifyUser(otherId, {
     title: response === "confirmed" ? "Entrevista confirmada" : "Entrevista cancelada",
-    body: `${workerProfile?.display_name || "El candidato"} ha ${response === "confirmed" ? "confirmado" : "cancelado"} la entrevista propuesta`,
+    body: `${actorProfile?.display_name || "La otra parte"} ha ${response === "confirmed" ? "confirmado" : "cancelado"} la entrevista propuesta`,
     type: "entrevista",
-    link: `/messages?candidateId=${user.id}`,
+    link: "/messages",
     createdBy: user.id,
   })
 
@@ -497,9 +511,21 @@ export async function respondToInterviewRequestAction(
   return { success: true }
 }
 
+/**
+ * Cierre de la entrevista por parte del establecimiento, una vez celebrada.
+ *
+ * `approved`  -> hubo contratación: habilita la valoración mutua y puntúa a
+ *                ambas partes (vía updateApplicationStatusAction).
+ * `not_hired` -> la entrevista se hizo pero no se contrató. Cuenta como
+ *                entrevista realizada en el historial de los dos, pero NO
+ *                habilita valorar: sin contratación no hay nada que valorar.
+ *
+ * `not_hired` es un estado propio y no 'cancelled' a propósito: una entrevista
+ * cancelada nunca llegó a celebrarse, y mezclarlas falsea el contador.
+ */
 export async function resolveInterviewRequestAction(
   interviewId: string,
-  resolution: "approved" | "cancelled"
+  resolution: "approved" | "not_hired"
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -530,18 +556,174 @@ export async function resolveInterviewRequestAction(
     .eq("id", user.id)
     .single()
 
+  const businessName = businessProfile?.display_name || "La empresa"
+
   await notifyUser(interview.worker_id, {
     title: resolution === "approved" ? "¡Has sido contratado!" : "Proceso finalizado",
     body: resolution === "approved"
-      ? `${businessProfile?.display_name || "La empresa"} te ha contratado tras la entrevista`
-      : `${businessProfile?.display_name || "La empresa"} ha decidido no continuar el proceso`,
+      ? `${businessName} te ha contratado tras la entrevista`
+      : `${businessName} ha decidido no continuar el proceso tras la entrevista`,
     type: "entrevista",
     link: `/messages?businessId=${user.id}`,
     createdBy: user.id,
   })
 
   revalidatePath("/messages")
+  revalidatePath("/interviews")
   revalidatePath(`/profile/${interview.worker_id}`)
+  return { success: true }
+}
+
+/**
+ * Cancela una entrevista. La puede cancelar **cualquiera de las dos partes**,
+ * mientras esté propuesta o confirmada, y el motivo es obligatorio: al otro le
+ * llega el aviso con la razón, no una cancelación a secas.
+ *
+ * La candidatura vuelve a "pending": el proceso sigue vivo, solo se cayó esta
+ * cita concreta.
+ */
+export async function cancelInterviewAction(interviewId: string, reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const trimmedReason = (reason || "").trim()
+  if (trimmedReason.length < 3) return { error: "Indica el motivo de la cancelación" }
+
+  const { data: interview } = await supabase
+    .from("interview_requests")
+    .select("id, application_id, business_id, worker_id, status, scheduled_at")
+    .eq("id", interviewId)
+    .single()
+
+  if (!interview) return { error: "Entrevista no encontrada" }
+
+  const isBusiness = interview.business_id === user.id
+  const isWorker = interview.worker_id === user.id
+  if (!isBusiness && !isWorker) return { error: "No autorizado" }
+
+  if (!["pending", "confirmed"].includes(interview.status)) {
+    return { error: "Esta entrevista ya está cerrada y no se puede cancelar" }
+  }
+
+  const { error } = await supabase
+    .from("interview_requests")
+    .update({
+      status: "cancelled",
+      cancellation_reason: trimmedReason,
+      cancelled_by: user.id,
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", interviewId)
+
+  if (error) return { error: error.message }
+
+  // La cita se cae, pero la candidatura sigue en pie.
+  await updateApplicationStatusAction(interview.application_id, "pending")
+
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  const otherId = isBusiness ? interview.worker_id : interview.business_id
+  await notifyUser(otherId, {
+    title: "Entrevista cancelada",
+    body: `${actorProfile?.display_name || "La otra parte"} ha cancelado la entrevista. Motivo: ${trimmedReason}`,
+    type: "entrevista",
+    link: "/messages",
+    createdBy: user.id,
+  })
+
+  revalidatePath("/messages")
+  revalidatePath("/interviews")
+  return { success: true }
+}
+
+/**
+ * Propone una nueva fecha para una entrevista existente, desde cualquiera de
+ * las dos partes.
+ *
+ * Reutiliza la misma fila en lugar de crear otra: así el historial de la
+ * candidatura no se llena de entrevistas fantasma y se puede ver cuántas veces
+ * se ha movido. Vuelve a `pending` porque la nueva fecha necesita que la otra
+ * parte la acepte, la proponga quien la proponga.
+ */
+export async function rescheduleInterviewAction(
+  interviewId: string,
+  newScheduledAt: string,
+  reason: string,
+  interviewType?: "call" | "in_person" | "video_call" | "other"
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const trimmedReason = (reason || "").trim()
+  if (trimmedReason.length < 3) return { error: "Indica el motivo del cambio de fecha" }
+
+  const newDate = new Date(newScheduledAt)
+  if (Number.isNaN(newDate.getTime())) return { error: "Fecha no válida" }
+  if (newDate.getTime() < Date.now()) return { error: "La nueva fecha ya ha pasado" }
+
+  const { data: interview } = await supabase
+    .from("interview_requests")
+    .select("id, application_id, business_id, worker_id, status, scheduled_at, rescheduled_count")
+    .eq("id", interviewId)
+    .single()
+
+  if (!interview) return { error: "Entrevista no encontrada" }
+
+  const isBusiness = interview.business_id === user.id
+  const isWorker = interview.worker_id === user.id
+  if (!isBusiness && !isWorker) return { error: "No autorizado" }
+
+  if (!["pending", "confirmed"].includes(interview.status)) {
+    return { error: "Esta entrevista ya está cerrada y no se puede reprogramar" }
+  }
+
+  const updates: Record<string, unknown> = {
+    status: "pending",
+    scheduled_at: newDate.toISOString(),
+    previous_scheduled_at: interview.scheduled_at,
+    reschedule_reason: trimmedReason,
+    rescheduled_count: (interview.rescheduled_count || 0) + 1,
+    updated_at: new Date().toISOString(),
+    // Una fecha nueva necesita recordatorio nuevo.
+    reminder_sent_at: null,
+  }
+  if (interviewType) updates.interview_type = interviewType
+
+  const { error } = await supabase
+    .from("interview_requests")
+    .update(updates)
+    .eq("id", interviewId)
+
+  if (error) return { error: error.message }
+
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  const formatted = newDate.toLocaleString("es-ES", {
+    weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+  })
+  const otherId = isBusiness ? interview.worker_id : interview.business_id
+
+  await notifyUser(otherId, {
+    title: "Nueva fecha propuesta para la entrevista",
+    body: `${actorProfile?.display_name || "La otra parte"} propone el ${formatted}. Motivo: ${trimmedReason}`,
+    type: "entrevista",
+    link: "/messages",
+    createdBy: user.id,
+  })
+
+  revalidatePath("/messages")
+  revalidatePath("/interviews")
   return { success: true }
 }
 
@@ -807,16 +989,20 @@ export async function createRatingAction(
     .eq("worker_id", workerId)
     .maybeSingle()
 
-  let hasRealInteraction = application?.status === "accepted"
-  if (!hasRealInteraction && application) {
+  // Solo se valora cuando ha habido CONTRATACIÓN. Antes bastaba con una
+  // entrevista `confirmed`, de modo que un candidato al que no se contrató
+  // podía recibir valoración por el mero hecho de haber acudido a la
+  // entrevista: eso no es una relación laboral y no hay nada que valorar.
+  let hired = application?.status === "accepted"
+  if (!hired && application) {
     const { count } = await supabase
       .from("interview_requests")
       .select("id", { count: "exact", head: true })
       .eq("application_id", application.id)
-      .in("status", ["confirmed", "approved"])
-    hasRealInteraction = (count || 0) > 0
+      .eq("status", "approved")
+    hired = (count || 0) > 0
   }
-  if (!hasRealInteraction) return { error: "Solo puedes valorar tras una entrevista confirmada o una contratación" }
+  if (!hired) return { error: "Solo puedes valorar tras una contratación" }
 
   const { error } = await supabase.from("ratings").insert({
     from_user_id: user.id,
