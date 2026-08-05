@@ -38,3 +38,6 @@ next-env.d.ts
 
 # unrelated nested tool repo, not part of this app
 /superpowers/
+
+# runtime error capture (instrumentation.ts)
+/logs/

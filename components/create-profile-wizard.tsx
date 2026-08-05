@@ -348,6 +348,20 @@ export function CreateProfileWizard() {
           return
         }
 
+        // With email confirmation enabled, Supabase does NOT error on a
+        // duplicate email - to prevent account enumeration it returns a
+        // decoy user with a random id and an empty `identities` array. That
+        // id does not exist in auth.users, so the profile insert that follows
+        // used to fail with a profiles_id_fkey violation. Detect it here.
+        if (authData.user && (authData.user.identities?.length ?? 0) === 0) {
+          setSubmitError(
+            "Este correo ya está registrado. Inicia sesión o usa \"He olvidado mi contraseña\". " +
+            "Si nunca confirmaste la cuenta, revisa tu bandeja: acabamos de reenviarte el enlace."
+          )
+          setIsSubmitting(false)
+          return
+        }
+
         userId = authData.user?.id ?? null
 
         // Email confirmation is mandatory, so signUp() never returns a
