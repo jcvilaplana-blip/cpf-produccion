@@ -14,6 +14,7 @@ import { AdminCandidatePreview } from "@/components/admin/admin-candidate-previe
 import { AdminSettingsSection } from "@/components/admin/admin-settings-section"
 import { AdminCrudTable, type ColumnDef } from "@/components/admin/admin-crud-table"
 import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
+import { RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,7 +29,7 @@ import {
   Crown, Globe, MapPin, Languages, CreditCard, Plug, Settings,
   TrendingUp, UserCheck, ClipboardList, Search, Menu,
   Pencil, Trash2, Plus, Eye, ExternalLink,
-  CheckCircle, X, Shield, Bell,
+  CheckCircle, XCircle, X, Shield, Bell,
 } from "lucide-react"
 
 const supabase = createClient()
@@ -106,6 +107,8 @@ export default function AdminPage() {
   const { data: catsData } = useSWR(catsKey, fetcher)
   const { data: ratingsData } = useSWR(section === "ratings" ? `/api/admin/ratings?search=${debouncedSearch}` : null, fetcher)
   const { data: applicationsData } = useSWR(section === "applications" ? "/api/admin/applications?limit=100" : null, fetcher)
+  const { data: integrationsData } = useSWR(section === "apis" ? "/api/admin/integrations" : null, fetcher)
+  const { data: micropaymentsData } = useSWR(section === "micropayments" ? "/api/admin/micropayments" : null, fetcher)
   const { data: interviewsData } = useSWR(section === "interviews" ? `/api/admin/interviews?search=${debouncedSearch}` : null, fetcher)
   const { data: msgsData } = useSWR(section === "messages" ? "/api/admin/messages" : null, fetcher)
   const notifKey = section === "notifications" ? "/api/admin/notifications" : null
@@ -388,7 +391,7 @@ export default function AdminPage() {
     notifications: "Notificaciones",
     plans: "Planes de Suscripción",
     countries: "Países", cities: "Ciudades", languages: "Idiomas",
-    "payment-methods": "Métodos de Pago", "job-payments": "Pagos de Ofertas", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
+    "payment-methods": "Métodos de Pago", "job-payments": "Pagos de Ofertas", micropayments: "Micropagos (Destacar / Flash)", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
   }
 
   const showSearch = !["dashboard", "settings", "apis", "notifications", "job-payments"].includes(section)
@@ -530,10 +533,31 @@ export default function AdminPage() {
                       <p className="text-sm font-medium text-[#01A89E]">{r.rated?.display_name || "Usuario"}</p>
                     </div>
                     <div className="flex items-center gap-0.5 mt-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3 w-3 ${i < Math.floor(r.rating) ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`} />)}
-                      <span className="text-xs ml-1">{Number(r.rating).toFixed(1)}</span>
+                      {/* La columna es `score`; leer `r.rating` daba NaN y
+                          estrellas vacías en todas las reseñas. */}
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3 w-3 ${i < Math.round(Number(r.score) || 0) ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`} />)}
+                      <span className="text-xs ml-1">{Number(r.score || 0).toFixed(1)}</span>
                     </div>
                     {r.comment && <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded p-1.5 line-clamp-2">{r.comment}</p>}
+                    {(() => {
+                      const raw = typeof r.criteria === "string" ? (() => { try { return JSON.parse(r.criteria) } catch { return null } })() : r.criteria
+                      if (!raw || typeof raw !== "object") return null
+                      const rows = RATING_CRITERIA
+                        .map((c) => ({ label: c.label, value: readCriterion(raw, c) }))
+                        .filter((x) => typeof x.value === "number")
+                      if (rows.length === 0) return null
+                      return (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {rows.map((x) => (
+                            <span key={x.label} className="flex items-center gap-0.5 rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">
+                              {x.label}
+                              <b className="text-slate-900">{x.value!.toFixed(1)}</b>
+                              <Star className="h-2 w-2 fill-yellow-400 text-yellow-400" />
+                            </span>
+                          ))}
+                        </div>
+                      )
+                    })()}
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditDialog({ open: true, type: "rating", item: { ...r } })}><Pencil className="h-3 w-3" /></Button>
@@ -611,10 +635,14 @@ export default function AdminPage() {
                   pending: "bg-amber-50 text-amber-700",
                   confirmed: "bg-blue-50 text-blue-700",
                   approved: "bg-emerald-50 text-emerald-700",
+                  not_hired: "bg-slate-100 text-slate-600",
                   cancelled: "bg-red-50 text-red-700",
                 }
                 const statusLabel: Record<string, string> = {
-                  pending: "Pendiente", confirmed: "Confirmada", approved: "Contratado", cancelled: "Cancelada",
+                  pending: "Pendiente", confirmed: "Confirmada", approved: "Contratado",
+                  // Se hizo la entrevista y no hubo contratación: distinto de
+                  // cancelada, que nunca llegó a celebrarse.
+                  not_hired: "Sin contratación", cancelled: "Cancelada",
                 }
                 const typeLabel: Record<string, string> = {
                   call: "Llamada", in_person: "Presencial", video_call: "Videoconferencia", other: "Otra",
@@ -632,6 +660,15 @@ export default function AdminPage() {
                       <p className="text-xs text-slate-500 mt-0.5">
                         {new Date(i.scheduled_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · {typeLabel[i.interview_type] || i.interview_type}
                       </p>
+                      {i.rescheduled_count > 0 && (
+                        <p className="text-[11px] text-amber-700 mt-0.5">
+                          Reprogramada {i.rescheduled_count} {i.rescheduled_count === 1 ? "vez" : "veces"}
+                          {i.reschedule_reason ? ` · ${i.reschedule_reason}` : ""}
+                        </p>
+                      )}
+                      {i.status === "cancelled" && i.cancellation_reason && (
+                        <p className="text-[11px] text-red-700 mt-0.5">Motivo: {i.cancellation_reason}</p>
+                      )}
                       {i.notes && <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded p-1.5 line-clamp-2">{i.notes}</p>}
                     </div>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setDeleteDialog({ open: true, type: "entrevista", item: i, endpoint: "/api/admin/interviews" })}><Trash2 className="h-3 w-3" /></Button>
@@ -898,62 +935,118 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ========== MICROPAGOS ========== */}
+          {section === "micropayments" && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">
+                Compras puntuales de Destacar oferta, Oferta Flash y funciones premium. Se marcan
+                como completadas desde el webhook de Stripe, nunca desde el navegador.
+              </p>
+              {(micropaymentsData?.data || []).length === 0 && (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">
+                  Todavía no hay micropagos.
+                </CardContent></Card>
+              )}
+              {(micropaymentsData?.data || []).map((m: any) => {
+                const statusStyle: Record<string, string> = {
+                  completed: "bg-emerald-50 text-emerald-700",
+                  pending: "bg-amber-50 text-amber-700",
+                  failed: "bg-red-50 text-red-700",
+                  cancelled: "bg-slate-100 text-slate-600",
+                }
+                const featureLabel: Record<string, string> = {
+                  highlight_job: "Destacar oferta (24h)",
+                  flash_job: "Oferta Flash",
+                  highlight_profile: "Destacar perfil (7 días)",
+                  view_matches: "Ver empresas interesadas",
+                  boost_visibility: "Impulsar visibilidad",
+                }
+                return (
+                  <Card key={m.id} className="bg-white"><CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-medium">
+                            {featureLabel[m.feature_type] || m.feature_type}
+                          </p>
+                          <Badge className={`text-[9px] px-1.5 py-0 border-0 ${statusStyle[m.status] || "bg-slate-50 text-slate-600"}`}>
+                            {m.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {m.profiles?.display_name || m.user_id?.slice(0, 8) || "—"}
+                          {m.created_at && ` · ${new Date(m.created_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold">
+                          {typeof m.amount === "number" ? (m.amount / 100).toFixed(2) + " €" : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent></Card>
+                )
+              })}
+            </div>
+          )}
+
           {/* ========== APIS ========== */}
           {section === "apis" && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500">APIs e integraciones conectadas</p>
+              <p className="text-xs text-slate-500">
+                Estado real, leído de la configuración del servidor. Antes esta lista estaba
+                escrita a mano y no se correspondía con la realidad.
+              </p>
+
+              {integrationsData?.stripeMode === "pruebas" && (
+                <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3">
+                  <p className="text-xs font-medium text-amber-800">
+                    Stripe está en modo PRUEBAS: se puede probar el flujo completo con tarjetas
+                    de test, pero no se cobra dinero real.
+                  </p>
+                </CardContent></Card>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  { name: "Supabase", desc: "Base de datos PostgreSQL, Auth y Storage", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: false },
-                  { name: "Stripe", desc: "Pagos internacionales con tarjeta y wallets", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://dashboard.stripe.com" },
-                  { name: "RedSys", desc: "Pasarela de pago para tarjetas espanolas", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://canales.redsys.es" },
-                  { name: "Mapbox", desc: "API de mapas y geolocalizacion", status: "conectado", color: "bg-emerald-50 text-emerald-700", configurable: true, configUrl: "https://account.mapbox.com" },
-                  { name: "Firebase Cloud Messaging", desc: "Notificaciones push", status: "pendiente", color: "bg-amber-50 text-amber-700", configurable: true, configUrl: "https://console.firebase.google.com" },
-                  { name: "SendGrid", desc: "Emails transaccionales", status: "pendiente", color: "bg-amber-50 text-amber-700", configurable: true, configUrl: "https://app.sendgrid.com" },
-                  { name: "Google Analytics", desc: "Analitica y seguimiento", status: "pendiente", color: "bg-amber-50 text-amber-700", configurable: true, configUrl: "https://analytics.google.com" },
-                ].map(api => (
-                  <Card key={api.name} className="bg-white"><CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div><p className="text-sm font-semibold">{api.name}</p><p className="text-[10px] text-slate-500 mt-0.5">{api.desc}</p></div>
-                      <Badge className={`text-[9px] px-2 py-0.5 border-0 capitalize ${api.color}`}>{api.status}</Badge>
-                    </div>
-                    {api.configurable && api.configUrl && (
-                      <div className="mt-3 pt-3 border-t">
-                        <a href={api.configUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-[#01A89E] hover:underline">
-                          <Settings className="h-3 w-3" /> Configurar en panel externo
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
+                {(integrationsData?.data || []).map((api: any) => {
+                  const color =
+                    api.status === "conectado" ? "bg-emerald-50 text-emerald-700"
+                    : api.status === "incompleto" ? "bg-amber-50 text-amber-700"
+                    : "bg-red-50 text-red-700"
+                  return (
+                    <Card key={api.key} className="bg-white"><CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{api.name}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{api.desc}</p>
+                        </div>
+                        <Badge className={`text-[9px] px-2 py-0.5 border-0 capitalize shrink-0 ${color}`}>
+                          {api.status}
+                        </Badge>
                       </div>
-                    )}
-                  </CardContent></Card>
-                ))}
+                      {api.missing?.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {api.missing.map((key: string) => (
+                            <div key={key} className="flex items-center gap-1.5">
+                              <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+                              <code className="text-[10px] font-mono text-slate-600">{key}</code>
+                              <span className="text-[10px] text-slate-400">sin valor</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {api.configUrl && (
+                        <div className="mt-3 pt-3 border-t">
+                          <a href={api.configUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-[#01A89E] hover:underline">
+                            <Settings className="h-3 w-3" /> Configurar en panel externo
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        </div>
+                      )}
+                    </CardContent></Card>
+                  )
+                })}
               </div>
-              <Card className="bg-white"><CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-3">Variables de Entorno</h3>
-                <div className="space-y-2">
-                  {[
-                    { key: "NEXT_PUBLIC_SUPABASE_URL", group: "Supabase" },
-                    { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", group: "Supabase" },
-                    { key: "MUX_TOKEN_ID", group: "Mux" },
-                    { key: "MUX_TOKEN_SECRET", group: "Mux" },
-                    { key: "MUX_WEBHOOK_SECRET", group: "Mux" },
-                    { key: "STRIPE_SECRET_KEY", group: "Stripe" },
-                    { key: "STRIPE_PUBLISHABLE_KEY", group: "Stripe" },
-                    { key: "REDSYS_MERCHANT_CODE", group: "Redsys" },
-                    { key: "REDSYS_TERMINAL", group: "Redsys" },
-                    { key: "REDSYS_SECRET_KEY", group: "Redsys" },
-                    { key: "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN", group: "Mapbox" },
-                  ].map(v => (
-                    <div key={v.key} className="flex items-center justify-between py-1.5 px-2 rounded bg-slate-50">
-                      <div className="flex items-center gap-2">
-                        <Badge className="text-[8px] px-1 py-0 bg-slate-200 text-slate-600 border-0">{v.group}</Badge>
-                        <code className="text-[10px] font-mono text-slate-700">{v.key}</code>
-                      </div>
-                      <Badge className="text-[9px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-0"><CheckCircle className="h-2 w-2 mr-0.5 inline" /> OK</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent></Card>
             </div>
           )}
 

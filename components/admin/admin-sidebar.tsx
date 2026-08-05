@@ -24,6 +24,7 @@ export type AdminSection =
   | "languages"
   | "payment-methods"
   | "job-payments"
+  | "micropayments"
   | "points-ledger"
   | "apis"
   | "settings"
@@ -87,6 +88,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { id: "payment-methods", label: "Métodos de Pago", icon: CreditCard },
       { id: "job-payments", label: "Pagos de Ofertas", icon: DollarSign },
+      { id: "micropayments", label: "Micropagos (Destacar/Flash)", icon: CreditCard },
     ],
   },
   {
