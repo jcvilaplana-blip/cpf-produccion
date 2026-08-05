@@ -26,6 +26,7 @@ interface ProfileDetailContentProps {
   id: string
   viewerId?: string | null
   viewerType?: "worker" | "business" | "admin" | null
+  initialProfile?: any
 }
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -52,7 +53,7 @@ const RATING_CRITERIA = [
   { keys: ["contract_fulfillment", "cumplimiento_contrato"], label: "Cumplimiento del contrato" },
 ]
 
-export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetailContentProps) {
+export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile }: ProfileDetailContentProps) {
   const router = useRouter()
   const [savedProfile, setSavedProfile] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -61,11 +62,17 @@ export function ProfileDetailContent({ id, viewerId, viewerType }: ProfileDetail
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  // Fetch real profile data from Supabase
-  const { data: profileData, isLoading } = useSWR(`/api/profile/${id}`, fetcher)
+  const { data: profileData, isLoading } = useSWR(
+    `/api/profile/${id}`,
+    fetcher,
+    {
+      fallbackData: initialProfile ? { data: initialProfile } : undefined,
+    }
+  )
+
   const worker = profileData?.data
 
-  if (isLoading) {
+  if (!worker && isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center pb-20">
         <Loader2 className="h-8 w-8 animate-spin text-[#01A89E]" />
