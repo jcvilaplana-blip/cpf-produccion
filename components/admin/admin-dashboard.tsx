@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatEuros } from "@/lib/tax"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -92,6 +93,30 @@ export function AdminDashboard({ stats, onNavigate }: DashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Ingresos: el panel no mostraba ni una cifra de dinero pese a que la
+          plataforma cobra suscripciones y micropagos. Solo suma lo cobrado. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Ingresos totales", value: formatEuros(s.revenueTotalCents ?? 0), color: "#059669", desc: `${s.revenueCount ?? 0} cobros` },
+          { label: "Este mes", value: formatEuros(s.revenueMonthCents ?? 0), color: "#0EA5E9", desc: "Desde el día 1" },
+          { label: "Suscripciones", value: formatEuros(s.revenueSubsCents ?? 0), color: "#F5A623", desc: "Planes mensuales" },
+          { label: "Micropagos", value: formatEuros(s.revenueMicroCents ?? 0), color: "#8B5CF6", desc: "Destacar, Flash…" },
+        ].map(r => (
+          <Card
+            key={r.label}
+            className="bg-white hover:shadow-md transition-all cursor-pointer border-l-4"
+            style={{ borderLeftColor: r.color }}
+            onClick={() => onNavigate("revenue" as AdminSection)}
+          >
+            <CardContent className="p-4">
+              <p className="text-xl font-bold text-slate-900">{r.value}</p>
+              <p className="text-xs font-medium text-slate-600 mt-0.5">{r.label}</p>
+              <p className="text-[10px] text-slate-400">{r.desc}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* KPI Row 1 - Main metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {kpis.map(k => (

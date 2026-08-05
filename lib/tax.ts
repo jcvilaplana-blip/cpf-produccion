@@ -13,7 +13,7 @@
  */
 
 export const VAT_RATE = 0.21
-export const VAT_LABEL = "IVA (21%)"
+export const VAT_LABEL = "(I.V.A. 21%)"
 
 export interface PriceBreakdown {
   /** Base imponible, en céntimos. */

@@ -53,7 +53,30 @@ export async function GET() {
     supabase.from("business_profiles").select("*", { count: "exact", head: true }).eq("subscription_plan", "premium"),
   ])
 
+  // Ingresos: no había ninguna métrica de dinero en el panel, aunque la
+  // plataforma cobra desde hace tiempo. Solo se suma lo efectivamente
+  // cobrado; un pago pendiente es una intención, no un ingreso.
+  const [{ data: paidMicro }, { data: paidSubs }] = await Promise.all([
+    supabase.from("micropayments").select("amount_cents, status, created_at").in("status", ["completed", "succeeded", "paid"]),
+    supabase.from("payments").select("amount, status, created_at, processed_at").in("status", ["completed", "succeeded", "paid"]),
+  ])
+
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  const microCents = (paidMicro || []).reduce((a, r) => a + (r.amount_cents || 0), 0)
+  const subsCents = (paidSubs || []).reduce((a, r) => a + (r.amount || 0), 0)
+  const monthCents =
+    (paidMicro || []).filter((r) => new Date(r.created_at) >= startOfMonth).reduce((a, r) => a + (r.amount_cents || 0), 0) +
+    (paidSubs || []).filter((r) => new Date(r.processed_at || r.created_at) >= startOfMonth).reduce((a, r) => a + (r.amount || 0), 0)
+
   return NextResponse.json({
+    revenueTotalCents: microCents + subsCents,
+    revenueMonthCents: monthCents,
+    revenueMicroCents: microCents,
+    revenueSubsCents: subsCents,
+    revenueCount: (paidMicro?.length || 0) + (paidSubs?.length || 0),
     totalProfiles: totalProfiles ?? 0,
     totalWorkers: totalWorkers ?? 0,
     totalBusinesses: totalBusinesses ?? 0,

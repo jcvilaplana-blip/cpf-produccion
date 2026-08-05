@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Users, Building2, FolderTree, MapPin, Crown, Globe,
   Languages, CreditCard, Settings, Star, MessageCircle, Briefcase, CalendarCheck,
-  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell, ClipboardList, UserCheck,
+  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell, ClipboardList, UserCheck, TrendingUp,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -26,6 +26,7 @@ export type AdminSection =
   | "payment-methods"
   | "job-payments"
   | "micropayments"
+  | "revenue"
   | "points-ledger"
   | "apis"
   | "settings"
@@ -89,6 +90,7 @@ const menuGroups: MenuGroup[] = [
     label: "Pagos",
     items: [
       { id: "payment-methods", label: "Métodos de Pago", icon: CreditCard },
+      { id: "revenue", label: "Ingresos", icon: TrendingUp },
       { id: "job-payments", label: "Pagos de Ofertas", icon: DollarSign },
       { id: "micropayments", label: "Micropagos (Destacar/Flash)", icon: CreditCard },
     ],

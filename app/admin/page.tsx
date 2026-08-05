@@ -15,6 +15,7 @@ import { AdminSettingsSection } from "@/components/admin/admin-settings-section"
 import { AdminCrudTable, type ColumnDef } from "@/components/admin/admin-crud-table"
 import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
 import { RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
+import { formatEuros } from "@/lib/tax"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -110,6 +111,7 @@ export default function AdminPage() {
   const { data: integrationsData } = useSWR(section === "apis" ? "/api/admin/integrations" : null, fetcher)
   const { data: micropaymentsData } = useSWR(section === "micropayments" ? "/api/admin/micropayments" : null, fetcher)
   const { data: subsData } = useSWR(section === "subscriptions" ? `/api/admin/subscriptions?search=${debouncedSearch}` : null, fetcher)
+  const { data: revenueData } = useSWR(section === "revenue" ? "/api/admin/revenue" : null, fetcher)
   const { data: interviewsData } = useSWR(section === "interviews" ? `/api/admin/interviews?search=${debouncedSearch}` : null, fetcher)
   const { data: msgsData } = useSWR(section === "messages" ? "/api/admin/messages" : null, fetcher)
   const notifKey = section === "notifications" ? "/api/admin/notifications" : null
@@ -392,7 +394,7 @@ export default function AdminPage() {
     notifications: "Notificaciones",
     plans: "Planes de Suscripción", subscriptions: "Suscripciones Activas",
     countries: "Países", cities: "Ciudades", languages: "Idiomas",
-    "payment-methods": "Métodos de Pago", "job-payments": "Pagos de Ofertas", micropayments: "Micropagos (Destacar / Flash)", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
+    "payment-methods": "Métodos de Pago", revenue: "Ingresos", "job-payments": "Pagos de Ofertas", micropayments: "Micropagos (Destacar / Flash)", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
   }
 
   const showSearch = !["dashboard", "settings", "apis", "notifications", "job-payments"].includes(section)
@@ -933,6 +935,84 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ========== INGRESOS ========== */}
+          {section === "revenue" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { label: "Ingresos totales", value: formatEuros(revenueData?.summary?.totalCents ?? 0), color: "text-emerald-600" },
+                  { label: "Este mes", value: formatEuros(revenueData?.summary?.monthCents ?? 0), color: "text-slate-900" },
+                  { label: "Base imponible", value: formatEuros(revenueData?.summary?.baseCents ?? 0), color: "text-slate-600" },
+                  { label: "I.V.A. repercutido", value: formatEuros(revenueData?.summary?.vatCents ?? 0), color: "text-amber-600" },
+                ].map((s) => (
+                  <Card key={s.label} className="bg-white"><CardContent className="p-3 text-center">
+                    <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                    <p className="text-[10px] text-slate-500">{s.label}</p>
+                  </CardContent></Card>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Suscripciones", value: formatEuros(revenueData?.summary?.suscripcionesCents ?? 0) },
+                  { label: "Micropagos", value: formatEuros(revenueData?.summary?.micropagosCents ?? 0) },
+                  { label: "Cobros / pendientes", value: `${revenueData?.summary?.countPaid ?? 0} / ${revenueData?.summary?.countPending ?? 0}` },
+                ].map((s) => (
+                  <Card key={s.label} className="bg-white"><CardContent className="p-2.5 text-center">
+                    <p className="text-sm font-semibold text-slate-900">{s.value}</p>
+                    <p className="text-[10px] text-slate-500">{s.label}</p>
+                  </CardContent></Card>
+                ))}
+              </div>
+
+              {(revenueData?.data || []).length === 0 && (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">
+                  Todavía no hay ingresos registrados.
+                </CardContent></Card>
+              )}
+
+              {(revenueData?.data || []).map((r: any) => {
+                const paid = ["completed", "succeeded", "paid", "active"].includes(String(r.status))
+                return (
+                  <Card key={`${r.source}-${r.id}`} className="bg-white"><CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage src={r.buyer?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs">
+                          {(r.buyer?.display_name || "?")[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-medium truncate">{r.buyer?.display_name || "Usuario"}</p>
+                          <Badge className="text-[9px] px-1.5 py-0 border-0 bg-slate-100 text-slate-600 capitalize">
+                            {r.source}
+                          </Badge>
+                          <Badge className={`text-[9px] px-1.5 py-0 border-0 ${paid ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                            {r.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">{r.concept}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {new Date(r.date).toLocaleString("es-ES", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          {r.validUntil && (
+                            <> · válido hasta {new Date(r.validUntil).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</>
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-slate-900">{formatEuros(r.totalCents)}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {formatEuros(r.baseCents)} + {formatEuros(r.vatCents)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent></Card>
+                )
+              })}
             </div>
           )}
 

@@ -79,12 +79,93 @@ async function applySubscription(
       .eq("id", userId)
   }
 
+  // Rastro contable. Sin esto, cada cobro mensual movía dinero y no dejaba
+  // ninguna fila: el panel podía decir quién tenía plan, pero no cuánto se
+  // había ingresado ni cuándo.
+  await recordSubscriptionPayment(supabase, subscription, userId, planId)
+
   await notifyUser(userId, {
     title: "Suscripción activada",
     body: `Tu ${metadata.plan_name || "plan"} está activo hasta el ${new Date(expiresAt).toLocaleDateString("es-ES")}.`,
     type: "aviso",
     link: "/subscribe",
   })
+}
+
+/**
+ * Guarda el cobro en `payments` y el estado en `subscriptions`.
+ *
+ * Ambas tablas ya existían y nadie las escribía. `order_id` lleva el id de la
+ * factura de Stripe, que es único por cobro: si el webhook se reintenta, la
+ * comprobación previa evita duplicar el ingreso.
+ */
+async function recordSubscriptionPayment(
+  supabase: ServiceClient,
+  subscription: Stripe.Subscription,
+  userId: string,
+  planId: string
+) {
+  try {
+    const invoiceId =
+      typeof (subscription as any).latest_invoice === "string"
+        ? (subscription as any).latest_invoice
+        : (subscription as any).latest_invoice?.id || subscription.id
+
+    const { data: existing } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("order_id", invoiceId)
+      .maybeSingle()
+
+    const amountCents = subscription.items?.data?.reduce(
+      (sum, item) => sum + (item.price?.unit_amount || 0) * (item.quantity || 1),
+      0
+    ) || 0
+
+    if (!existing) {
+      await supabase.from("payments").insert({
+        user_id: userId,
+        order_id: invoiceId,
+        plan_id: planId,
+        amount: amountCents,
+        currency: "eur",
+        status: "completed",
+        payment_method: "stripe",
+        processed_at: new Date().toISOString(),
+        metadata: { subscription_id: subscription.id },
+      })
+    }
+
+    const periodStart = (subscription as any).current_period_start as number | undefined
+    const periodEnd = (subscription as any).current_period_end as number | undefined
+
+    const { data: existingSub } = await supabase
+      .from("subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle()
+
+    const row = {
+      user_id: userId,
+      plan_type: planId,
+      status: subscription.status,
+      payment_method: "stripe",
+      current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
+      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      canceled_at: null,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (existingSub) {
+      await supabase.from("subscriptions").update(row).eq("id", existingSub.id)
+    } else {
+      await supabase.from("subscriptions").insert(row)
+    }
+  } catch (err) {
+    // El cobro es lo autoritativo y ya ocurrió: un fallo registrándolo no debe
+    // devolver error a Stripe y provocar reintentos del flujo entero.
+    console.error("Stripe webhook: no se pudo registrar el cobro de suscripción", err)
+  }
 }
 
 /** Baja o impago: se retira el plan, pero no se borra el historial. */
@@ -108,6 +189,21 @@ async function cancelSubscription(supabase: ServiceClient, subscription: Stripe.
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId)
+  }
+
+  // La baja también queda registrada: el historial de pagos no se toca, pero
+  // la suscripción deja de figurar como activa.
+  try {
+    await supabase
+      .from("subscriptions")
+      .update({
+        status: subscription.status || "canceled",
+        canceled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+  } catch (err) {
+    console.error("Stripe webhook: no se pudo registrar la baja", err)
   }
 
   await notifyUser(userId, {
