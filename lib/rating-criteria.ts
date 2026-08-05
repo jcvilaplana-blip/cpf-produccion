@@ -64,6 +64,65 @@ export const RATING_CRITERIA: RatingCriterion[] = [
   },
 ]
 
+/**
+ * Criterios con los que un candidato valora a un establecimiento.
+ *
+ * No son los mismos ni podrían serlo: "rapidez de aprendizaje" o "adaptación
+ * al equipo" describen a una persona trabajando, no a un local contratando.
+ * Lo que un trabajador puede juzgar de una empresa es otra cosa —si pagó lo
+ * acordado, si el ambiente era sano, si el horario fue el pactado—, y es lo
+ * que se pregunta aquí.
+ */
+export const BUSINESS_RATING_CRITERIA: RatingCriterion[] = [
+  {
+    key: "payment_compliance",
+    aliases: ["pago_acordado"],
+    label: "Pago acordado",
+    hint: "¿Pagó lo pactado y a tiempo?",
+  },
+  {
+    key: "work_environment",
+    aliases: ["ambiente_trabajo"],
+    label: "Ambiente de trabajo",
+    hint: "¿Buen trato y clima en el equipo?",
+  },
+  {
+    key: "schedule_respect",
+    aliases: ["respeto_horario"],
+    label: "Respeto del horario",
+    hint: "¿Se cumplieron los turnos acordados?",
+  },
+  {
+    key: "organization",
+    aliases: ["organizacion"],
+    label: "Organización",
+    hint: "¿Estaba todo previsto y ordenado?",
+  },
+  {
+    key: "facilities",
+    aliases: ["instalaciones"],
+    label: "Instalaciones y medios",
+    hint: "¿Material y espacios en buen estado?",
+  },
+  {
+    key: "communication",
+    aliases: ["comunicacion"],
+    label: "Comunicación",
+    hint: "¿Dieron instrucciones claras?",
+  },
+  {
+    key: "would_repeat",
+    aliases: ["repetiria"],
+    label: "Volvería a trabajar aquí",
+    hint: "¿Repetirías con este establecimiento?",
+  },
+]
+
+/** Los criterios que tocan según a quién se valore. */
+export function criteriaFor(userType?: "worker" | "business" | null): RatingCriterion[] {
+  return userType === "business" ? BUSINESS_RATING_CRITERIA : RATING_CRITERIA
+}
+
 /** Todas las claves que valen para un criterio, la actual y las antiguas. */
 export function criterionKeys(criterion: RatingCriterion): string[] {
   return [criterion.key, ...criterion.aliases]

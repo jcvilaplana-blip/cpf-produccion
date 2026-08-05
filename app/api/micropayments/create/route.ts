@@ -151,7 +151,13 @@ export async function POST(request: Request) {
         },
       ],
       mode: "payment",
-      success_url: `${baseUrl}/micropayment/success?session_id={CHECKOUT_SESSION_ID}&feature=${featureType}&mp_id=${micropayment.id}`,
+      // "Destacar mi perfil" se compra desde Editar perfil, así que se vuelve
+      // allí y la confirmación se da en un modal, sin sacar al usuario de su
+      // pantalla. El resto de compras siguen usando la página de éxito.
+      success_url:
+        featureType === "highlight_profile"
+          ? `${baseUrl}/edit-profile?destacado=1`
+          : `${baseUrl}/micropayment/success?session_id={CHECKOUT_SESSION_ID}&feature=${featureType}&mp_id=${micropayment.id}`,
       cancel_url: `${baseUrl}/micropayment/cancel?mp_id=${micropayment.id}`,
       customer_email: user?.email,
       metadata: {

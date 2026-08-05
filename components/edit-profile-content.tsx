@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation" 
 import { ArrowLeft, Save, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,7 @@ import { CvSection } from "@/components/edit-profile/cv-section"
 import { PortfolioSection } from "@/components/edit-profile/portfolio-section"
 import { PortfolioVideosSection } from "@/components/edit-profile/portfolio-videos-section"
 import { PremiumFeaturesCard } from "@/components/premium-features-card"
+import { ProfileHighlightedModal } from "@/components/profile-highlighted-modal"
 import { ReferralCard } from "@/components/edit-profile/referral-card"
 
 interface EditProfileContentProps {
@@ -98,7 +99,6 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     // `custom_subcategory: customSubcategory || null`, cada vez que alguien
     // editaba su perfil se borraba la especialidad que había puesto al
     // registrarse.
-    setCustomSubcategory((profile as any).custom_subcategory || "")
     setCustomSubcategory((profile as any).custom_subcategory || "")
     setExperienceYears(String(profile.experience_years || ""))
     setAvailability(profile.availability_status || "")
@@ -476,6 +476,11 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
 
         {/* Premium Features - Highlight profile & View matches */}
         <PremiumFeaturesCard />
+
+        {/* Se abre al volver del pago de "Destacar mi perfil". */}
+        <Suspense fallback={null}>
+          <ProfileHighlightedModal />
+        </Suspense>
 
         <div className="pt-2 pb-4">
           <Button

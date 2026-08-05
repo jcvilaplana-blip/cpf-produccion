@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Star, X, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createRatingAction } from "@/lib/actions"
-import { RATING_CRITERIA } from "@/lib/rating-criteria"
+import { criteriaFor } from "@/lib/rating-criteria"
 
 interface RatingDialogProps {
   open: boolean
@@ -16,11 +16,7 @@ interface RatingDialogProps {
   ratedUserId: string
   ratedUserName: string
   jobId: string
-  /**
-   * Los siete criterios describen a un trabajador (puntualidad, higiene,
-   * adaptación al equipo…). Al valorar a una empresa no aplican, así que ahí
-   * se mantiene la valoración global de siempre.
-   */
+  /** Decide qué siete criterios se preguntan: los de trabajador o los de empresa. */
   ratedUserType?: "worker" | "business" | null
   onSuccess?: () => void
 }
@@ -63,44 +59,38 @@ export function RatingDialog({
 }: RatingDialogProps) {
   const router = useRouter()
   const [scores, setScores] = useState<Record<string, number>>({})
-  const [overall, setOverall] = useState(0)
   const [review, setReview] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Los criterios describen a un trabajador; a una empresa se la valora en
-  // global, como hasta ahora.
-  const usesCriteria = ratedUserType !== "business"
+  // Ambos sentidos se valoran por criterios; lo que cambia es la lista, porque
+  // lo que un trabajador puede juzgar de una empresa no es lo mismo que lo que
+  // una empresa juzga de un trabajador.
+  const criteria = criteriaFor(ratedUserType)
 
   useEffect(() => {
     if (open) return
     setScores({})
-    setOverall(0)
     setReview("")
     setError(null)
   }, [open])
 
-  const rated = RATING_CRITERIA.filter((c) => scores[c.key] > 0)
-  const allRated = rated.length === RATING_CRITERIA.length
+  const rated = criteria.filter((c) => scores[c.key] > 0)
+  const allRated = rated.length === criteria.length
 
   // La nota global es la media de los criterios: pedirla aparte además de los
   // siete sería preguntar dos veces lo mismo y podría contradecirse.
   const average = useMemo(() => {
-    if (!usesCriteria) return overall
     if (rated.length === 0) return 0
     const total = rated.reduce((sum, c) => sum + scores[c.key], 0)
     return Math.round((total / rated.length) * 10) / 10
-  }, [usesCriteria, overall, rated, scores])
+  }, [rated, scores])
 
-  const canSubmit = usesCriteria ? allRated : overall > 0
+  const canSubmit = allRated
 
   const handleSubmit = async () => {
     if (!canSubmit) {
-      setError(
-        usesCriteria
-          ? "Valora los siete criterios antes de enviar"
-          : "Selecciona una calificación"
-      )
+      setError("Valora los siete criterios antes de enviar")
       return
     }
     if (!jobId) {
@@ -114,9 +104,9 @@ export function RatingDialog({
       const result = await createRatingAction(
         ratedUserId,
         jobId,
-        usesCriteria ? Math.round(average) : overall,
+        Math.round(average),
         review,
-        usesCriteria ? scores : undefined
+        scores
       )
       if (result.error) {
         setError(result.error)
@@ -157,16 +147,15 @@ export function RatingDialog({
             Valorar a {ratedUserName}
           </DialogTitle>
           <p className="mt-1 text-[13px] leading-snug text-slate-500">
-            {usesCriteria
-              ? "Puntúa los siete criterios. Aparecerán en su perfil público."
-              : "Comparte tu experiencia trabajando con este establecimiento."}
+            {ratedUserType === "business"
+              ? "Puntúa los siete criterios. Ayudarán a otros candidatos a decidir."
+              : "Puntúa los siete criterios. Aparecerán en su perfil público."}
           </p>
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto px-5">
-          {usesCriteria ? (
-            <div className="divide-y divide-slate-100">
-              {RATING_CRITERIA.map((criterion) => (
+          <div className="divide-y divide-slate-100">
+              {criteria.map((criterion) => (
                 <div
                   key={criterion.key}
                   className="flex items-center justify-between gap-3 py-3 first:pt-0"
@@ -183,13 +172,7 @@ export function RatingDialog({
                   />
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="py-2">
-              <p className="mb-2 text-[14px] font-medium text-slate-900">Calificación</p>
-              <StarRow value={overall} onChange={setOverall} size="lg" />
-            </div>
-          )}
+          </div>
 
           <div className="py-4">
             <p className="mb-2 text-[14px] font-medium text-slate-900">
@@ -214,10 +197,9 @@ export function RatingDialog({
         </div>
 
         <div className="border-t border-slate-100 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
-          {usesCriteria && (
-            <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between">
               <span className="text-[13px] text-slate-500">
-                {rated.length}/{RATING_CRITERIA.length} criterios
+                {rated.length}/{criteria.length} criterios
               </span>
               <span className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-900">
                 Media
@@ -227,7 +209,6 @@ export function RatingDialog({
                 </span>
               </span>
             </div>
-          )}
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !canSubmit}

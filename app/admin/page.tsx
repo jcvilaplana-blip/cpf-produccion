@@ -109,6 +109,7 @@ export default function AdminPage() {
   const { data: applicationsData } = useSWR(section === "applications" ? "/api/admin/applications?limit=100" : null, fetcher)
   const { data: integrationsData } = useSWR(section === "apis" ? "/api/admin/integrations" : null, fetcher)
   const { data: micropaymentsData } = useSWR(section === "micropayments" ? "/api/admin/micropayments" : null, fetcher)
+  const { data: subsData } = useSWR(section === "subscriptions" ? `/api/admin/subscriptions?search=${debouncedSearch}` : null, fetcher)
   const { data: interviewsData } = useSWR(section === "interviews" ? `/api/admin/interviews?search=${debouncedSearch}` : null, fetcher)
   const { data: msgsData } = useSWR(section === "messages" ? "/api/admin/messages" : null, fetcher)
   const notifKey = section === "notifications" ? "/api/admin/notifications" : null
@@ -389,7 +390,7 @@ export default function AdminPage() {
     applications: "Candidaturas", interviews: "Solicitudes de Entrevista", categories: "Empleos",
     ratings: "Reseñas", messages: "Mensajes",
     notifications: "Notificaciones",
-    plans: "Planes de Suscripción",
+    plans: "Planes de Suscripción", subscriptions: "Suscripciones Activas",
     countries: "Países", cities: "Ciudades", languages: "Idiomas",
     "payment-methods": "Métodos de Pago", "job-payments": "Pagos de Ofertas", micropayments: "Micropagos (Destacar / Flash)", "points-ledger": "Puntos y Referidos", apis: "APIs e Integraciones", settings: "Configuración",
   }
@@ -932,6 +933,84 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ========== SUSCRIPCIONES ACTIVAS ========== */}
+          {section === "subscriptions" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "Total", value: subsData?.summary?.total ?? 0, color: "text-slate-900" },
+                  { label: "Activas", value: subsData?.summary?.activas ?? 0, color: "text-emerald-600" },
+                  { label: "Por caducar", value: subsData?.summary?.porCaducar ?? 0, color: "text-amber-600" },
+                  { label: "Caducadas", value: subsData?.summary?.caducadas ?? 0, color: "text-red-600" },
+                ].map((s) => (
+                  <Card key={s.label} className="bg-white"><CardContent className="p-3 text-center">
+                    <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                    <p className="text-[10px] text-slate-500">{s.label}</p>
+                  </CardContent></Card>
+                ))}
+              </div>
+
+              {(subsData?.data || []).length === 0 && (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">
+                  Todavía no hay nadie suscrito.
+                </CardContent></Card>
+              )}
+
+              {(subsData?.data || []).map((s: any) => {
+                const stateStyle: Record<string, string> = {
+                  activa: "bg-emerald-50 text-emerald-700",
+                  por_caducar: "bg-amber-50 text-amber-700",
+                  caducada: "bg-red-50 text-red-700",
+                  sin_caducidad: "bg-slate-100 text-slate-600",
+                }
+                const stateLabel: Record<string, string> = {
+                  activa: "Activa", por_caducar: "Por caducar",
+                  caducada: "Caducada", sin_caducidad: "Sin caducidad",
+                }
+                const planLabel: Record<string, string> = {
+                  "standard-business": "Standard (empresa)",
+                  "premium-business": "Premium (empresa)",
+                  "premium-worker": "Premium (candidato)",
+                }
+                return (
+                  <Card key={`${s.kind}-${s.id}`} className="bg-white"><CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage src={s.avatar_url || undefined} />
+                        <AvatarFallback className={s.kind === "business" ? "bg-orange-100 text-orange-700 text-xs" : "bg-teal-100 text-teal-700 text-xs"}>
+                          {(s.name || "?")[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-medium truncate">{s.name}</p>
+                          <Badge className="text-[9px] px-1.5 py-0 border-0 bg-slate-100 text-slate-600">
+                            {s.kind === "business" ? "Empresa" : "Candidato"}
+                          </Badge>
+                          <Badge className={`text-[9px] px-1.5 py-0 border-0 ${stateStyle[s.state] || ""}`}>
+                            {stateLabel[s.state] || s.state}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {planLabel[s.plan] || s.plan || "—"}
+                          {s.expires_at && (
+                            <>
+                              {" · hasta "}
+                              {new Date(s.expires_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                              {typeof s.daysLeft === "number" && (
+                                <> ({s.daysLeft > 0 ? `quedan ${s.daysLeft} d` : `caducó hace ${Math.abs(s.daysLeft)} d`})</>
+                              )}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent></Card>
+                )
+              })}
             </div>
           )}
 

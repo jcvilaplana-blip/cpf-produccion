@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getHighlightedProfileIds, sortHighlightedFirst } from "@/lib/highlighted-profiles"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -89,7 +90,10 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
           jobType: profile.availability_status || "full-time",
           isFlashOffer: false,
         }))
-        setWorkers(mapped)
+        // Ver lib/highlighted-profiles.ts: los perfiles destacados de pago
+        // van delante, manteniendo el orden por valoración entre ellos.
+        const highlighted = await getHighlightedProfileIds(supabase)
+        setWorkers(sortHighlightedFirst(mapped, highlighted))
       } catch (e) {
         console.error("Error loading workers:", e)
       } finally {

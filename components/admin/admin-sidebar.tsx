@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Users, Building2, FolderTree, MapPin, Crown, Globe,
   Languages, CreditCard, Settings, Star, MessageCircle, Briefcase, CalendarCheck,
-  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell, ClipboardList,
+  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell, ClipboardList, UserCheck,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -20,6 +20,7 @@ export type AdminSection =
   | "messages"
   | "notifications"
   | "plans"
+  | "subscriptions"
   | "countries" | "cities"
   | "languages"
   | "payment-methods"
@@ -73,6 +74,7 @@ const menuGroups: MenuGroup[] = [
     label: "Suscripciones",
     items: [
       { id: "plans", label: "Ver Planes", icon: Crown },
+      { id: "subscriptions", label: "Suscripciones Activas", icon: UserCheck },
     ],
   },
   {

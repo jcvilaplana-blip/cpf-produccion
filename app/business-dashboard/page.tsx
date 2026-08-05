@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client"
 import { checkInterviewRemindersAction } from "@/lib/actions"
 import { computeBestMatchScore, type MatchJobInput } from "@/lib/matching"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
+import { getHighlightedProfileIds, sortHighlightedFirst } from "@/lib/highlighted-profiles"
 import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
 
@@ -119,7 +120,10 @@ export default function BusinessDashboardPage() {
         if (activeJobs.length > 0) {
           withMatch.sort((a, b) => (b.matchPercent || 0) - (a.matchPercent || 0))
         }
-        setCandidates(withMatch)
+        // Los perfiles con "Destacar" pagado van primero, conservando entre
+        // ellos el orden por coincidencia/valoración.
+        const highlighted = await getHighlightedProfileIds(supabase)
+        setCandidates(sortHighlightedFirst(withMatch, highlighted))
       }
 
       setMyJobsCount(count || 0)

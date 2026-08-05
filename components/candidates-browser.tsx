@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react" 
+import { getHighlightedProfileIds, sortHighlightedFirst } from "@/lib/highlighted-profiles"
 import { WorkerVideoCard } from "@/components/worker-video-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -113,7 +114,10 @@ export function CandidatesBrowser() {
           experience_years: c.experience_years,
         }))
 
-        setCandidates(formattedCandidates)
+        // Destacados primero: es lo que el candidato paga con "Destacar mi
+        // perfil" y hasta ahora no tenía ningún efecto en los listados.
+        const highlighted = await getHighlightedProfileIds(supabase)
+        setCandidates(sortHighlightedFirst(formattedCandidates, highlighted))
         setCategories(catsData || [])
         setSubcategories(subsData || [])
       } catch (e) {
