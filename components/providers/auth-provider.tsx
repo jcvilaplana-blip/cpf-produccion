@@ -25,7 +25,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | "timeout"> {
+// PromiseLike y no Promise: los builders de supabase-js son "thenables", no
+// promesas reales, así que exigir Promise<T> hacía que TypeScript no pudiera
+// inferir el resultado y lo diera por `unknown`.
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T | "timeout"> {
   const timeout = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), timeoutMs))
   return Promise.race([promise, timeout])
 }

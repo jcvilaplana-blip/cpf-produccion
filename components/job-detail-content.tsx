@@ -531,7 +531,7 @@ export function JobDetailContent({
         </div>
       )}
 
-      <BottomNavigation profile={userProfile} />
+      <BottomNavigation profile={userProfile ?? null} />
     </div>
   )
 }

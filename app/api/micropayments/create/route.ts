@@ -10,7 +10,15 @@ function getStripe() {
     throw new Error("STRIPE_SECRET_KEY is not configured")
   }
   return new Stripe(key, {
-    apiVersion: "2024-06-20",
+    // La versión de la API va fijada a propósito: el SDK v19 se genera contra
+    // "2025-09-30.clover" y sus tipos describen esa forma, pero cambiarla aquí
+    // cambiaría de verdad lo que devuelve Stripe. Los pagos están sin probar
+    // (STRIPE_WEBHOOK_SECRET ni siquiera está configurado), así que se
+    // mantiene la fijada y se marca el desajuste en lugar de tocar el
+    // comportamiento a ciegas.
+    // TODO(antes de lanzar): subir a la versión del SDK y probar el cobro
+    // completo, incluido el webhook.
+    apiVersion: "2024-06-20" as Stripe.LatestApiVersion,
   })
 }
 

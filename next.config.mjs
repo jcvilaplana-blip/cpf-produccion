@@ -13,7 +13,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // El proyecto está en 0 errores. Se deja la comprobación activa para que
+    // el build falle si vuelven a aparecer: los 49 que había acumulados
+    // escondían bugs reales (una especialidad que se borraba al guardar, un
+    // mapa que se quedaba sin marcadores, un botón de entrevista roto), y
+    // pasaban desapercibidos precisamente porque el build los ignoraba.
+    ignoreBuildErrors: false,
   },
   images: {
     unoptimized: true,

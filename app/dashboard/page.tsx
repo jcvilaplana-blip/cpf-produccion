@@ -44,8 +44,12 @@ export default async function DashboardPage() {
     specialties: profile?.specialties || null,
   }
 
+  // La unión a `profiles` es de uno-a-uno, pero PostgREST la tipa como array.
+  // Se normaliza aquí: si algún día llega como array, el nombre del
+  // establecimiento seguiría pintándose en la tarjeta.
   const jobsWithMatch = (jobsData || []).map((job) => ({
     ...job,
+    business: Array.isArray(job.business) ? job.business[0] ?? null : job.business ?? null,
     matchPercent: computeMatchScore(candidateMatchInput, job).percent,
   }))
 

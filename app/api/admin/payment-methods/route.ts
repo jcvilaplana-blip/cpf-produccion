@@ -4,7 +4,7 @@ import { verifyAdmin } from "@/lib/admin-auth"
 
 export async function GET() {
   const { supabase, error } = await verifyAdmin()
-  if (error) return NextResponse.json({ error }, { status: 401 })
+  if (error || !supabase) return NextResponse.json({ error }, { status: 401 })
   const { data, error: e } = await supabase.from("payment_methods").select("*").order("sort_order")
   if (e) return NextResponse.json({ error: e.message }, { status: 500 })
   return NextResponse.json({ data })
@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const { supabase, error } = await verifyAdmin()
-  if (error) return NextResponse.json({ error }, { status: 401 })
+  if (error || !supabase) return NextResponse.json({ error }, { status: 401 })
   const body = await req.json()
   const { data, error: e } = await supabase.from("payment_methods").insert({
     provider: body.provider, display_name: body.display_name,
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const { supabase, error } = await verifyAdmin()
-  if (error) return NextResponse.json({ error }, { status: 401 })
+  if (error || !supabase) return NextResponse.json({ error }, { status: 401 })
   const body = await req.json()
   const { id, ...updates } = body
   updates.updated_at = new Date().toISOString()
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const { supabase, error } = await verifyAdmin()
-  if (error) return NextResponse.json({ error }, { status: 401 })
+  if (error || !supabase) return NextResponse.json({ error }, { status: 401 })
   const { id } = await req.json()
   const { error: e } = await supabase.from("payment_methods").delete().eq("id", id)
   if (e) return NextResponse.json({ error: e.message }, { status: 500 })

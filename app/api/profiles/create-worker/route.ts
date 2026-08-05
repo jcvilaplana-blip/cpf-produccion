@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function upsertProfileWithRetry(supabase: ReturnType<typeof createClient>, profileData: any) {
+async function upsertProfileWithRetry(supabase: SupabaseClient<any, any, any>, profileData: any) {
   const maxAttempts = 3
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const { error } = await supabase

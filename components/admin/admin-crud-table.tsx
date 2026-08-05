@@ -38,8 +38,9 @@ function useCategories() {
   useEffect(() => {
     if (categoriesCache) return
     fetch("/api/categories").then(r => r.json()).then(d => {
-      categoriesCache = d.data || []
-      setCats(categoriesCache)
+      const loaded: any[] = d.data || []
+      categoriesCache = loaded
+      setCats(loaded)
     }).catch(() => {})
   }, [])
   return cats

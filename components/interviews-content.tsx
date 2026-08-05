@@ -27,7 +27,7 @@ export interface BusinessInterview {
   scheduledAt: string
   interviewType: "call" | "in_person" | "video_call" | "other"
   otherTypeDetail: string | null
-  status: "pending" | "confirmed" | "cancelled" | "approved"
+  status: "pending" | "confirmed" | "cancelled" | "approved" | "not_hired"
   notes: string | null
 }
 
@@ -46,7 +46,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
 
-  const handleResolve = async (interviewId: string, resolution: "approved" | "cancelled") => {
+  const handleResolve = async (interviewId: string, resolution: "approved" | "not_hired") => {
     setIsResolving(true)
     const result = await resolveInterviewRequestAction(interviewId, resolution)
     setIsResolving(false)
@@ -56,7 +56,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
     }
     setInterviews((prev) => prev.map((i) => (i.id === interviewId ? { ...i, status: resolution } : i)))
     setSelectedInterview((prev) => (prev ? { ...prev, status: resolution } : prev))
-    toast.success(resolution === "approved" ? "Candidato contratado" : "Entrevista cancelada")
+    toast.success(resolution === "approved" ? "Candidato contratado" : "Entrevista cerrada sin contratación")
   }
 
   const getStatusBadge = (status: BusinessInterview["status"]) => {
@@ -64,6 +64,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
       pending: { variant: "secondary" as const, icon: AlertCircle, text: "Pendiente de confirmar" },
       confirmed: { variant: "default" as const, icon: CheckCircle2, text: "Confirmada" },
       approved: { variant: "outline" as const, icon: CheckCircle2, text: "Contratado" },
+      not_hired: { variant: "secondary" as const, icon: XCircle, text: "Sin contratación" },
       cancelled: { variant: "destructive" as const, icon: XCircle, text: "Cancelada" },
     }
     const config = variants[status]
@@ -321,16 +322,16 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                                 onClick={() => handleResolve(interview.id, "approved")}
                               >
                                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Aprobar y Contratar
+                                Candidato contratado
                               </Button>
                               <Button
                                 variant="outline"
-                                className="w-full text-destructive"
+                                className="w-full"
                                 disabled={isResolving}
-                                onClick={() => handleResolve(interview.id, "cancelled")}
+                                onClick={() => handleResolve(interview.id, "not_hired")}
                               >
                                 <XCircle className="h-4 w-4 mr-2" />
-                                Cancelar
+                                No contratado
                               </Button>
                             </>
                           )}

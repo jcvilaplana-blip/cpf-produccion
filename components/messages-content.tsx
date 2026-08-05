@@ -774,12 +774,14 @@ export function MessagesContent({
                   {/* Message Input */}
                   <div className="p-3 border-t bg-card">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
+                      {/* Sin autoFocus: en móvil abría el teclado nada más
+                          entrar en la conversación, tapando los mensajes que
+                          el usuario venía a leer. Se abre al tocar el campo. */}
                       <Input
                         placeholder="Escribe un mensaje..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         className="flex-1"
-                        autoFocus
                       />
                       <Button
                         type="submit"

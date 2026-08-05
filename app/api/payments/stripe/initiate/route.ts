@@ -6,7 +6,9 @@ import Stripe from "stripe"
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
   if (!key) throw new Error("STRIPE_SECRET_KEY not configured")
-  return new Stripe(key, { apiVersion: "2024-06-20" })
+  // Ver la nota en app/api/micropayments/create/route.ts sobre por qué la
+  // versión sigue fijada pese al desajuste con los tipos del SDK.
+  return new Stripe(key, { apiVersion: "2024-06-20" as Stripe.LatestApiVersion })
 }
 
 export async function POST(req: NextRequest) {

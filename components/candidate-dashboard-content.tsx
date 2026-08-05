@@ -116,6 +116,9 @@ export function CandidateDashboardContent({
           setJobs(
             jobsData.map((job) => ({
               ...job,
+              // Ver la nota en app/dashboard/page.tsx: PostgREST tipa la unión
+              // uno-a-uno como array.
+              business: Array.isArray(job.business) ? job.business[0] ?? null : job.business ?? null,
               matchPercent: computeMatchScore(candidateMatchInput, job).percent,
             }))
           )

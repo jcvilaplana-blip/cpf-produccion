@@ -413,9 +413,11 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
       duration: 1500,
       essential: true,
     })
-    // When switching to flash, also filter to jobs only
+    // Al entrar en zoom flash, mostrar solo ofertas flash. Antes ponía
+    // "jobs", que no existe en la unión: ninguna rama del render coincidía
+    // y el mapa se quedaba sin marcadores.
     if (zoomLevel === "flash") {
-      setViewMode("jobs")
+      setViewMode("flash")
     } else if (zoomLevel === "planet" || zoomLevel === "country") {
       setViewMode("all")
     }

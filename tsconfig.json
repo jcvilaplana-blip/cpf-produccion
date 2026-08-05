@@ -23,5 +23,12 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Repositorio de skills de terceros clonado dentro del proyecto: la
+    // aplicación no importa nada de ahí y sus ejemplos referencian módulos
+    // que no existen aquí, así que comprobarlo solo genera ruido.
+    "superpowers",
+    "_native_build_backup"
+  ]
 }
