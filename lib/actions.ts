@@ -755,7 +755,11 @@ interface RewardDef {
   label: string
 }
 
-export const REWARD_CATALOG: Record<string, RewardDef> = {
+// NOT exported: this file is "use server", where every export must be an async
+// function. Exporting this object made Next throw "A \"use server\" file can
+// only export async functions, found object" while rendering any page that
+// imports this module - which is what broke saving the profile.
+const REWARD_CATALOG: Record<string, RewardDef> = {
   premium_profile: { cost: 500, roles: ["worker", "business"], label: "Perfil Premium (7 días)" },
   free_flash_offer: { cost: 300, roles: ["business"], label: "Oferta Flash gratuita" },
   highlight_credit: { cost: 200, roles: ["business"], label: "Destacar oferta gratis" },
