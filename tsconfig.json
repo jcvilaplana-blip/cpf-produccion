@@ -29,6 +29,13 @@
     // aplicación no importa nada de ahí y sus ejemplos referencian módulos
     // que no existen aquí, así que comprobarlo solo genera ruido.
     "superpowers",
-    "_native_build_backup"
+    // Copias que dejan los despliegues y el build nativo. Con
+    // ignoreBuildErrors en false, Next comprueba también estos ficheros y una
+    // copia vieja puede tumbar un build que por lo demás está bien.
+    "_native_build_backup",
+    "_predeploy_bak",
+    "**/*.bak",
+    ".next.bak-*",
+    "out"
   ]
 }
