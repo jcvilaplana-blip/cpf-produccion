@@ -23,10 +23,13 @@ const PROTECTED_PATTERNS: RegExp[] = [
 ]
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request)
-
   const { pathname } = request.nextUrl
   const isProtected = PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname))
+
+  // La validación contra el servidor de Auth sólo se pide donde de verdad se
+  // usa para dejar pasar o no. El resto de páginas son públicas y no ganan
+  // nada pagando ese viaje de red.
+  const { response, user } = await updateSession(request, isProtected)
 
   if (isProtected && !user) {
     const loginUrl = new URL('/auth/login', request.url)

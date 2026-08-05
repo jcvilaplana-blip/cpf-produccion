@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 import { redirect } from "next/navigation"
+import { after } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { CandidateDashboardContent } from "@/components/candidate-dashboard-content"
 import { computeMatchScore } from "@/lib/matching"
@@ -53,11 +54,17 @@ export default async function DashboardPage() {
     matchPercent: computeMatchScore(candidateMatchInput, job).percent,
   }))
 
-  try {
-    await checkAndSendInterviewReminders(supabase, user.id, "worker")
-  } catch (err) {
-    console.error("dashboard: interview reminder check failed", err)
-  }
+  // Enviar recordatorios es un efecto secundario, no un dato que la página
+  // necesite para pintarse. Estaba con `await` delante del return, así que su
+  // consulta y sus inserciones se sumaban íntegras al tiempo de respuesta del
+  // panel en CADA carga. `after()` lo ejecuta una vez enviada la respuesta.
+  after(async () => {
+    try {
+      await checkAndSendInterviewReminders(supabase, user.id, "worker")
+    } catch (err) {
+      console.error("dashboard: interview reminder check failed", err)
+    }
+  })
 
   return (
     <CandidateDashboardContent

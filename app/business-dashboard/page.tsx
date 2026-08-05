@@ -72,12 +72,21 @@ export default function BusinessDashboardPage() {
 
     const loadData = async () => {
       const supabase = createClient()
-      const [{ data: candidatesData }, { data: activeJobsData }, { count }, { count: saved }] = await Promise.all([
+      // `getHighlightedProfileIds` viajaba en serie DESPUÉS de estas cuatro
+      // consultas, añadiendo un quinto viaje de red antes de poder pintar
+      // nada. No depende de sus resultados, así que va en el mismo lote.
+      const [{ data: candidatesData }, { data: activeJobsData }, { count }, { count: saved }, highlighted] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years, contract_type_sought")
           .eq("user_type", "worker")
-          .order("rating", { ascending: false }),
+          .order("rating", { ascending: false })
+          // Sin límite esto se descargaba la tabla entera de candidatos en
+          // cada carga del panel. Con pocos usuarios no se nota, pero crece
+          // sin techo. El buscador y el filtro de categoría de esta página
+          // operan sobre lo ya cargado, así que el tope es holgado; cuando el
+          // volumen lo pida, hay que mover búsqueda y filtro al servidor.
+          .limit(200),
         supabase
           .from("jobs")
           .select("city, location, contract_type, category, position")
@@ -92,6 +101,7 @@ export default function BusinessDashboardPage() {
           .from("saved_profiles")
           .select("id", { count: "exact", head: true })
           .eq("business_id", user.id),
+        getHighlightedProfileIds(supabase),
       ])
 
       if (candidatesData) {
@@ -128,7 +138,6 @@ export default function BusinessDashboardPage() {
         }
         // Los perfiles con "Destacar" pagado van primero, conservando entre
         // ellos el orden por coincidencia/valoración.
-        const highlighted = await getHighlightedProfileIds(supabase)
         setCandidates(sortHighlightedFirst(withMatch, highlighted))
       }
 

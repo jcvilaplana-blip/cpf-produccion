@@ -28,6 +28,14 @@ echo "==> Comprobaciones previas..."
 node scripts/preflight.mjs
 
 echo "==> Compilando (next build)..."
+# Este es un hosting compartido: 8 núcleos, pero la memoria libre ronda los
+# 2 GB y no hay swap alguno. Sin limitar la paralelización, la fase de
+# recolección de páginas se queda sin memoria y el build muere con un error
+# engañoso sobre `pages-manifest.json`. Se puede subir con NEXT_BUILD_CPUS si
+# algún día la máquina va más holgada.
+export NEXT_BUILD_CPUS="${NEXT_BUILD_CPUS:-2}"
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=2048}"
+echo "    (limitado a $NEXT_BUILD_CPUS procesos por memoria disponible)"
 node_modules/.bin/next build
 
 echo "==> Build completado."

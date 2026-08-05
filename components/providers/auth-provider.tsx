@@ -76,21 +76,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let hadSession = false
 
     const loadProfile = async (userId: string) => {
-      const profileData = await loadProfileWithRetry(supabase, userId)
-      if (cancelled) return
-      setProfile(profileData)
-
-      if (profileData?.user_type === "business" || profileData?.rol === 3) {
-        const result = await withTimeout(
+      // Las dos consultas salen a la vez, no encadenadas. Antes había que
+      // esperar a `profiles` sólo para saber si el usuario era un negocio y
+      // entonces pedir `business_profiles`: dos viajes de red en serie que
+      // retrasaban el arranque de TODA la aplicación, porque hasta que esto
+      // no termina `isLoading` sigue en true y ninguna página puede pintar.
+      // Para un candidato la fila de business_profiles simplemente no existe
+      // (`maybeSingle` devuelve null sin error) y se descarta: pedirla de más
+      // no cuesta tiempo porque viaja en paralelo con la otra.
+      const [profileData, businessResult] = await Promise.all([
+        loadProfileWithRetry(supabase, userId),
+        withTimeout(
           supabase
             .from("business_profiles")
             .select("company_name, company_logo_url, city, verified")
             .eq("id", userId)
-            .single(),
+            .maybeSingle(),
           5000
-        )
-        if (!cancelled && result !== "timeout") setBusinessProfile(result.data)
-      }
+        ),
+      ])
+      if (cancelled) return
+      // Nunca pisar un perfil bueno con null. `onAuthStateChange` vuelve a
+      // dispararse en cada refresco de token (y al recuperar el foco de la
+      // pestaña), así que esto se reejecuta en segundo plano durante toda la
+      // sesión. Si una de esas recargas fallaba o expiraba, se guardaba null,
+      // `user` pasaba a null y las páginas que exigen un rol concreto hacían
+      // `return null`: el panel del establecimiento se quedaba EN BLANCO sin
+      // ningún error, con la sesión perfectamente válida. El cierre de sesión
+      // real limpia el perfil en la rama `else` de abajo, que sí es explícita.
+      if (profileData) setProfile(profileData)
+
+      const isBusiness = profileData?.user_type === "business" || profileData?.rol === 3
+      if (isBusiness && businessResult !== "timeout") setBusinessProfile(businessResult.data)
     }
 
     // Rely solely on onAuthStateChange - it always fires once immediately
