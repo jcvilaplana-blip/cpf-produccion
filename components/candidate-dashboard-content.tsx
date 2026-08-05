@@ -178,12 +178,12 @@ export function CandidateDashboardContent({
                 <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
               </Link>
               <div>
-                <h2 className="text-sm font-semibold">Hola, {userName}</h2>
-                <p className="text-xs text-muted-foreground">Encuentra tu proximo trabajo</p>
+                <h2 className="text-[16px] font-bold">Hola, {userName}</h2>
+                <p className="text-[13px] text-muted-foreground">Encuentra tu proximo trabajo</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] bg-[#F48221]/10 text-[#F48221] border-[#F48221]/30">Beta</Badge>
+              <Badge variant="outline" className="text-[12px] bg-[#F48221]/10 text-[#F48221] border-[#F48221]/30">Beta</Badge>
               <Button asChild variant="ghost" size="icon">
                 <Link href="/notifications">
                   <Bell className="h-5 w-5" />
@@ -223,7 +223,7 @@ export function CandidateDashboardContent({
               <h3 className="text-base font-bold flex items-center gap-2">
                 <Zap className="h-5 w-5 text-[#F48221]" /> Ofertas Flash
               </h3>
-              <Link href="/flash-offers" className="text-xs text-[#01A89E] font-medium flex items-center gap-1">
+              <Link href="/flash-offers" className="text-[13px] text-[#01A89E] font-medium flex items-center gap-1">
                 Ver todas <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -233,16 +233,16 @@ export function CandidateDashboardContent({
                   <Card className="border-[#F48221]/30 bg-[#F48221]/5 h-full">
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-[#F48221] text-white text-[10px]">FLASH</Badge>
+                        <Badge className="bg-[#F48221] text-white text-[12px]">FLASH</Badge>
                         {flash.salary_min && (
-                          <span className="text-[10px] text-muted-foreground">{flash.salary_min}EUR/dia</span>
+                          <span className="text-[13px] font-medium text-muted-foreground leading-snug">{flash.salary_min}EUR/dia</span>
                         )}
                       </div>
-                      <h4 className="text-sm font-semibold line-clamp-2">{flash.title}</h4>
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                      <h4 className="text-[16px] font-bold leading-snug line-clamp-2">{flash.title}</h4>
+                      <div className="flex items-center gap-1 mt-1.5 text-[13px] text-muted-foreground">
                         <MapPin className="h-3 w-3" /> {flash.location}
                       </div>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1 mt-1 text-[13px] text-muted-foreground">
                         <Clock className="h-3 w-3" /> Urgente
                       </div>
                     </CardContent>
@@ -257,7 +257,7 @@ export function CandidateDashboardContent({
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ WebkitOverflowScrolling: "touch" }}>
           <button
             onClick={() => setSelectedCategory("all")}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedCategory === "all" ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border hover:border-[#01A89E]"}`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${selectedCategory === "all" ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border hover:border-[#01A89E]"}`}
           >
             Todas ({jobs.length})
           </button>
@@ -267,7 +267,7 @@ export function CandidateDashboardContent({
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedCategory === cat ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border hover:border-[#01A89E]"}`}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${selectedCategory === cat ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border hover:border-[#01A89E]"}`}
               >
                 {cat} ({count})
               </button>
@@ -287,7 +287,7 @@ export function CandidateDashboardContent({
             <Card className="bg-[#01A89E]/5 border-[#01A89E]/20 hover:border-[#01A89E]/50 transition-colors">
               <CardContent className="p-3 text-center">
                 <p className="text-xl font-bold text-[#01A89E]">{jobs.length}</p>
-                <p className="text-[10px] text-muted-foreground">Ofertas Activas</p>
+                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Activas</p>
               </CardContent>
             </Card>
           </button>
@@ -296,7 +296,7 @@ export function CandidateDashboardContent({
             <Card className="bg-[#F48221]/5 border-[#F48221]/20 hover:border-[#F48221]/50 transition-colors">
               <CardContent className="p-3 text-center">
                 <p className="text-xl font-bold text-[#F48221]">{activeFlash.length}</p>
-                <p className="text-[10px] text-muted-foreground">Ofertas Flash</p>
+                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Flash</p>
               </CardContent>
             </Card>
           </Link>
@@ -307,7 +307,7 @@ export function CandidateDashboardContent({
                 <p className="text-xl font-bold text-violet-600 flex items-center justify-center gap-1.5">
                   <CalendarCheck className="h-4 w-4" /> {interviewStats.completed}
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[13px] font-medium text-muted-foreground leading-snug">
                   Entrevistas{interviewStats.upcoming > 0 ? ` · ${interviewStats.upcoming} pend.` : ""}
                 </p>
               </CardContent>
@@ -324,7 +324,7 @@ export function CandidateDashboardContent({
               )}
             >
               {unreadCount > 0 && (
-                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-md">
+                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[12px] font-bold text-white shadow-md">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -337,7 +337,7 @@ export function CandidateDashboardContent({
                 >
                   <MessageCircle className="h-4 w-4" /> {unreadCount}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Mensajes</p>
+                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mensajes</p>
               </CardContent>
             </Card>
           </Link>
@@ -352,8 +352,8 @@ export function CandidateDashboardContent({
             <Card>
               <CardContent className="p-8 text-center">
                 <Briefcase className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm font-medium text-foreground">No hay ofertas disponibles</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[15px] font-semibold text-foreground">No hay ofertas disponibles</p>
+                <p className="text-[13px] text-muted-foreground mt-1">
                   {searchQuery ? "Intenta con otros terminos de busqueda" : "Vuelve pronto para ver nuevas oportunidades"}
                 </p>
               </CardContent>
@@ -367,26 +367,26 @@ export function CandidateDashboardContent({
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 border flex-shrink-0">
                           <AvatarImage src={job.business?.avatar_url || ""} />
-                          <AvatarFallback className="bg-[#01A89E]/10 text-[#01A89E] text-xs">
+                          <AvatarFallback className="bg-[#01A89E]/10 text-[#01A89E] text-[13px]">
                             {job.business?.display_name?.[0] || "E"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold line-clamp-1">{job.title}</h4>
-                          <p className="text-xs text-muted-foreground">{job.business?.display_name || "Empresa"}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                          <h4 className="text-[16px] font-bold leading-snug line-clamp-1">{job.title}</h4>
+                          <p className="text-[13px] text-muted-foreground">{job.business?.display_name || "Empresa"}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[13px] text-muted-foreground">
                             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {job.location}</span>
                             {job.salary_min && job.salary_max && (
                               <span className="font-semibold text-foreground">{job.salary_min}-{job.salary_max}EUR</span>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {job.category && <Badge variant="secondary" className="text-[10px]">{job.category}</Badge>}
-                            {job.contract_type && <Badge variant="outline" className="text-[10px]">{job.contract_type}</Badge>}
-                            {job.is_flash && <Badge className="bg-[#F97316] text-white text-[10px]">FLASH</Badge>}
-                            {job.is_highlighted && <Badge className="bg-[#F48221] text-white text-[10px]">Destacada</Badge>}
+                            {job.category && <Badge variant="secondary" className="text-[12px]">{job.category}</Badge>}
+                            {job.contract_type && <Badge variant="outline" className="text-[12px]">{job.contract_type}</Badge>}
+                            {job.is_flash && <Badge className="bg-[#F97316] text-white text-[12px]">FLASH</Badge>}
+                            {job.is_highlighted && <Badge className="bg-[#F48221] text-white text-[12px]">Destacada</Badge>}
                             {typeof job.matchPercent === "number" && job.matchPercent > 0 && (
-                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[10px]">
+                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[12px]">
                                 {job.matchPercent}% coincidencia
                               </Badge>
                             )}

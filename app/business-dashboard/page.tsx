@@ -180,8 +180,8 @@ export default function BusinessDashboardPage() {
                 <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
               </Link>
               <div>
-                <h2 className="text-sm font-semibold">Panel de Empresa</h2>
-                <p className="text-xs text-muted-foreground">{userName}</p>
+                <h2 className="text-[16px] font-bold">Panel de Empresa</h2>
+                <p className="text-[13px] text-muted-foreground">{userName}</p>
               </div>
             </div>
             {/* Solo notificaciones y perfil: recompensas y mensajes tienen su
@@ -205,18 +205,18 @@ export default function BusinessDashboardPage() {
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
             <Link href="/business-profile/edit">
               <Building2 className="h-5 w-5 text-[#F48221]" />
-              <span className="text-[10px] font-medium">Mi Perfil</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Mi Perfil</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="relative h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
             <Link href="/interviews">
               {interviewStats.upcoming > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-bold text-white shadow-md">
+                <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[12px] font-bold text-white shadow-md">
                   {interviewStats.upcoming}
                 </span>
               )}
               <CalendarCheck className="h-5 w-5 text-violet-600" />
-              <span className="text-[10px] font-medium">Mis Entrevistas</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Mis Entrevistas</span>
             </Link>
           </Button>
           <Button
@@ -229,12 +229,12 @@ export default function BusinessDashboardPage() {
           >
             <Link href="/messages">
               {unreadCount > 0 && (
-                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-md">
+                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[12px] font-bold text-white shadow-md">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
               <MessageCircle className={cn("h-5 w-5", unreadCount > 0 && "text-red-500")} />
-              <span className="text-[10px] font-medium">Mensajes</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Mensajes</span>
             </Link>
           </Button>
         </div>
@@ -244,13 +244,13 @@ export default function BusinessDashboardPage() {
           <Button asChild className="h-auto py-4 flex-col gap-2 bg-[#F97316] hover:bg-[#EA6A0E] text-white rounded-xl">
             <Link href="/jobs/create?flash=true">
               <Zap className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Crear Oferta Flash</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Crear Oferta Flash</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F97316]/30 hover:bg-[#F97316]/5">
             <Link href="/my-jobs?filter=flash">
               <ListChecks className="h-5 w-5 text-[#F97316]" />
-              <span className="text-[10px] font-medium">Gestionar Ofertas Flash</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Gestionar Ofertas Flash</span>
             </Link>
           </Button>
         </div>
@@ -260,13 +260,13 @@ export default function BusinessDashboardPage() {
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F5A623]/30 hover:bg-[#F5A623]/5">
             <Link href="/subscribe">
               <Crown className="h-5 w-5 text-[#F5A623]" />
-              <span className="text-[10px] font-medium">Suscripción</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Suscripción</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
             <Link href="/rewards">
               <Gift className="h-5 w-5 text-violet-600" />
-              <span className="text-[10px] font-medium">Recompensas Gamificación</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Recompensas Gamificación</span>
             </Link>
           </Button>
         </div>
@@ -281,7 +281,7 @@ export default function BusinessDashboardPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold">{myJobsCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Mis Ofertas</p>
+                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mis Ofertas</p>
                 </div>
               </CardContent>
             </Card>
@@ -294,7 +294,7 @@ export default function BusinessDashboardPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold">{savedCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Candidatos Guardados</p>
+                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">Candidatos Guardados</p>
                 </div>
               </CardContent>
             </Card>
@@ -311,13 +311,13 @@ export default function BusinessDashboardPage() {
               </div>
               <div className="flex-1">
                 <p className="text-xl font-bold">{interviewStats.completed}</p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[13px] font-medium text-muted-foreground leading-snug">
                   Entrevistas Realizadas, Contrataciones
                   {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratados` : ""}
                 </p>
               </div>
               {interviewStats.upcoming > 0 && (
-                <Badge className="bg-violet-600 text-white border-0 text-[10px]">
+                <Badge className="bg-violet-600 text-white border-0 text-[12px]">
                   {interviewStats.upcoming} pendiente{interviewStats.upcoming === 1 ? "" : "s"}
                 </Badge>
               )}
@@ -331,11 +331,11 @@ export default function BusinessDashboardPage() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-          <button onClick={() => setSelectedCategory("all")} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedCategory === "all" ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border"}`}>
+          <button onClick={() => setSelectedCategory("all")} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${selectedCategory === "all" ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border"}`}>
             Todos ({candidates.length})
           </button>
           {categories.map((cat) => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${selectedCategory === cat ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border"}`}>
+            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors whitespace-nowrap ${selectedCategory === cat ? "bg-[#01A89E] text-white border-[#01A89E]" : "bg-white text-foreground border-border"}`}>
               {cat} ({candidates.filter((c) => c.job_category === cat).length})
             </button>
           ))}
@@ -363,30 +363,30 @@ export default function BusinessDashboardPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-semibold truncate">{candidate.display_name}</h4>
+                            <h4 className="text-[15px] font-bold truncate">{candidate.display_name}</h4>
                             {candidate.rating && candidate.rating > 0 && (
                               <div className="flex items-center gap-0.5 flex-shrink-0">
                                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs font-medium">{candidate.rating}</span>
+                                <span className="text-[13px] font-semibold">{candidate.rating}</span>
                               </div>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            {candidate.job_category && <p className="text-xs text-[#01A89E] font-medium">{candidate.job_category}</p>}
+                            {candidate.job_category && <p className="text-[13px] text-[#01A89E] font-semibold">{candidate.job_category}</p>}
                             {typeof candidate.matchPercent === "number" && candidate.matchPercent > 0 && (
-                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[9px] px-1.5 py-0">
+                              <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[12px] px-2 py-0.5">
                                 {candidate.matchPercent}% coincide con tus ofertas
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 mt-1 text-[13px] text-muted-foreground">
                             {candidate.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{candidate.location}</span>}
                             {candidate.experience_years && <span>{candidate.experience_years} años exp.</span>}
                           </div>
                           {candidate.specialties && candidate.specialties.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {candidate.specialties.slice(0, 3).map((s: string) => (
-                                <Badge key={s} variant="secondary" className="text-[9px] px-1.5 py-0">{s}</Badge>
+                                <Badge key={s} variant="secondary" className="text-[12px] px-2 py-0.5">{s}</Badge>
                               ))}
                             </div>
                           )}
