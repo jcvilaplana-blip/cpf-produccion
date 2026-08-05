@@ -1,23 +1,22 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {
   ArrowLeft, MapPin, Star, Briefcase, MessageCircle, Heart, CalendarCheck,
-  Globe, Clock, Award, Image as ImageIcon, Video, Loader2, FileText, ChevronRight, X
+  Award, Image as ImageIcon, Loader2, ChevronRight, X, Play, Pause,
+  BadgeCheck, Trophy, Sparkles, Radio, FileText, Zap,
 } from "lucide-react"
 import useSWR from "swr"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
-import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
-import { RatingSummary } from "@/components/rating-summary"
 import { computeDisplayStatus } from "@/lib/profile-status"
 import { saveProfileAction } from "@/lib/actions"
 import { isProfileSaved } from "@/lib/supabase/queries"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -53,6 +52,73 @@ const RATING_CRITERIA = [
   { keys: ["contract_fulfillment", "cumplimiento_contrato"], label: "Cumplimiento del contrato" },
 ]
 
+/** Parses a DB column that may arrive as an array, a JSON string, or null. */
+function parseList(raw: unknown): any[] {
+  try {
+    if (Array.isArray(raw)) return raw.filter(Boolean)
+    if (typeof raw === "string") {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+/** Media columns hold either plain URLs or `{ url }` objects. */
+function parseMediaList(raw: unknown): string[] {
+  return parseList(raw)
+    .map((item) => (typeof item === "string" ? item : item?.url || item?.src || ""))
+    .filter(Boolean)
+}
+
+function Stars({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "h-5 w-5" : "h-3.5 w-3.5"
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={cn(
+            cls,
+            i < Math.round(value) ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Section({
+  icon: Icon,
+  title,
+  action,
+  children,
+  className,
+}: {
+  icon?: React.ComponentType<{ className?: string }>
+  title?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn("rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm", className)}>
+      {title && (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {Icon && <Icon className="h-4 w-4 text-[#01A89E]" />}
+            <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+          </div>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  )
+}
+
 export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile }: ProfileDetailContentProps) {
   const router = useRouter()
   const [savedProfile, setSavedProfile] = useState(false)
@@ -60,129 +126,76 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   const [showInterviewDialog, setShowInterviewDialog] = useState(false)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [showVideoOverlay, setShowVideoOverlay] = useState(true)
   const videoRef = useRef<HTMLVideoElement | null>(null)
-
-  const { data: profileData, isLoading } = useSWR(
-    `/api/profile/${id}`,
-    fetcher,
-    {
-      fallbackData: initialProfile ? { data: initialProfile } : undefined,
-    }
-  )
-
-  const worker = profileData?.data
-
-  if (!worker && isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pb-20">
-        <Loader2 className="h-8 w-8 animate-spin text-[#01A89E]" />
-      </div>
-    )
-  }
-
-  if (!worker) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pb-20">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Perfil no encontrado</h1>
-          <p className="text-muted-foreground mb-4">Este perfil no existe o fue eliminado.</p>
-          <Button asChild><Link href="/candidates">Ver candidatos</Link></Button>
-        </div>
-      </div>
-    )
-  }
 
   const isBusinessViewer = viewerType === "business" && viewerId !== id
 
+  const { data: profileData, isLoading } = useSWR(`/api/profile/${id}`, fetcher, {
+    fallbackData: initialProfile ? { data: initialProfile } : undefined,
+  })
+
+  const worker = profileData?.data
+
+  // --- Hooks must all run before any early return (rules of hooks) ---
   useEffect(() => {
     if (!isBusinessViewer || !viewerId) return
     let mounted = true
-    const loadSaved = async () => {
-      const { isSaved } = await isProfileSaved(viewerId, id)
+    isProfileSaved(viewerId, id).then(({ isSaved }) => {
       if (mounted) setSavedProfile(isSaved)
-    }
-    loadSaved()
+    })
     return () => {
       mounted = false
     }
   }, [isBusinessViewer, viewerId, id])
 
-  const specialties: string[] = (() => {
-    try {
-      if (Array.isArray(worker.specialties)) return worker.specialties
-      if (typeof worker.specialties === "string") return JSON.parse(worker.specialties)
-      return []
-    } catch { return [] }
-  })()
-  const languages: string[] = (() => {
-    try {
-      let raw = worker.languages
-      if (typeof raw === "string") raw = JSON.parse(raw)
-      if (!Array.isArray(raw)) return []
-      return raw.map((l: any) =>
-        typeof l === "string" ? l : [l.name || l.language, l.level].filter(Boolean).join(" - ")
-      )
-    } catch { return [] }
-  })()
-  const contractTypes: string[] = (() => {
-    try {
-      if (Array.isArray(worker.contract_type_sought)) return worker.contract_type_sought
-      if (typeof worker.contract_type_sought === "string") return JSON.parse(worker.contract_type_sought)
-      return []
-    } catch { return [] }
-  })()
-  const portfolioImages: string[] = Array.isArray(worker.portfolio_images) ? worker.portfolio_images : []
-  const portfolioVideos: string[] = Array.isArray(worker.portfolio_videos) ? worker.portfolio_videos : []
-  // First portfolio video doubles as the "vídeo de presentación" - a
-  // distinct, featured slot instead of a parallel upload system.
-  const presentationVideo = portfolioVideos[0] || null
-  const otherVideos = portfolioVideos.slice(1)
-  const galleryImages = portfolioImages.slice(0, 6)
-
-  const skills = Array.isArray(worker.skills) ? worker.skills : []
-  const workExperience = Array.isArray(worker.work_experience) ? worker.work_experience : []
-  const certifications: string[] = Array.isArray(worker.certificates) ? worker.certificates : []
-  const badges: string[] = Array.isArray(worker.badges) ? worker.badges : []
-  const ratingCriteriaSummary: Record<string, number> = worker.rating_criteria_summary || {}
-  const roles = specialties.length > 0 ? specialties : worker.job_category ? [worker.job_category] : ["Sin categoría"]
-  const contractTypeNames = contractTypes
-    .map((ct) => CONTRACT_TYPE_LABELS[ct] || ct)
-    .filter(Boolean)
-  const activelySearching =
-    worker.availability_status === "available" || worker.has_open_application || worker.has_active_interview
-  const criteriaFields = RATING_CRITERIA.map((criteria) => ({
-    label: criteria.label,
-    value: criteria.keys
-      .map((key) => ratingCriteriaSummary[key])
-      .find((value) => typeof value === "number") as number | undefined,
-  }))
-
-  const avail = computeDisplayStatus({
-    selfReported: worker.availability_status,
-    hasActiveInterview: Boolean(worker.has_active_interview),
-    hasOpenApplication: Boolean(worker.has_open_application),
-  })
-
-  const birthDate = worker.date_of_birth
-    ? new Date(worker.date_of_birth).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
-    : null
-
   useEffect(() => {
     if (!isVideoOpen || !videoRef.current) return
-    videoRef.current.currentTime = 0
-    videoRef.current.play().catch(() => {})
-    setIsVideoPlaying(true)
+    const el = videoRef.current
+    el.currentTime = 0
+    el.play().catch(() => {})
+    setShowVideoOverlay(false)
   }, [isVideoOpen])
 
-  const handleCloseVideo = () => {
-    setIsVideoOpen(false)
-    if (videoRef.current) {
-      videoRef.current.pause()
-      setIsVideoPlaying(false)
+  // Body scroll lock while the reel is open, so the page behind doesn't move.
+  useEffect(() => {
+    if (!isVideoOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
     }
-  }
+  }, [isVideoOpen])
 
-  const handleToggleSave = async () => {
+  const handleCloseVideo = useCallback(() => {
+    videoRef.current?.pause()
+    setIsVideoPlaying(false)
+    setIsVideoOpen(false)
+  }, [])
+
+  const toggleVideoPlayback = useCallback(() => {
+    const el = videoRef.current
+    if (!el) return
+    if (el.paused) {
+      el.play().catch(() => {})
+    } else {
+      el.pause()
+    }
+  }, [])
+
+  const handleRequestInterview = useCallback(() => {
+    if (!viewerId) {
+      router.push(`/auth/login?redirect=/profile/${id}`)
+      return
+    }
+    if (!isBusinessViewer) {
+      toast.error("Solo las empresas pueden solicitar entrevistas")
+      return
+    }
+    setShowInterviewDialog(true)
+  }, [viewerId, isBusinessViewer, router, id])
+
+  const handleToggleSave = useCallback(async () => {
     if (!viewerId) {
       router.push(`/auth/login?redirect=/profile/${id}`)
       return
@@ -191,358 +204,553 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
       toast.error("Solo empresas pueden guardar perfiles")
       return
     }
-
     setSavingProfile(true)
     const result = await saveProfileAction(id)
     setSavingProfile(false)
-
     if (result.error) {
       toast.error(result.error)
       return
     }
-
     const saved = Boolean(result.saved)
     setSavedProfile(saved)
-    toast.success(saved ? "Perfil guardado" : "Perfil eliminado de guardados")
-  }
+    toast.success(saved ? "Perfil guardado en tus favoritos" : "Perfil eliminado de guardados")
+  }, [viewerId, isBusinessViewer, router, id])
 
-  const handleMessage = () => {
+  const handleMessage = useCallback(() => {
     if (!viewerId) {
       router.push(`/auth/login?redirect=/profile/${id}`)
       return
     }
-    router.push(`/messages?candidateId=${worker.id}&candidateName=${encodeURIComponent(worker.display_name)}`)
+    router.push(
+      `/messages?candidateId=${worker?.id}&candidateName=${encodeURIComponent(worker?.display_name || "")}`
+    )
+  }, [viewerId, router, id, worker?.id, worker?.display_name])
+
+  if (!worker && isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center pb-20">
+        <Loader2 className="h-8 w-8 animate-spin text-[#01A89E]" />
+      </div>
+    )
   }
 
+  if (!worker) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6 pb-20">
+        <div className="text-center">
+          <h1 className="mb-2 text-2xl font-bold">Perfil no encontrado</h1>
+          <p className="mb-4 text-muted-foreground">Este perfil no existe o fue eliminado.</p>
+          <Button asChild>
+            <Link href="/candidates">Ver candidatos</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // --- Derived data ---
+  const specialties: string[] = parseList(worker.specialties).filter((s) => typeof s === "string")
+  const contractTypes: string[] = parseList(worker.contract_type_sought).filter((s) => typeof s === "string")
+  const portfolioImages = parseMediaList(worker.portfolio_images)
+  const portfolioVideos = parseMediaList(worker.portfolio_videos)
+
+  // The first portfolio video doubles as the "vídeo de presentación" uploaded
+  // during candidate registration - a featured slot, not a parallel system.
+  const presentationVideo = portfolioVideos[0] || null
+  const galleryImages = portfolioImages.slice(0, 6)
+
+  const certifications: any[] = parseList(worker.certificates)
+  const badges: any[] = parseList(worker.badges)
+  const workExperience = parseList(worker.work_experience)
+  const ratingCriteriaSummary: Record<string, number> = worker.rating_criteria_summary || {}
+
+  const roles = specialties.length > 0 ? specialties : worker.job_category ? [worker.job_category] : []
+  const contractTypeNames = contractTypes.map((ct) => CONTRACT_TYPE_LABELS[ct] || ct).filter(Boolean)
+
+  const avail = computeDisplayStatus({
+    selfReported: worker.availability_status,
+    hasActiveInterview: Boolean(worker.has_active_interview),
+    hasOpenApplication: Boolean(worker.has_open_application),
+  })
+  const activelySearching =
+    worker.availability_status === "available" || worker.has_open_application || worker.has_active_interview
+
+  const criteriaFields = RATING_CRITERIA.map((criteria) => ({
+    label: criteria.label,
+    value: criteria.keys
+      .map((key) => ratingCriteriaSummary[key])
+      .find((value) => typeof value === "number") as number | undefined,
+  }))
+
+  const rating: number = typeof worker.rating === "number" ? worker.rating : 0
+  const totalRatings: number = worker.total_ratings || 0
+  const experienceYears: number | null =
+    typeof worker.experience_years === "number" ? worker.experience_years : null
+
+  /** Sections 6/17 and 7/18 are requested twice: as a summary near the top and
+   *  again as detail at the end of the sheet. */
+  const contractChips = (
+    <div className="flex flex-wrap gap-2">
+      {contractTypeNames.length > 0 ? (
+        contractTypeNames.map((contractType) => (
+          <Badge
+            key={contractType}
+            className="rounded-full border border-[#01A89E]/25 bg-[#01A89E]/10 px-3 py-1 text-[13px] font-medium text-[#00776F]"
+          >
+            {contractType}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-sm text-slate-500">No especificado</span>
+      )}
+    </div>
+  )
+
+  const activeSearchBlock = (
+    <div className="flex items-center gap-3">
+      <span
+        className={cn(
+          "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+          activelySearching ? "bg-emerald-100" : "bg-slate-100"
+        )}
+      >
+        <Radio className={cn("h-5 w-5", activelySearching ? "text-emerald-600" : "text-slate-400")} />
+        {activelySearching && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/30" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[15px] font-semibold text-slate-900">
+            {activelySearching ? "Buscando activamente" : "No busca activamente"}
+          </p>
+          <Badge className={cn("rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium", avail.color)}>
+            {avail.label}
+          </Badge>
+        </div>
+        <p className="mt-0.5 text-[13px] leading-snug text-slate-500">
+          {activelySearching
+            ? "Revisa ofertas y responde rápido a nuevas propuestas."
+            : "Sin señales recientes de búsqueda activa."}
+        </p>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <section className="relative overflow-hidden">
-        <div className="relative h-[52vh] min-h-[340px] bg-slate-950">
+    <div className="min-h-screen bg-slate-50 pb-24">
+      {/* 1 + 2 — Header: foto de perfil con nombre y tipos de empleo dentro */}
+      <header className="relative">
+        <div className="relative aspect-[3/4] max-h-[74vh] w-full overflow-hidden bg-slate-900 sm:aspect-[16/10]">
           {worker.avatar_url ? (
-            <img src={worker.avatar_url} alt={worker.display_name} className="absolute inset-0 h-full w-full object-cover opacity-80" />
+            <img
+              src={worker.avatar_url}
+              alt={worker.display_name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01A89E]/30 to-[#01A89E]/10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/20" />
 
-          <div className="absolute top-4 left-4 z-10">
-            <Button variant="ghost" size="icon" className="bg-slate-900/70 text-white hover:bg-slate-900/90 rounded-full" onClick={() => router.back()}>
+          {/* Safe-area aware top bar */}
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Volver"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950/45 text-white backdrop-blur-md active:scale-95"
+            >
               <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="absolute top-4 right-4 z-10">
+            </button>
             {isBusinessViewer && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`rounded-full ${savedProfile ? "bg-red-500 text-white" : "bg-slate-900/70 text-white hover:bg-slate-900/90"}`}
+              <button
+                type="button"
                 onClick={handleToggleSave}
                 disabled={savingProfile}
+                aria-label={savedProfile ? "Quitar de guardados" : "Guardar perfil"}
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-colors active:scale-95",
+                  savedProfile ? "bg-rose-500 text-white" : "bg-slate-950/45 text-white"
+                )}
               >
-                <Heart className={`h-5 w-5 ${savedProfile ? "fill-white" : ""}`} />
-              </Button>
+                <Heart className={cn("h-5 w-5", savedProfile && "fill-current")} />
+              </button>
             )}
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4">
-            <div className="mx-auto max-w-5xl rounded-[2rem] border border-white/10 bg-white/95 px-5 py-6 shadow-2xl backdrop-blur-lg">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Perfil profesional</p>
-                  <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950">{worker.display_name}</h1>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {roles.map((role: string, index: number) => (
-                      <Badge key={index} className="rounded-full bg-slate-100 text-slate-700 border-0 px-3 py-1 text-sm">
-                        {role}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-3xl bg-slate-50 px-4 py-3 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Ubicación</p>
-                    <p className="mt-2 text-base font-semibold text-slate-900">{worker.location || "No indicada"}</p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 px-4 py-3 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Experiencia</p>
-                    <p className="mt-2 text-base font-semibold text-slate-900">{worker.experience_years ? `${worker.experience_years} años` : "Sin datos"}</p>
-                  </div>
-                </div>
+          {/* Nombre + tipos de empleo, directamente sobre la imagen */}
+          <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-6">
+            <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-sm">
+              {worker.display_name}
+            </h1>
+            {roles.length > 0 && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {roles.map((role) => (
+                  <span
+                    key={role}
+                    className="rounded-full bg-white/15 px-3 py-1 text-[13px] font-medium text-white ring-1 ring-inset ring-white/25 backdrop-blur-md"
+                  >
+                    {role}
+                  </span>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
-      </section>
+      </header>
 
-      <section className="container mx-auto px-4 py-4 space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card>
-            <CardContent className="p-4">
-              <div className="grid gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Valoración media</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="text-4xl font-bold text-slate-900">{worker.rating > 0 ? worker.rating.toFixed(1) : "—"}</div>
-                    <div className="flex items-center gap-1 text-slate-600">
-                      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                      <span>{worker.total_ratings || 0} valoraciones</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href={`/profile/${id}/ratings`} className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100">
-                  Ver valoraciones y reseñas
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-4">
+        {/* 3 — Ubicación */}
+        <Section>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#01A89E]/10">
+              <MapPin className="h-5 w-5 text-[#01A89E]" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</p>
+              <p className="truncate text-[15px] font-semibold text-slate-900">
+                {worker.location || "No especificada"}
+              </p>
+            </div>
+          </div>
+        </Section>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-3xl bg-[#ECFDF5] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">Tipo contrato</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {contractTypeNames.length > 0 ? (
-                        contractTypeNames.map((contractType) => (
-                          <Badge key={contractType} className="rounded-full bg-white text-slate-800 border border-slate-200 px-3 py-1 text-sm">
-                            {contractType}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-sm text-slate-600">No especificado</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-3xl bg-[#EFF6FF] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-blue-700">Búsqueda activa</p>
-                    <p className="mt-2 text-lg font-semibold text-slate-900">{activelySearching ? "Sí" : "No"}</p>
-                    <p className="mt-2 text-sm text-slate-600">{activelySearching ? "Responde rápido a nuevas propuestas." : "Sin actividad reciente."}</p>
-                  </div>
-                </div>
+        {/* 4 + 5 — Experiencia (izquierda) y valoraciones reales (derecha) */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-[#01A89E]" />
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Experiencia</p>
+            </div>
+            <p className="mt-2 text-3xl font-bold leading-none text-slate-900">
+              {experienceYears !== null ? experienceYears : "—"}
+              {experienceYears !== null && (
+                <span className="ml-1 text-sm font-semibold text-slate-500">
+                  {experienceYears === 1 ? "año" : "años"}
+                </span>
+              )}
+            </p>
+            <p className="mt-1.5 text-[12px] leading-snug text-slate-500">
+              {experienceYears !== null ? "en hostelería" : "Sin datos"}
+            </p>
+          </div>
+
+          <Link
+            href={`/profile/${id}/ratings`}
+            className="group flex flex-col rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors active:bg-slate-50"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                  Valoración
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-active:translate-x-0.5" />
+            </div>
+            <p className="mt-2 text-3xl font-bold leading-none text-slate-900">
+              {totalRatings > 0 ? rating.toFixed(1) : "—"}
+            </p>
+            <div className="mt-1.5">
+              <Stars value={rating} />
+            </div>
+            <p className="mt-1 text-[12px] leading-snug text-slate-500">
+              {totalRatings} {totalRatings === 1 ? "valoración" : "valoraciones"}
+            </p>
+          </Link>
         </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Criterios de valoración</p>
-                <p className="mt-1 text-sm text-slate-700">Puntualidad, actitud, rapidez, resolución, higiene, adaptación y cumplimiento</p>
+        {/* 6 — Tipo de contrato que busca */}
+        <Section icon={FileText} title="Tipo de contrato que busca">
+          {contractChips}
+        </Section>
+
+        {/* 7 — Indicador de búsqueda activa */}
+        <Section>{activeSearchBlock}</Section>
+
+        {/* Criterios de valoración (1 a 5 estrellas) */}
+        <Section
+          icon={Sparkles}
+          title="Criterios de valoración"
+          action={
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+              1–5 ★
+            </span>
+          }
+        >
+          <div className="divide-y divide-slate-100">
+            {criteriaFields.map((criteria) => (
+              <div key={criteria.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                <p className="min-w-0 flex-1 text-[14px] leading-snug text-slate-700">{criteria.label}</p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Stars value={criteria.value || 0} />
+                  <span className="w-7 text-right text-[13px] font-semibold tabular-nums text-slate-900">
+                    {criteria.value ? criteria.value.toFixed(1) : "—"}
+                  </span>
+                </div>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-600">1–5 estrellas</span>
+            ))}
+          </div>
+        </Section>
+
+        {/* 8 — Valoración media real de empresas */}
+        <Section>
+          <div className="flex items-center gap-4">
+            <div className="flex h-[74px] w-[74px] shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100/60">
+              <span className="text-[28px] font-bold leading-none text-slate-900">
+                {totalRatings > 0 ? rating.toFixed(1) : "—"}
+              </span>
+              <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+                media
+              </span>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {criteriaFields.map((criteria) => (
-                <div key={criteria.label} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-900">{criteria.label}</p>
-                    <span className="text-sm text-slate-600">{criteria.value ? criteria.value.toFixed(1) : "—"}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-slate-900">Valoración media de empresas</p>
+              <div className="mt-1.5">
+                <Stars value={rating} size="md" />
+              </div>
+              <p className="mt-1.5 text-[12px] leading-snug text-slate-500">
+                {totalRatings > 0
+                  ? `Basada en ${totalRatings} ${totalRatings === 1 ? "valoración real" : "valoraciones reales"} de establecimientos que le han contratado.`
+                  : "Aún no tiene valoraciones. Solo los establecimientos que le hayan contratado pueden valorarle."}
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/profile/${id}/ratings`}
+            className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-[14px] font-semibold text-slate-900 active:bg-slate-100"
+          >
+            Ver valoraciones y reseñas
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </Link>
+        </Section>
+
+        {/* 9 — CTAs */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={handleRequestInterview}
+            className="h-[58px] rounded-2xl bg-[#01A89E] text-[15px] font-semibold text-white shadow-lg shadow-[#01A89E]/25 hover:bg-[#018F86] active:scale-[0.98]"
+          >
+            <CalendarCheck className="mr-1.5 h-[18px] w-[18px]" />
+            Solicitar entrevista
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleMessage}
+            className="h-[58px] rounded-2xl border-slate-300 bg-white text-[15px] font-semibold text-slate-900 active:scale-[0.98]"
+          >
+            <MessageCircle className="mr-1.5 h-[18px] w-[18px]" />
+            Enviar mensaje
+          </Button>
+        </div>
+        {!isBusinessViewer && (
+          <p className="px-1 text-[12px] leading-snug text-slate-500">
+            Solo las cuentas de empresa pueden solicitar entrevistas y guardar candidatos. Inicia sesión con una
+            cuenta de establecimiento.
+          </p>
+        )}
+
+        {/* 10 — Certificados verificados */}
+        {certifications.length > 0 && (
+          <Section icon={BadgeCheck} title="Certificados verificados">
+            <div className="flex flex-wrap gap-2">
+              {certifications.map((cert, index) => (
+                <Badge
+                  key={index}
+                  className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[13px] font-medium text-emerald-800"
+                >
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  {typeof cert === "string" ? cert : cert?.name || cert?.title || ""}
+                </Badge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* 11 — Insignias */}
+        {badges.length > 0 && (
+          <Section icon={Award} title="Insignias">
+            <div className="flex flex-wrap gap-2">
+              {badges.map((badge, index) => (
+                <Badge
+                  key={index}
+                  className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[13px] font-medium text-amber-800"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {typeof badge === "string" ? badge : badge?.name || ""}
+                </Badge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* 12 — Nivel y puntos de gamificación */}
+        <Section icon={Trophy} title="Nivel y puntos">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-gradient-to-br from-[#01A89E]/10 to-[#01A89E]/5 p-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#00776F]">Nivel</p>
+              <p className="mt-1.5 text-2xl font-bold leading-none text-slate-900">
+                {worker.level ? worker.level : "—"}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-violet-100/70 to-violet-50 p-3.5">
+              <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-violet-700">
+                <Zap className="h-3 w-3" /> Puntos
+              </p>
+              <p className="mt-1.5 text-2xl font-bold leading-none text-slate-900">
+                {worker.points != null ? worker.points : "—"}
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        {/* 13 — Galería (hasta 6 imágenes) */}
+        {galleryImages.length > 0 && (
+          <Section
+            icon={ImageIcon}
+            title="Galería"
+            action={
+              <span className="text-[12px] text-slate-400">
+                {galleryImages.length}/6
+              </span>
+            }
+          >
+            <PortfolioImageViewer images={galleryImages} />
+          </Section>
+        )}
+      </main>
+
+      {/* 14 — Vídeo de presentación a ancho completo */}
+      {presentationVideo && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setIsVideoOpen(true)}
+            className="relative block w-full overflow-hidden bg-black sm:mx-auto sm:max-w-2xl sm:rounded-3xl"
+            aria-label="Reproducir vídeo de presentación"
+          >
+            {/* `#t=0.1` forces mobile browsers to paint the first frame as poster */}
+            <video
+              src={`${presentationVideo}#t=0.1`}
+              muted
+              playsInline
+              preload="metadata"
+              className="aspect-[9/16] max-h-[80vh] w-full object-cover sm:aspect-video"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
+            <span className="absolute left-1/2 top-1/2 flex h-[70px] w-[70px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-2xl">
+              <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
+            </span>
+            <div className="absolute inset-x-0 bottom-0 p-5 text-left">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/70">
+                Vídeo de presentación
+              </p>
+              <p className="mt-1 text-lg font-semibold text-white">{worker.display_name}</p>
+            </div>
+          </button>
+        </div>
+      )}
+
+      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-3">
+        {/* 15 — Sobre mí */}
+        {worker.bio && (
+          <Section icon={MessageCircle} title="Sobre mí">
+            <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-600">{worker.bio}</p>
+          </Section>
+        )}
+
+        {/* 16 — Experiencia */}
+        {workExperience.length > 0 && (
+          <Section icon={Briefcase} title="Experiencia">
+            <div className="space-y-2.5">
+              {workExperience.map((exp: any, i: number) => (
+                <div key={i} className="rounded-2xl border border-slate-200 p-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-semibold leading-snug text-slate-900">{exp.position}</p>
+                      {exp.company && <p className="text-[13px] text-slate-600">{exp.company}</p>}
+                      <p className="mt-1 text-[12px] text-slate-400">
+                        {exp.startDate || "?"} — {exp.current ? "Actualidad" : exp.endDate || "?"}
+                      </p>
+                    </div>
+                    <Badge
+                      className={cn(
+                        "shrink-0 rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium",
+                        exp.current ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                      )}
+                    >
+                      {exp.current ? "Actual" : "Anterior"}
+                    </Badge>
                   </div>
-                  <div className="mt-3">
-                    <RatingSummary rating={criteria.value || 0} totalRatings={0} showDetails={false} size="sm" />
-                  </div>
+                  {exp.description && (
+                    <p className="mt-2.5 text-[13px] leading-relaxed text-slate-600">{exp.description}</p>
+                  )}
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </Section>
+        )}
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {isBusinessViewer && (
-            <Button
-              className="h-14 rounded-2xl bg-[#01A89E] text-white font-semibold shadow-lg hover:bg-[#018F86]"
-              onClick={() => setShowInterviewDialog(true)}
-            >
-              <CalendarCheck className="h-4 w-4 mr-2" /> Solicitar entrevista
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            className="h-14 rounded-2xl font-semibold border-slate-300 text-slate-900"
-            onClick={handleMessage}
+        {/* 17 — Tipo de contrato que busca (detalle final) */}
+        <Section icon={FileText} title="Tipo de contrato que busca">
+          {contractChips}
+        </Section>
+
+        {/* 18 — Indicador de búsqueda activa (detalle final) */}
+        <Section>{activeSearchBlock}</Section>
+      </main>
+
+      {/* Reel del vídeo de presentación */}
+      {isVideoOpen && presentationVideo && (
+        <div className="fixed inset-0 z-[60] bg-black">
+          <button
+            type="button"
+            onClick={handleCloseVideo}
+            aria-label="Cerrar vídeo"
+            className="absolute right-4 top-[calc(env(safe-area-inset-top,0px)+1rem)] z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md active:scale-95"
           >
-            <MessageCircle className="h-4 w-4 mr-2" /> Enviar mensaje
-          </Button>
-        </div>
+            <X className="h-5 w-5" />
+          </button>
 
-        {certifications.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Certificados verificados</h3>
-              <div className="flex flex-wrap gap-2">
-                {certifications.map((cert, index) => (
-                  <Badge key={index} className="rounded-full bg-slate-100 text-slate-700 border-0 px-3 py-1 text-sm">
-                    {typeof cert === "string" ? cert : JSON.stringify(cert)}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {badges.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Insignias</h3>
-              <div className="flex flex-wrap gap-2">
-                {badges.map((badge, index) => (
-                  <Badge key={index} className="rounded-full bg-[#FEF3C7] text-[#92400E] border-0 px-3 py-1 text-sm">
-                    {badge}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Nivel</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{worker.level ? `Nivel ${worker.level}` : "—"}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Puntos acumulados</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{worker.points != null ? `${worker.points} pts` : "—"}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {galleryImages.length > 0 && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-[#01A89E]" />
-                  <h3 className="font-semibold">Galería</h3>
-                </div>
-                <span className="text-xs text-muted-foreground">Hasta 6 imágenes</span>
-              </div>
-              <PortfolioImageViewer images={galleryImages} />
-            </CardContent>
-          </Card>
-        )}
-
-        {presentationVideo && (
-          <Card className="overflow-hidden rounded-[2rem]">
-            <div className="relative aspect-[16/9] bg-black">
-              <video
-                src={presentationVideo}
-                muted
-                preload="metadata"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-              <button
-                type="button"
-                onClick={() => setIsVideoOpen(true)}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <div className="rounded-full bg-white/90 p-4 shadow-lg">
-                  <Video className="h-6 w-6 text-black" />
-                </div>
-              </button>
-              <div className="absolute bottom-4 left-4 text-white">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/70">Vídeo de presentación</p>
-                <p className="text-lg font-semibold">{worker.display_name}</p>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {isVideoOpen && presentationVideo && (
-          <div className="fixed inset-0 z-50 bg-black/95 p-4 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={handleCloseVideo}
-              className="absolute top-4 right-4 z-20 rounded-full bg-white/10 text-white p-2 hover:bg-white/20"
-              aria-label="Cerrar video"
+          <div className="relative h-full w-full" onClick={toggleVideoPlayback}>
+            <video
+              ref={videoRef}
+              src={presentationVideo}
+              playsInline
+              autoPlay
+              className="h-full w-full object-contain"
+              onPlay={() => {
+                setIsVideoPlaying(true)
+                setShowVideoOverlay(false)
+              }}
+              onPause={() => {
+                setIsVideoPlaying(false)
+                setShowVideoOverlay(true)
+              }}
+              onEnded={() => {
+                setIsVideoPlaying(false)
+                setShowVideoOverlay(true)
+              }}
+            />
+            {/* Único control: play/pause centrado */}
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200",
+                showVideoOverlay || !isVideoPlaying ? "opacity-100" : "opacity-0"
+              )}
             >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="relative w-full max-w-3xl aspect-[16/9] rounded-[2rem] overflow-hidden bg-black shadow-2xl">
-              <video
-                ref={videoRef}
-                src={presentationVideo}
-                controls
-                playsInline
-                className="w-full h-full object-cover"
-                onPlay={() => setIsVideoPlaying(true)}
-                onPause={() => setIsVideoPlaying(false)}
-              />
+              <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
+                {isVideoPlaying ? (
+                  <Pause className="h-8 w-8 fill-white text-white" />
+                ) : (
+                  <Play className="ml-1 h-8 w-8 fill-white text-white" />
+                )}
+              </span>
             </div>
           </div>
-        )}
-
-        {worker.bio && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Sobre mí</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{worker.bio}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {workExperience.length > 0 && (
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <h3 className="font-semibold">Experiencia</h3>
-              <div className="space-y-3">
-                {workExperience.map((exp: any, i: number) => (
-                  <div key={i} className="rounded-3xl border border-slate-200 p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{exp.position}{exp.company ? ` · ${exp.company}` : ""}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{exp.startDate || "?"} - {exp.current ? "Actualidad" : exp.endDate || "?"}</p>
-                      </div>
-                      <Badge className="bg-[#E6FFFA] text-[#0F766E] border-0 text-xs py-1 px-2">
-                        {exp.current ? "Actual" : "Anterior"}
-                      </Badge>
-                    </div>
-                    {exp.description && <p className="mt-3 text-sm text-muted-foreground">{exp.description}</p>}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tipo de contrato buscado</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {contractTypeNames.length > 0 ? contractTypeNames.map((contractType: string) => (
-                    <Badge key={contractType} className="rounded-full bg-[#F8FAFC] text-[#0F766E] border-0 px-3 py-1 text-sm">
-                      {contractType}
-                    </Badge>
-                  )) : (
-                    <span className="text-sm text-muted-foreground">Sin datos</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Búsqueda activa</p>
-                <div className="mt-2">
-                  <Badge className={`rounded-full px-3 py-1 text-sm ${activelySearching ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
-                    {activelySearching ? "Sí, activo" : "No activo"}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {activelySearching ? "El candidato revisa ofertas y responde rápido." : "No hay señales recientes de búsqueda activa."}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+        </div>
+      )}
 
       {isBusinessViewer && (
         <InterviewRequestDialog

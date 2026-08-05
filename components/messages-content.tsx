@@ -79,7 +79,7 @@ export function MessagesContent({
   const [searchQuery, setSearchQuery] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // Job application linking this conversation's two participants (if any),
   // used to offer interview/hire confirmation and unlock mutual ratings.
@@ -103,12 +103,25 @@ export function MessagesContent({
     setActiveInterview(data || null)
   }, [supabase])
 
-  // Scroll to bottom helper
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, 100)
+  // WhatsApp-style anchoring: pin the scroll to the newest message at the
+  // bottom. Scrolling the container directly (instead of scrollIntoView on a
+  // sentinel) keeps the page behind the chat from moving on mobile.
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const run = () => {
+      const el = messagesContainerRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }
+    run()
+    requestAnimationFrame(() => {
+      const el = messagesContainerRef.current
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior })
+    })
   }, [])
+
+  useEffect(() => {
+    if (!selectedConversation || messages.length === 0) return
+    scrollToBottom()
+  }, [messages, selectedConversation, scrollToBottom])
 
   // Load the job application (if any) tying the two participants together
   useEffect(() => {
@@ -210,7 +223,7 @@ export function MessagesContent({
         if (prev.some((m) => m.id === message.id)) return prev
         return [...prev, message]
       })
-      scrollToBottom()
+      scrollToBottom("smooth")
 
       // Mark incoming message as read since we're viewing the conversation
       if (message.receiver_id === user.id) {
@@ -259,7 +272,7 @@ export function MessagesContent({
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => [...prev, optimisticMsg])
-    scrollToBottom()
+    scrollToBottom("smooth")
 
     const sent = await sendMessage(
       supabase,
@@ -295,6 +308,20 @@ export function MessagesContent({
     }
     return date.toLocaleDateString("es-ES", { day: "numeric", month: "short" })
   }
+
+  // WhatsApp-style day separator between message groups
+  const formatDayLabel = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const diffDays = Math.round((startOf(new Date()) - startOf(date)) / 86400000)
+    if (diffDays === 0) return "Hoy"
+    if (diffDays === 1) return "Ayer"
+    if (diffDays < 7) return date.toLocaleDateString("es-ES", { weekday: "long" })
+    return date.toLocaleDateString("es-ES", { day: "numeric", month: "long" })
+  }
+
+  const isSameDay = (a: string, b: string) =>
+    new Date(a).toDateString() === new Date(b).toDateString()
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-6 md:pt-14">
@@ -504,7 +531,7 @@ export function MessagesContent({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-160px)]">
+          <div className="grid md:grid-cols-3 gap-4 h-[calc(100dvh-11rem)] min-h-[22rem] md:h-[calc(100dvh-10rem)]">
             {/* Conversations List */}
             <div
               className={cn(
@@ -576,8 +603,13 @@ export function MessagesContent({
             >
               {selectedConversation ? (
                 <Card className="flex-1 flex flex-col overflow-hidden">
-                  {/* Messages area */}
-                  <CardContent className="flex-1 p-4 overflow-y-auto">
+                  {/* Messages area - oldest at the top, newest pinned to the
+                      bottom, like WhatsApp. `mt-auto` keeps short threads
+                      anchored down without clipping long ones. */}
+                  <div
+                    ref={messagesContainerRef}
+                    className="flex-1 flex flex-col overflow-y-auto overscroll-contain p-4"
+                  >
                     {isLoadingMessages ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -592,52 +624,60 @@ export function MessagesContent({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-2">
-                        {messages.map((message) => {
+                      <div className="mt-auto flex flex-col gap-1.5">
+                        {messages.map((message, index) => {
                           const isOwn = message.sender_id === user.id
+                          const previous = messages[index - 1]
+                          const showDaySeparator =
+                            !previous || !isSameDay(previous.created_at, message.created_at)
                           return (
-                            <div
-                              key={message.id}
-                              className={cn("flex", isOwn ? "justify-end" : "justify-start")}
-                            >
-                              <div
-                                className={cn(
-                                  "max-w-[75%] rounded-2xl px-4 py-2.5",
-                                  isOwn
-                                    ? "bg-primary text-primary-foreground rounded-br-sm"
-                                    : "bg-muted text-foreground rounded-bl-sm"
-                                )}
-                              >
-                                <p className="text-sm whitespace-pre-wrap break-words">
-                                  {message.content}
-                                </p>
+                            <div key={message.id}>
+                              {showDaySeparator && (
+                                <div className="flex justify-center py-3">
+                                  <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-medium capitalize text-muted-foreground">
+                                    {formatDayLabel(message.created_at)}
+                                  </span>
+                                </div>
+                              )}
+                              <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                                 <div
                                   className={cn(
-                                    "flex items-center justify-end gap-1 mt-1",
-                                    isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
+                                    "max-w-[78%] rounded-2xl px-3.5 py-2",
+                                    isOwn
+                                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                                      : "bg-muted text-foreground rounded-bl-sm"
                                   )}
                                 >
-                                  <span className="text-[10px]">
-                                    {new Date(message.created_at).toLocaleTimeString("es-ES", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                  {isOwn &&
-                                    (message.read ? (
-                                      <CheckCheck className="h-3.5 w-3.5" />
-                                    ) : (
-                                      <Check className="h-3.5 w-3.5" />
-                                    ))}
+                                  <p className="text-sm whitespace-pre-wrap break-words">
+                                    {message.content}
+                                  </p>
+                                  <div
+                                    className={cn(
+                                      "flex items-center justify-end gap-1 -mb-0.5 mt-0.5",
+                                      isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
+                                    )}
+                                  >
+                                    <span className="text-[10px]">
+                                      {new Date(message.created_at).toLocaleTimeString("es-ES", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                    {isOwn &&
+                                      (message.read ? (
+                                        <CheckCheck className="h-3.5 w-3.5" />
+                                      ) : (
+                                        <Check className="h-3.5 w-3.5" />
+                                      ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           )
                         })}
-                        <div ref={messagesEndRef} />
                       </div>
                     )}
-                  </CardContent>
+                  </div>
 
                   {/* Message Input */}
                   <div className="p-3 border-t bg-card">
