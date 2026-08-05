@@ -2,6 +2,30 @@ export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function upsertProfileWithRetry(supabase: ReturnType<typeof createClient>, profileData: any) {
+  const maxAttempts = 3
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(profileData)
+
+    if (!error) {
+      return null
+    }
+
+    const isForeignKeyError = error.code === "23503" || error.message?.includes("profiles_id_fkey")
+    if (attempt === maxAttempts || !isForeignKeyError) {
+      return error
+    }
+
+    await sleep(300)
+  }
+
+  return null
+}
+
 export async function POST(request: Request) {
   try {
     const { profileData } = await request.json()
@@ -23,10 +47,7 @@ export async function POST(request: Request) {
     })
     
     // Create worker profile
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert(profileData)
-    
+    const profileError = await upsertProfileWithRetry(supabase, profileData)
     if (profileError) {
       console.error("Worker profile creation error:", profileError)
       return NextResponse.json({ error: "Error al crear perfil: " + profileError.message }, { status: 500 })
