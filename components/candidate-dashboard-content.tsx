@@ -23,6 +23,8 @@ import { BottomNavigation } from "@/components/bottom-navigation"
 import { SmartSearch } from "@/components/smart-search"
 import { createClient } from "@/lib/supabase/client"
 import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
+import { useUnreadMessages } from "@/hooks/use-unread-messages"
+import { cn } from "@/lib/utils"
 
 type Job = {
   id: string
@@ -75,7 +77,9 @@ export function CandidateDashboardContent({
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [categories, setCategories] = useState<Category[]>(initialCategories)
-  const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  // Se cuenta en vivo (realtime) partiendo del valor que ya trajo el servidor,
+  // para que el badge reaccione al recibir y al leer sin recargar la página.
+  const unreadCount = useUnreadMessages(userId, initialUnreadCount)
   const jobListRef = useRef<HTMLDivElement>(null)
 
   const userInitial = userName[0] || "U"
@@ -90,7 +94,9 @@ export function CandidateDashboardContent({
 
     const refresh = async () => {
       try {
-        const [{ data: jobsData }, { data: catsData }, { count: unread }] = await Promise.all([
+        // El contador de mensajes ya no se pide aquí: lo lleva
+        // useUnreadMessages por realtime, sin esperar al siguiente refresco.
+        const [{ data: jobsData }, { data: catsData }] = await Promise.all([
           supabase
             .from("jobs")
             .select(`
@@ -102,7 +108,6 @@ export function CandidateDashboardContent({
             .order("created_at", { ascending: false })
             .limit(50),
           supabase.from("categories").select("id, name").order("name"),
-          supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", userId).eq("read", false),
         ])
         if (jobsData) {
           setJobs(
@@ -113,7 +118,6 @@ export function CandidateDashboardContent({
           )
         }
         if (catsData) setCategories(catsData)
-        if (unread !== null) setUnreadCount(unread)
       } catch {
         // Best-effort background refresh - keep showing the last good data
       }
@@ -301,14 +305,26 @@ export function CandidateDashboardContent({
           </Link>
 
           <Link href="/messages">
-            <Card className="relative bg-blue-500/5 border-blue-500/20 hover:border-blue-500/50 transition-colors">
+            <Card
+              className={cn(
+                "relative transition-colors",
+                unreadCount > 0
+                  ? "bg-red-500/5 border-red-500/40 hover:border-red-500/60"
+                  : "bg-blue-500/5 border-blue-500/20 hover:border-blue-500/50"
+              )}
+            >
               {unreadCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white border-0 h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px]">
-                  {unreadCount}
-                </Badge>
+                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-md">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
               )}
               <CardContent className="p-3 text-center">
-                <p className="text-xl font-bold text-blue-600 flex items-center justify-center gap-1.5">
+                <p
+                  className={cn(
+                    "text-xl font-bold flex items-center justify-center gap-1.5",
+                    unreadCount > 0 ? "text-red-600" : "text-blue-600"
+                  )}
+                >
                   <MessageCircle className="h-4 w-4" /> {unreadCount}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Mensajes</p>

@@ -11,12 +11,14 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import {
-  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Play, Loader2, Building2, Zap, ListChecks, Gift,
+  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
 import { checkInterviewRemindersAction } from "@/lib/actions"
 import { computeBestMatchScore, type MatchJobInput } from "@/lib/matching"
+import { useUnreadMessages } from "@/hooks/use-unread-messages"
+import { cn } from "@/lib/utils"
 
 interface Candidate {
   id: string
@@ -40,6 +42,7 @@ export default function BusinessDashboardPage() {
   const [myJobsCount, setMyJobsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const dataLoaded = useRef(false)
+  const unreadCount = useUnreadMessages(user?.id)
 
   const userName = user?.displayName || "Empresa"
   const userAvatar = user?.avatarUrl
@@ -192,10 +195,22 @@ export default function BusinessDashboardPage() {
               <span className="text-[10px] font-medium">Mi Perfil</span>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl">
-            <Link href="/reels">
-              <Play className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Ver Reels</span>
+          <Button
+            asChild
+            variant="outline"
+            className={cn(
+              "relative h-auto py-4 flex-col gap-2 rounded-xl",
+              unreadCount > 0 && "border-red-500/40 bg-red-500/5"
+            )}
+          >
+            <Link href="/messages">
+              {unreadCount > 0 && (
+                <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-md">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+              <MessageCircle className={cn("h-5 w-5", unreadCount > 0 && "text-red-500")} />
+              <span className="text-[10px] font-medium">Mensajes</span>
             </Link>
           </Button>
         </div>

@@ -233,6 +233,30 @@ a, button {
   }
 }
 
+/* Parpadeo lento del contador de mensajes sin leer. Más pausado que
+   animate-pulse de Tailwind (2s), para que se lea como una alerta y no como
+   un elemento cargando. Se detiene si el usuario pide menos movimiento. */
+@keyframes slow-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+}
+
+.animate-slow-blink {
+  animation: slow-blink 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slow-blink {
+    animation: none;
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }

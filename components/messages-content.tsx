@@ -26,7 +26,7 @@ import {
   type RelevantApplication,
 } from "@/lib/messaging"
 import { useRealtimeMessages, useRealtimeConversations } from "@/hooks/use-realtime-messages"
-import { updateApplicationStatusAction, respondToInterviewRequestAction, resolveInterviewRequestAction } from "@/lib/actions"
+import { updateApplicationStatusAction, respondToInterviewRequestAction, resolveInterviewRequestAction, notifyNewMessageAction } from "@/lib/actions"
 import { RatingDialog } from "@/components/rating-dialog"
 import { InterviewRequestDialog } from "@/components/interview-request-dialog"
 import { toast } from "sonner"
@@ -285,6 +285,13 @@ export function MessagesContent({
     if (sent) {
       // Replace optimistic message with real one
       setMessages((prev) => prev.map((m) => (m.id === optimisticMsg.id ? sent : m)))
+
+      // Feed entry for the recipient. Best-effort: the message is already sent,
+      // and realtime already alerts them if they have the app open.
+      const receiverId = selectedConversation.other_participant?.id
+      if (receiverId) {
+        notifyNewMessageAction(receiverId, content).catch(() => {})
+      }
     }
 
     setIsSending(false)

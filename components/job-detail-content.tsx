@@ -497,7 +497,7 @@ export function JobDetailContent({
                 size="lg"
                 disabled={isApplying}
               >
-                {isApplying ? "Enviando..." : "Aplicar a esta Oferta"}
+                {isApplying ? "Enviando..." : "Me interesa la Oferta"}
               </Button>
             )}
           </div>

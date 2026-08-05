@@ -10,6 +10,7 @@ import { LanguageProvider } from "@/lib/i18n/language-context"
 import { AuthProvider } from "@/components/providers/auth-provider"
 import { NotificationProvider } from "@/lib/notifications/notification-context"
 import { NotificationTrigger } from "@/components/notification-trigger"
+import { MessageAlerts } from "@/components/message-alerts"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
@@ -78,6 +79,7 @@ export default function RootLayout({
               <GlobalBottomNavigation />
               <ScrollToTop />
               <NotificationTrigger />
+              <MessageAlerts />
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>

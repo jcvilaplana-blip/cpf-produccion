@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { notifyUser } from "@/lib/notifications/create-notification"
+import { getOrCreateConversation, sendMessage } from "@/lib/messaging"
 import { notifyMatchingCandidates } from "@/lib/matching/notify-match-alerts"
 import { notifyFlashOfferCandidates } from "@/lib/payments/flash-fanout"
 import { checkAndSendInterviewReminders } from "@/lib/interview-reminders"
@@ -167,9 +168,75 @@ export async function applyToJobAction(jobId: string, coverLetter?: string) {
 
   if (error) return { error: error.message }
 
+  // "Me interesa la oferta" has to reach the business, not just sit in a table:
+  // open the conversation and drop the first message in it, so the interest
+  // lands in their inbox and drives the unread badge on their dashboard.
+  // Best-effort - the application itself is already saved.
+  try {
+    const [{ data: job }, { data: candidate }] = await Promise.all([
+      supabase.from("jobs").select("id, title, business_id").eq("id", jobId).single(),
+      supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+    ])
+
+    if (job?.business_id && job.business_id !== user.id) {
+      const candidateName = candidate?.display_name || "Un candidato"
+
+      const conversationId = await getOrCreateConversation(supabase, user.id, job.business_id)
+      if (conversationId) {
+        await sendMessage(
+          supabase,
+          conversationId,
+          user.id,
+          job.business_id,
+          `Hola, me interesa vuestra oferta "${job.title}".`
+        )
+      }
+
+      await notifyUser(job.business_id, {
+        title: "Nuevo interesado en tu oferta",
+        body: `${candidateName} está interesado en "${job.title}".`,
+        type: "interes",
+        link: "/messages",
+        createdBy: user.id,
+      })
+    }
+  } catch (err) {
+    console.error("applyToJobAction: no se pudo avisar al establecimiento", err)
+  }
+
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath("/profile")
+  revalidatePath("/messages")
   return { success: true }
+}
+
+/**
+ * Deja constancia de un mensaje nuevo en el buzón de avisos del destinatario.
+ *
+ * El mensaje en sí lo escribe el cliente, pero un usuario no puede insertar en
+ * el feed de otro, así que la fila de notificación se crea aquí con permisos de
+ * servicio. Va en las dos direcciones: candidato → empresa y empresa →
+ * candidato.
+ */
+export async function notifyNewMessageAction(receiverId: string, preview: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+  if (!receiverId || receiverId === user.id) return { success: true }
+
+  const { data: sender } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  return notifyUser(receiverId, {
+    title: `Nuevo mensaje de ${sender?.display_name || "un usuario"}`,
+    body: preview.slice(0, 140),
+    type: "otro",
+    link: "/messages",
+    createdBy: user.id,
+  })
 }
 
 export async function updateApplicationStatusAction(
