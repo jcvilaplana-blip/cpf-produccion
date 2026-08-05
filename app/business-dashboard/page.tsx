@@ -292,8 +292,9 @@ export default function BusinessDashboardPage() {
           </Link>
         </div>
 
-        {/* Línea 5: histórico de entrevistas y contrataciones */}
-        <Link href="/interviews" className="block">
+        {/* Línea 5: histórico. Filtra solo las cerradas -celebradas, con
+            contratación o sin ella-, no las que siguen en curso. */}
+        <Link href="/interviews?filter=realizadas" className="block">
           <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="bg-violet-500/10 p-2.5 rounded-xl">

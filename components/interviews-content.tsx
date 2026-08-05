@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -41,7 +42,11 @@ const TYPE_ICONS: Record<string, typeof Video> = {
 export function InterviewsContent({ interviews: initialInterviews }: { interviews: BusinessInterview[] }) {
   const [interviews, setInterviews] = useState(initialInterviews)
   const [date, setDate] = useState<Date | undefined>(new Date())
-  const [selectedTab, setSelectedTab] = useState("todas")
+  // El panel enlaza aquí con ?filter=realizadas para abrir directamente el
+  // histórico, en lugar de dejar al usuario buscando la pestaña.
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("filter") === "realizadas" ? "realizadas" : "todas"
+  const [selectedTab, setSelectedTab] = useState(initialTab)
   const [selectedInterview, setSelectedInterview] = useState<BusinessInterview | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
@@ -82,6 +87,10 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
     if (selectedTab === "pendientes") return interview.status === "pending"
     if (selectedTab === "confirmadas") return interview.status === "confirmed"
     if (selectedTab === "contratados") return interview.status === "approved"
+    // "Realizadas": las que llegaron a celebrarse y ya están cerradas, con
+    // contratación o sin ella. Las canceladas quedan fuera porque nunca
+    // ocurrieron: mezclarlas falsearía el histórico.
+    if (selectedTab === "realizadas") return ["approved", "not_hired"].includes(interview.status)
     return true
   })
 
@@ -167,11 +176,12 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
           Las entrevistas se solicitan desde la ficha de cada candidato o desde el chat.
         </p>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4 h-auto">
+          <TabsList className="grid w-full grid-cols-5 mb-4 h-auto">
             <TabsTrigger value="todas" className="text-xs sm:text-sm py-2">Todas</TabsTrigger>
             <TabsTrigger value="pendientes" className="text-xs sm:text-sm py-2">Pendientes</TabsTrigger>
             <TabsTrigger value="confirmadas" className="text-xs sm:text-sm py-2">Confirmadas</TabsTrigger>
             <TabsTrigger value="contratados" className="text-xs sm:text-sm py-2">Contratados</TabsTrigger>
+            <TabsTrigger value="realizadas" className="text-xs sm:text-sm py-2">Realizadas</TabsTrigger>
           </TabsList>
 
           <TabsContent value={selectedTab} className="space-y-3 mt-0">
