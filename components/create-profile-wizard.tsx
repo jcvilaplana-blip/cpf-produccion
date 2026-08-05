@@ -397,28 +397,28 @@ export function CreateProfileWizard() {
         }
       }
 
+      // Media has to be uploaded BEFORE the profile insert, otherwise the URLs
+      // never make it into the row and the public profile shows no gallery and
+      // no presentation video. Shared by both the worker and business branches.
+      const uploadFile = async (file: File | null, type: "video" | "portfolio" | "photos") => {
+        if (!file) return null
+        const uploadForm = new FormData()
+        uploadForm.append("file", file)
+        uploadForm.append("type", type)
+        uploadForm.append("userId", accountId)
+
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm })
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}))
+          throw new Error(errorData.error || `Error al subir ${type === "video" ? "el vídeo" : "la imagen"}`)
+        }
+        const data = await uploadRes.json()
+        return data.url as string | null
+      }
+
       // 3. Create profile
       if (isWorker) {
         const expYears = form.experience === "10+" ? 10 : form.experience === "5-10" ? 7 : form.experience === "3-5" ? 4 : form.experience === "1-2" ? 1 : 0
-
-        // Media has to be uploaded BEFORE the profile insert, otherwise the
-        // URLs never make it into the row and the public profile shows no
-        // gallery and no presentation video.
-        const uploadFile = async (file: File | null, type: "video" | "portfolio") => {
-          if (!file) return null
-          const uploadForm = new FormData()
-          uploadForm.append("file", file)
-          uploadForm.append("type", type)
-          uploadForm.append("userId", accountId)
-
-          const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm })
-          if (!uploadRes.ok) {
-            const errorData = await uploadRes.json().catch(() => ({}))
-            throw new Error(errorData.error || `Error al subir ${type === "video" ? "el vídeo" : "la imagen"}`)
-          }
-          const data = await uploadRes.json()
-          return data.url as string | null
-        }
 
         const portfolioVideoUrls: string[] = []
         const portfolioImageUrls: string[] = []
@@ -489,13 +489,27 @@ export function CreateProfileWizard() {
         router.push("/auth/sign-up-success")
 
       } else {
-        // Business profile
+        // Business photos: uploaded before the insert, same reason as workers.
+        const businessPhotoUrls: string[] = []
+        try {
+          for (const image of form.galleryImages.slice(0, 6)) {
+            const url = await uploadFile(image, "photos")
+            if (url) businessPhotoUrls.push(url)
+          }
+        } catch (e: unknown) {
+          console.error("Error uploading business photos:", e)
+          setSubmitError(e instanceof Error ? e.message : "Error al subir las imágenes")
+          setIsSubmitting(false)
+          return
+        }
+
         const res = await fetch("/api/profiles/create-business", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             businessData: {
               id: userId,
+              photos: businessPhotoUrls,
               company_name: form.companyName,
               business_type: form.businessType,
               category_id: form.categoryId || null,
@@ -977,15 +991,20 @@ export function CreateProfileWizard() {
                       </div>
                     )}
 
-                    {/* Galería: hasta 6 imágenes, se muestran en grid en el perfil público */}
-                    {isWorker && (
-                      <div className="space-y-3">
+                    {/* Galería: hasta 6 imágenes. En candidatos va a
+                        profiles.portfolio_images; en empresas, a
+                        business_profiles.photos. */}
+                    <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-base font-semibold">Galería de fotos (máx. 6)</Label>
+                          <Label className="text-base font-semibold">
+                            {isWorker ? "Galería de fotos (máx. 6)" : "Fotos del establecimiento (máx. 6)"}
+                          </Label>
                           <span className="text-xs text-muted-foreground">{form.galleryImages.length}/6</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Fotos tuyas trabajando, montajes, presentaciones… Se mostrarán en tu perfil público.
+                          {isWorker
+                            ? "Fotos tuyas trabajando, montajes, presentaciones… Se mostrarán en tu perfil público."
+                            : "Sala, barra, terraza, equipo… Ayudan a que los candidatos se hagan una idea del local."}
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                           {form.galleryImages.map((image, index) => (
@@ -1027,8 +1046,7 @@ export function CreateProfileWizard() {
                             </label>
                           )}
                         </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
 

@@ -1,6 +1,31 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createSessionClient } from "@/lib/supabase/server"
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Works out which folder the file belongs in.
+ *
+ * The signed-in user always wins: this route runs with the service-role key,
+ * so trusting a client-supplied `userId` would let anyone write into another
+ * user's folder. The form field is only honoured during registration, where
+ * the account exists but has no session yet because e-mail confirmation is
+ * still pending - and even then it has to look like a UUID.
+ */
+async function resolveOwnerId(formData: FormData): Promise<string> {
+  try {
+    const sessionClient = await createSessionClient()
+    const { data: { user } } = await sessionClient.auth.getUser()
+    if (user?.id) return user.id
+  } catch {
+    // No session (or cookies unavailable) - fall through to the signup path.
+  }
+
+  const claimed = ((formData.get("userId") as string) || "").trim()
+  return UUID_RE.test(claimed) ? claimed : "unknown"
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +38,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get("file") as File
     const type = (formData.get("type") as string) || "avatar"
-    const userId = (formData.get("userId") as string) || "unknown"
+    const userId = await resolveOwnerId(formData)
 
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 })
 

@@ -429,10 +429,12 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
           updateEducation={updateEducation}
         />
 
+        {/* 6 imágenes: es lo que muestra la galería del perfil público
+            (ver profile-detail-content.tsx). */}
         <PortfolioSection
           images={portfolioImages}
           onImagesChange={setPortfolioImages}
-          maxImages={3}
+          maxImages={6}
         />
 
         <PortfolioVideosSection
