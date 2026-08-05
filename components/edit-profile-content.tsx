@@ -94,6 +94,11 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     setBio(profile.bio || "")
     setJobCategory(profile.job_category || "")
     setSubcategory(profile.job_subcategory || "")
+    // Sin esto se quedaba vacía y, como el guardado escribe
+    // `custom_subcategory: customSubcategory || null`, cada vez que alguien
+    // editaba su perfil se borraba la especialidad que había puesto al
+    // registrarse.
+    setCustomSubcategory((profile as any).custom_subcategory || "")
     setCustomSubcategory((profile as any).custom_subcategory || "")
     setExperienceYears(String(profile.experience_years || ""))
     setAvailability(profile.availability_status || "")
@@ -152,9 +157,26 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
     if (exp.length) setWorkExperience(exp)
     if (edu.length) setEducation(edu)
 
-    const rawContract = profile.contract_type_sought
+    // El tipo declara string[], pero Supabase devuelve estas columnas a veces
+    // como texto (JSON o separado por comas), de ahí la comprobación en
+    // ejecución. Se lee como `unknown` para que TypeScript no dé por imposible
+    // la rama de cadena y la reduzca a `never`.
+    const rawContract: unknown = profile.contract_type_sought
     if (rawContract) {
-      setContractTypes(Array.isArray(rawContract) ? rawContract : typeof rawContract === "string" ? rawContract.split(",") : [])
+      let parsed: string[] = []
+      if (Array.isArray(rawContract)) {
+        parsed = rawContract.filter((value): value is string => typeof value === "string")
+      } else if (typeof rawContract === "string") {
+        try {
+          const fromJson = JSON.parse(rawContract)
+          parsed = Array.isArray(fromJson)
+            ? fromJson.filter((value): value is string => typeof value === "string")
+            : rawContract.split(",")
+        } catch {
+          parsed = rawContract.split(",")
+        }
+      }
+      setContractTypes(parsed.map((value) => value.trim()).filter(Boolean))
     }
 
     if (typeof profile.match_alert_threshold === "number") {

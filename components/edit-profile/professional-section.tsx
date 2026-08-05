@@ -23,6 +23,8 @@ const MATCH_ALERT_STEPS = [
 interface ProfessionalSectionProps {
   jobCategory: string; setJobCategory: (v: string) => void
   subcategory: string; setSubcategory: (v: string) => void
+  /** Especialidad escrita a mano cuando la subcategoría elegida es "Otro". */
+  customSubcategory: string; setCustomSubcategory: (v: string) => void
   experienceYears: string; setExperienceYears: (v: string) => void
   currentPosition: string; setCurrentPosition: (v: string) => void
   availability: string; setAvailability: (v: string) => void
@@ -106,6 +108,23 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
                 {filteredSubcategories.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {/* Mismo comportamiento que el registro: al elegir "Otro" se pide
+                escribir la especialidad. Sin este campo, el valor guardado en
+                el alta no podía editarse aquí. */}
+            {p.subcategory?.toLowerCase() === "otro" && (
+              <div className="mt-2">
+                <Label htmlFor="customSub" className="text-xs font-medium text-gray-600">
+                  Especifica tu especialidad
+                </Label>
+                <Input
+                  id="customSub"
+                  value={p.customSubcategory}
+                  onChange={(e) => p.setCustomSubcategory(e.target.value)}
+                  placeholder="Ej: Especialista en coctelería de autor"
+                  className="mt-1"
+                />
+              </div>
+            )}
           </div>
           <div>
             <Label htmlFor="expYears" className="text-xs font-medium text-gray-600">Años de experiencia</Label>
