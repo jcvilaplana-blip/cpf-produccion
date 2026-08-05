@@ -11,7 +11,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import {
-  Search, MapPin, Star, Users, Briefcase, Plus, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift, CalendarCheck,
+  Search, MapPin, Star, Users, Briefcase, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift, CalendarCheck, Crown,
 } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -42,6 +42,7 @@ export default function BusinessDashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [myJobsCount, setMyJobsCount] = useState(0)
+  const [savedCount, setSavedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const dataLoaded = useRef(false)
   const unreadCount = useUnreadMessages(user?.id)
@@ -71,7 +72,7 @@ export default function BusinessDashboardPage() {
 
     const loadData = async () => {
       const supabase = createClient()
-      const [{ data: candidatesData }, { data: activeJobsData }, { count }] = await Promise.all([
+      const [{ data: candidatesData }, { data: activeJobsData }, { count }, { count: saved }] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years, contract_type_sought")
@@ -84,6 +85,11 @@ export default function BusinessDashboardPage() {
           .eq("is_active", true),
         supabase
           .from("jobs")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", user.id),
+        // Candidatos guardados con el corazón, para la tarjeta de Guardados.
+        supabase
+          .from("saved_profiles")
           .select("id", { count: "exact", head: true })
           .eq("business_id", user.id),
       ])
@@ -127,6 +133,7 @@ export default function BusinessDashboardPage() {
       }
 
       setMyJobsCount(count || 0)
+      setSavedCount(saved || 0)
       setLoading(false)
       checkInterviewRemindersAction().catch(() => {})
     }
@@ -168,15 +175,11 @@ export default function BusinessDashboardPage() {
                 <p className="text-xs text-muted-foreground">{userName}</p>
               </div>
             </div>
+            {/* Solo notificaciones y perfil: recompensas y mensajes tienen su
+                propia tarjeta más abajo y aquí solo competían por el espacio. */}
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/notifications"><Bell className="h-5 w-5" /></Link>
-              </Button>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/rewards"><Gift className="h-5 w-5" /></Link>
-              </Button>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/messages"><MessageCircle className="h-5 w-5" /></Link>
+              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
+                <Link href="/notifications"><Bell className="h-6 w-6" /></Link>
               </Button>
               <Avatar className="h-9 w-9">
                 <AvatarImage src={userAvatar} alt={userName} />
@@ -187,18 +190,24 @@ export default function BusinessDashboardPage() {
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-6">
+      <div className="px-4 py-4 space-y-3">
+        {/* Línea 1: perfil · entrevistas · mensajes */}
         <div className="grid grid-cols-3 gap-3">
-          <Button asChild className="h-auto py-4 flex-col gap-2 bg-[#01A89E] hover:bg-[#018F86] text-white rounded-xl">
-            <Link href="/jobs/create">
-              <Plus className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Publicar Oferta</span>
-            </Link>
-          </Button>
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
             <Link href="/business-profile/edit">
               <Building2 className="h-5 w-5 text-[#F48221]" />
               <span className="text-[10px] font-medium">Mi Perfil</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="relative h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
+            <Link href="/interviews">
+              {interviewStats.upcoming > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-bold text-white shadow-md">
+                  {interviewStats.upcoming}
+                </span>
+              )}
+              <CalendarCheck className="h-5 w-5 text-violet-600" />
+              <span className="text-[10px] font-medium">Mis Entrevistas</span>
             </Link>
           </Button>
           <Button
@@ -221,6 +230,7 @@ export default function BusinessDashboardPage() {
           </Button>
         </div>
 
+        {/* Línea 2: ofertas flash */}
         <div className="grid grid-cols-2 gap-3">
           <Button asChild className="h-auto py-4 flex-col gap-2 bg-[#F97316] hover:bg-[#EA6A0E] text-white rounded-xl">
             <Link href="/jobs/create?flash=true">
@@ -236,33 +246,55 @@ export default function BusinessDashboardPage() {
           </Button>
         </div>
 
+        {/* Línea 3: suscripción y gamificación */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-[#01A89E]/5 border-[#01A89E]/20">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="bg-[#01A89E]/10 p-2.5 rounded-xl">
-                <Briefcase className="h-6 w-6 text-[#01A89E]" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{myJobsCount}</p>
-                <p className="text-[10px] text-muted-foreground">Mis Ofertas</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-[#F48221]/5 border-[#F48221]/20">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="bg-[#F48221]/10 p-2.5 rounded-xl">
-                <Users className="h-6 w-6 text-[#F48221]" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{candidates.length}</p>
-                <p className="text-[10px] text-muted-foreground">Candidatos</p>
-              </div>
-            </CardContent>
-          </Card>
+          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F5A623]/30 hover:bg-[#F5A623]/5">
+            <Link href="/subscribe">
+              <Crown className="h-5 w-5 text-[#F5A623]" />
+              <span className="text-[10px] font-medium">Suscripción</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
+            <Link href="/rewards">
+              <Gift className="h-5 w-5 text-violet-600" />
+              <span className="text-[10px] font-medium">Recompensas Gamificación</span>
+            </Link>
+          </Button>
         </div>
 
+        {/* Línea 4: mis ofertas y candidatos guardados */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/my-jobs">
+            <Card className="bg-[#01A89E]/5 border-[#01A89E]/20 hover:border-[#01A89E]/50 transition-colors h-full">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="bg-[#01A89E]/10 p-2.5 rounded-xl">
+                  <Briefcase className="h-6 w-6 text-[#01A89E]" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{myJobsCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Mis Ofertas</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/favorites">
+            <Card className="bg-rose-500/5 border-rose-500/20 hover:border-rose-500/50 transition-colors h-full">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="bg-rose-500/10 p-2.5 rounded-xl">
+                  <Heart className="h-6 w-6 text-rose-500" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{savedCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Candidatos Guardados</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Línea 5: histórico de entrevistas y contrataciones */}
         <Link href="/interviews" className="block">
-          <Card className="bg-violet-500/5 border-violet-500/20">
+          <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="bg-violet-500/10 p-2.5 rounded-xl">
                 <CalendarCheck className="h-6 w-6 text-violet-600" />
@@ -270,8 +302,8 @@ export default function BusinessDashboardPage() {
               <div className="flex-1">
                 <p className="text-xl font-bold">{interviewStats.completed}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  Entrevistas realizadas
-                  {interviewStats.hired > 0 ? ` · ${interviewStats.hired} con contratación` : ""}
+                  Entrevistas Realizadas, Contrataciones
+                  {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratados` : ""}
                 </p>
               </div>
               {interviewStats.upcoming > 0 && (

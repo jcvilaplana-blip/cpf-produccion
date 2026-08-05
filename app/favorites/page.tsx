@@ -32,11 +32,17 @@ export default function FavoritesPage() {
       setUserType(type)
 
       if (type === "business") {
-        const { data } = await supabase
+        // Hay que nombrar la clave foránea: saved_profiles apunta a `profiles`
+        // dos veces (business_id y worker_id), así que sin el nombre PostgREST
+        // responde PGRST201 "ambiguous relationship" y la consulta entera
+        // falla. El resultado era una página de guardados siempre vacía por
+        // muchos candidatos que se hubieran guardado.
+        const { data, error } = await supabase
           .from("saved_profiles")
-          .select("*, profile:profiles(*)")
+          .select("*, profile:profiles!saved_profiles_worker_id_fkey(*)")
           .eq("business_id", user.id)
           .order("created_at", { ascending: false })
+        if (error) console.error("Guardados: no se pudieron cargar", error)
         setSavedItems(data || [])
       } else {
         const [{ data: savedJobs }, { data: savedBusinesses }] = await Promise.all([

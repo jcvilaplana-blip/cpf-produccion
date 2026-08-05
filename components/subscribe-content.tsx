@@ -114,6 +114,69 @@ export function SubscribeContent({
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
+        {/* Plan vigente. La página ya cargaba `currentSubscription` de la tabla
+            `subscriptions` y no lo mostraba en ninguna parte: solo se veía el
+            catálogo, sin forma de saber a qué estabas suscrito ni hasta cuándo. */}
+        {currentSubscription && (() => {
+          const plan = plans.find((p) => p.id === currentSubscription.plan_type)
+          const end = currentSubscription.current_period_end
+          const daysLeft = end ? Math.ceil((new Date(end).getTime() - Date.now()) / 86400000) : null
+          return (
+            <div className="mb-8 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
+                    Tu suscripción
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold">
+                    {plan?.name || currentSubscription.plan_type}
+                  </h2>
+                  {plan && (
+                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                  )}
+                </div>
+                <Badge className="bg-primary text-primary-foreground">
+                  {currentSubscription.status === "active" ? "Activa" : currentSubscription.status}
+                </Badge>
+              </div>
+
+              {end && (
+                <div className="mt-4 rounded-xl bg-background/70 px-4 py-3">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Válida hasta el </span>
+                    <strong>
+                      {new Date(end).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                    </strong>
+                    {typeof daysLeft === "number" && daysLeft >= 0 && (
+                      <span className="text-muted-foreground"> · quedan {daysLeft} días</span>
+                    )}
+                  </p>
+                  {currentSubscription.current_period_start && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Periodo iniciado el{" "}
+                      {new Date(currentSubscription.current_period_start).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {plan && (
+                <div className="mt-4">
+                  <p className="mb-2 text-sm font-semibold">Incluye</p>
+                  <ul className="space-y-1.5">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Banner para empresa recién registrada */}
         {isNewBusiness && (
           <div className="mb-8 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-6 text-center">
