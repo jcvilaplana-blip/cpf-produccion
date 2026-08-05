@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Users, Building2, FolderTree, MapPin, Crown, Globe,
   Languages, CreditCard, Settings, Star, MessageCircle, Briefcase, CalendarCheck,
-  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell,
+  ChevronDown, ChevronRight, Zap, DollarSign, Plug, X, LogOut, Bell, ClipboardList,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -13,6 +13,7 @@ export type AdminSection =
   | "dashboard"
   | "candidates" | "businesses"
   | "jobs" | "flash"
+  | "applications"
   | "interviews"
   | "categories"
   | "ratings"
@@ -52,8 +53,9 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    label: "Entrevistas",
+    label: "Candidaturas",
     items: [
+      { id: "applications", label: "Candidaturas", icon: ClipboardList },
       { id: "interviews", label: "Solicitudes de Entrevista", icon: CalendarCheck },
     ],
   },

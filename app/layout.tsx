@@ -11,6 +11,7 @@ import { AuthProvider } from "@/components/providers/auth-provider"
 import { NotificationProvider } from "@/lib/notifications/notification-context"
 import { NotificationTrigger } from "@/components/notification-trigger"
 import { MessageAlerts } from "@/components/message-alerts"
+import { PushRegistrar } from "@/components/push-registrar"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
@@ -80,6 +81,7 @@ export default function RootLayout({
               <ScrollToTop />
               <NotificationTrigger />
               <MessageAlerts />
+              <PushRegistrar />
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>

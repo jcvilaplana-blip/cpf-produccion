@@ -105,6 +105,7 @@ export default function AdminPage() {
   const catsKey = section === "categories" ? "/api/admin/categories" : null
   const { data: catsData } = useSWR(catsKey, fetcher)
   const { data: ratingsData } = useSWR(section === "ratings" ? `/api/admin/ratings?search=${debouncedSearch}` : null, fetcher)
+  const { data: applicationsData } = useSWR(section === "applications" ? "/api/admin/applications?limit=100" : null, fetcher)
   const { data: interviewsData } = useSWR(section === "interviews" ? `/api/admin/interviews?search=${debouncedSearch}` : null, fetcher)
   const { data: msgsData } = useSWR(section === "messages" ? "/api/admin/messages" : null, fetcher)
   const notifKey = section === "notifications" ? "/api/admin/notifications" : null
@@ -136,6 +137,7 @@ export default function AdminPage() {
   const categories = catsData?.categories || catsData?.data || []
   const subcategories = catsData?.subcategories || []
   const ratings = ratingsData?.data || []
+  const applications = applicationsData?.data || []
   const interviews = interviewsData?.data || []
   const conversations = msgsData?.data || []
   const sentNotifications = notifData?.data || []
@@ -380,7 +382,8 @@ export default function AdminPage() {
   // Section titles
   const sectionTitles: Record<AdminSection, string> = {
     dashboard: "Dashboard", candidates: "Candidatos", businesses: "Empresas",
-    jobs: "Ofertas de Empleo", flash: "Ofertas Flash", interviews: "Solicitudes de Entrevista", categories: "Empleos",
+    jobs: "Ofertas de Empleo", flash: "Ofertas Flash",
+    applications: "Candidaturas", interviews: "Solicitudes de Entrevista", categories: "Empleos",
     ratings: "Reseñas", messages: "Mensajes",
     notifications: "Notificaciones",
     plans: "Planes de Suscripción",
@@ -542,6 +545,64 @@ export default function AdminPage() {
           )}
 
           {/* ========== INTERVIEWS ========== */}
+          {/* ========== CANDIDATURAS ========== */}
+          {section === "applications" && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">
+                {applications.length} candidaturas · incluye las canceladas por el candidato ("Ya no me interesa")
+              </p>
+              {applications.length === 0 && (
+                <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">
+                  Todavía no hay candidaturas.
+                </CardContent></Card>
+              )}
+              {applications.map((a: any) => {
+                const statusStyle: Record<string, string> = {
+                  pending: "bg-amber-50 text-amber-700",
+                  interview: "bg-blue-50 text-blue-700",
+                  accepted: "bg-emerald-50 text-emerald-700",
+                  rejected: "bg-red-50 text-red-700",
+                  withdrawn: "bg-orange-50 text-orange-700",
+                }
+                const statusLabel: Record<string, string> = {
+                  pending: "Pendiente", interview: "En entrevista", accepted: "Contratado",
+                  rejected: "Rechazada", withdrawn: "Cancelada",
+                }
+                return (
+                  <Card key={a.id} className="bg-white"><CardContent className="p-3"><div className="flex items-start gap-3">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarImage src={a.profiles?.avatar_url} />
+                      <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">{(a.profiles?.display_name || "?")[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium">{a.profiles?.display_name || "Candidato"}</p>
+                        <span className="text-[10px] text-slate-400">{"->"}</span>
+                        <p className="text-sm font-medium text-[#01A89E] truncate">{a.jobs?.title || "Oferta eliminada"}</p>
+                        <Badge className={`text-[9px] px-1.5 py-0 border-0 ${statusStyle[a.status] || "bg-slate-50 text-slate-600"}`}>
+                          {statusLabel[a.status] || a.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Creada {new Date(a.created_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {a.updated_at && a.updated_at !== a.created_at && (
+                          <> · actualizada {new Date(a.updated_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>
+                        )}
+                      </p>
+                      {a.cover_letter && <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded p-1.5 line-clamp-2">{a.cover_letter}</p>}
+                    </div>
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
+                      onClick={() => setDeleteDialog({ open: true, type: "candidatura", item: a, endpoint: "/api/admin/applications" })}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div></CardContent></Card>
+                )
+              })}
+            </div>
+          )}
+
           {section === "interviews" && (
             <div className="space-y-2">
               <p className="text-xs text-slate-500">{interviews.length} solicitudes de entrevista</p>

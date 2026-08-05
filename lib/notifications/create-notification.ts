@@ -1,4 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js"
+import { sendPushToUser } from "@/lib/notifications/push"
 
 function getServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -36,5 +37,15 @@ export async function notifyUser(userId: string, options: NotifyUserOptions) {
   })
 
   if (error) return { error: error.message }
+
+  // La fila alimenta el buzón dentro de la app; el push es lo que hace que
+  // llegue con la app cerrada. Va después y sin await bloqueante: si el envío
+  // falla, el aviso ya está guardado y se verá igual al abrir la aplicación.
+  sendPushToUser(userId, {
+    title: options.title,
+    body: options.body,
+    link: options.link,
+  }).catch(() => {})
+
   return { success: true }
 }

@@ -21,13 +21,14 @@ import {
   Zap,
   Eye,
   Users,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/i18n/language-context"
-import { applyToJobAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
+import { applyToJobAction, withdrawApplicationAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
 import { toast } from "sonner"
 import type { Profile } from "@/lib/types"
 
@@ -108,6 +109,7 @@ export function JobDetailContent({
   const [isSaved, setIsSaved] = useState(initialIsSaved)
   const [hasApplied, setHasApplied] = useState(initialHasApplied)
   const [isApplying, setIsApplying] = useState(false)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isHighlighting, setIsHighlighting] = useState(false)
 
@@ -126,6 +128,20 @@ export function JobDetailContent({
       setHasApplied(true)
       toast.success("Candidatura enviada correctamente")
     }
+  }
+
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true)
+    const result = await withdrawApplicationAction(job.id)
+    setIsWithdrawing(false)
+
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    // Vuelve al estado inicial: puede volver a interesarle más adelante.
+    setHasApplied(false)
+    toast.success("Has cancelado tu candidatura")
   }
 
   const handleSave = async () => {
@@ -486,10 +502,21 @@ export function JobDetailContent({
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t">
           <div className="container mx-auto max-w-3xl">
             {hasApplied ? (
-              <Button disabled className="w-full bg-green-600 hover:bg-green-600">
-                <CheckCircle2 className="h-5 w-5 mr-2" />
-                Candidatura Enviada
-              </Button>
+              <div className="space-y-2">
+                <Button disabled className="w-full bg-green-600 hover:bg-green-600">
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Candidatura Enviada
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleWithdraw}
+                  disabled={isWithdrawing}
+                  className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {isWithdrawing ? "Cancelando..." : "Ya no me interesa"}
+                </Button>
+              </div>
             ) : (
               <Button
                 onClick={handleApply}

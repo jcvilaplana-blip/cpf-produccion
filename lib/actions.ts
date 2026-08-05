@@ -152,19 +152,28 @@ export async function applyToJobAction(jobId: string, coverLetter?: string) {
   // Check if already applied
   const { data: existing } = await supabase
     .from("applications")
-    .select("id")
+    .select("id, status")
     .eq("job_id", jobId)
     .eq("worker_id", user.id)
     .maybeSingle()
 
-  if (existing) return { error: "Ya has aplicado a esta oferta" }
+  // Una candidatura retirada se puede reactivar: el candidato cambió de
+  // opinión, no hace falta una fila nueva.
+  if (existing && existing.status !== "withdrawn") {
+    return { error: "Ya has mostrado interés en esta oferta" }
+  }
 
-  const { error } = await supabase.from("applications").insert({
-    job_id: jobId,
-    worker_id: user.id,
-    cover_letter: coverLetter || null,
-    status: "pending",
-  })
+  const { error } = existing
+    ? await supabase
+        .from("applications")
+        .update({ status: "pending", updated_at: new Date().toISOString() })
+        .eq("id", existing.id)
+    : await supabase.from("applications").insert({
+        job_id: jobId,
+        worker_id: user.id,
+        cover_letter: coverLetter || null,
+        status: "pending",
+      })
 
   if (error) return { error: error.message }
 
@@ -207,6 +216,63 @@ export async function applyToJobAction(jobId: string, coverLetter?: string) {
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath("/profile")
   revalidatePath("/messages")
+  return { success: true }
+}
+
+/**
+ * "Ya no me interesa": el candidato retira su candidatura.
+ *
+ * Se marca como `withdrawn` en lugar de borrar la fila. Borrarla dejaría al
+ * establecimiento sin saber qué pasó con alguien que ya había contactado, y
+ * haría desaparecer el hecho del panel de administración, donde debe quedar
+ * registro de todo. El establecimiento la ve como "Cancelada".
+ */
+export async function withdrawApplicationAction(jobId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: application } = await supabase
+    .from("applications")
+    .select("id, status")
+    .eq("job_id", jobId)
+    .eq("worker_id", user.id)
+    .maybeSingle()
+
+  if (!application) return { error: "No tienes ninguna candidatura en esta oferta" }
+  if (application.status === "accepted") {
+    return { error: "Esta candidatura ya está aceptada: háblalo con el establecimiento por mensaje" }
+  }
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ status: "withdrawn", updated_at: new Date().toISOString() })
+    .eq("id", application.id)
+
+  if (error) return { error: error.message }
+
+  // Avisar al establecimiento: tenía una candidatura viva y ha dejado de serlo.
+  try {
+    const [{ data: job }, { data: candidate }] = await Promise.all([
+      supabase.from("jobs").select("title, business_id").eq("id", jobId).single(),
+      supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+    ])
+    if (job?.business_id && job.business_id !== user.id) {
+      await notifyUser(job.business_id, {
+        title: "Candidatura cancelada",
+        body: `${candidate?.display_name || "Un candidato"} ya no está interesado en "${job.title}".`,
+        type: "otro",
+        link: `/jobs/${jobId}/applications`,
+        createdBy: user.id,
+      })
+    }
+  } catch (err) {
+    console.error("withdrawApplicationAction: no se pudo avisar al establecimiento", err)
+  }
+
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath(`/jobs/${jobId}/applications`)
+  revalidatePath("/profile")
   return { success: true }
 }
 
@@ -281,23 +347,6 @@ export async function updateApplicationStatusAction(
   }
 
   revalidatePath("/my-jobs")
-  return { success: true }
-}
-
-export async function withdrawApplicationAction(applicationId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "No autenticado" }
-
-  const { error } = await supabase
-    .from("applications")
-    .update({ status: "withdrawn" })
-    .eq("id", applicationId)
-    .eq("worker_id", user.id)
-
-  if (error) return { error: error.message }
-
-  revalidatePath("/profile")
   return { success: true }
 }
 

@@ -57,7 +57,7 @@ const statusLabels: Record<string, string> = {
   accepted: "Aceptado",
   rejected: "Rechazado",
   interview: "Entrevista",
-  withdrawn: "Retirado",
+  withdrawn: "Cancelada",
 }
 
 const statusColors: Record<string, string> = {
@@ -65,7 +65,7 @@ const statusColors: Record<string, string> = {
   accepted: "bg-green-500/10 text-green-700 border-green-500/20",
   rejected: "bg-red-500/10 text-red-700 border-red-500/20",
   interview: "bg-[#01A89E]/10 text-[#018F86] border-[#01A89E]/20",
-  withdrawn: "bg-muted text-muted-foreground",
+  withdrawn: "bg-orange-500/10 text-orange-700 border-orange-500/20",
 }
 
 export function JobApplicationsContent({
@@ -98,6 +98,7 @@ export function JobApplicationsContent({
     accepted: applications.filter(a => a.status === "accepted").length,
     interview: applications.filter(a => a.status === "interview").length,
     rejected: applications.filter(a => a.status === "rejected").length,
+    withdrawn: applications.filter(a => a.status === "withdrawn").length,
   }
 
   return (
@@ -121,7 +122,7 @@ export function JobApplicationsContent({
       <div className="container mx-auto px-4 py-4 max-w-3xl">
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-3 mb-4">
-          {(["all", "pending", "interview", "accepted", "rejected"] as const).map(status => (
+          {(["all", "pending", "interview", "accepted", "rejected", "withdrawn"] as const).map(status => (
             <Button
               key={status}
               variant={filter === status ? "default" : "outline"}
