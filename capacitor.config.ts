@@ -52,6 +52,16 @@ const config: CapacitorConfig = {
     cleartext: false,
     androidScheme: 'https',
     iosScheme: 'https',
+    // Sin esta lista, el webview solo navega dentro de su propio host y
+    // manda el resto al navegador externo, dejando la app en blanco. Hay
+    // que incluir el propio sitio y Supabase (auth y realtime).
+    allowNavigation: [
+      'cpf.fullstark.es',
+      '*.fullstark.es',
+      '*.supabase.co',
+      'camareroporfavor.com',
+      '*.camareroporfavor.com',
+    ],
   },
   android: {
     allowMixedContent: false,
