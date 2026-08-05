@@ -62,6 +62,10 @@ const config: CapacitorConfig = {
       'camareroporfavor.com',
       '*.camareroporfavor.com',
     ],
+    // Si el webview no consigue cargar `url`, en lugar de quedarse en blanco
+    // muestra esta página local, que ejecuta un diagnóstico y lo enseña en
+    // pantalla. Evita tener que conectar el móvil por USB para saber qué falla.
+    errorPath: 'diagnostico.html',
   },
   android: {
     allowMixedContent: false,
