@@ -222,7 +222,13 @@ export default function BusinessDashboardPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
-                    <Link href="/business-profile"><Eye className="mr-2 h-4 w-4" /><span>Ver Perfil</span></Link>
+                    {/* Lleva al perfil público real, el mismo que ven los
+                        candidatos. `/business-profile` no es un perfil sino una
+                        vista de gestión (editar, publicar oferta, ver ofertas)
+                        que ya duplican las tarjetas de este panel; abrirla desde
+                        "Ver Perfil" mostraba una página distinta de la que el
+                        establecimiento enseña al mundo. */}
+                    <Link href={`/business/${user.id}`}><Eye className="mr-2 h-4 w-4" /><span>Ver Perfil</span></Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
                     <Link href="/business-profile/edit"><Pencil className="mr-2 h-4 w-4" /><span>Editar Perfil</span></Link>
