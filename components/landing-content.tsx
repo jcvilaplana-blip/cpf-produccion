@@ -4,11 +4,16 @@ import type React from "react"
 import { HeroSlider } from "@/components/hero-slider"
 import { CategoriesScroll } from "@/components/categories-scroll"
 import { VenueTypesScroll } from "@/components/venue-types-scroll"
+import { WorkerVideoCard } from "@/components/worker-video-card"
+import { HomeModeDialog } from "@/components/home-mode-dialog"
+import { useHomeMode } from "@/lib/use-home-mode"
+import { useAuth } from "@/hooks/use-auth"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { CompaniesCarousel } from "@/components/companies-carousel"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Zap } from "lucide-react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -27,13 +32,38 @@ interface LandingContentProps {
   isLoggedIn?: boolean
 }
 
+const INITIAL_WORKERS_COUNT = 6
+const LOAD_MORE_COUNT = 12
+
 export function LandingContent({ featuredJobs, stats, businesses, workers: workersData = [], flashOffers = [], isLoggedIn = false }: LandingContentProps) {
   const { t } = useLanguage()
   const router = useRouter()
+  const { user } = useAuth()
 
-  // `workersData` sigue llegando por props aunque esta portada ya no pinte
-  // candidatos: la portada del establecimiento, que va después, sí los
-  // necesita y comparte este mismo componente.
+  // Qué portada toca: la de quien busca empleo o la de quien busca personal.
+  // A quien tiene sesión no se le pregunta —su rol ya lo dice—; a quien no la
+  // tiene se le pregunta una vez y se recuerda.
+  const { modo, elegir, debePreguntar } = useHomeMode(user?.userType ?? null)
+  const esPortadaEmpresa = modo === "empresa"
+
+  const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
+
+  const workers = workersData.map((profile: any) => ({
+    id: profile.id,
+    name: profile.display_name,
+    category: profile.job_category || "General",
+    location: profile.location ? profile.location.split(",")[0].trim() : "Espana",
+    rating: profile.rating || 0,
+    avatarUrl: profile.avatar_url || "/placeholder.svg",
+    experience: `${profile.experience_years || 0} ${t("candidates.years")} ${t("candidates.yearsExperience")}`,
+  }))
+
+  const visibleWorkers = workers.slice(0, displayedWorkers)
+  const hasMoreWorkers = displayedWorkers < workers.length
+
+  const loadMoreWorkers = () => {
+    setDisplayedWorkers((prev) => Math.min(prev + LOAD_MORE_COUNT, workers.length))
+  }
 
   const featuredFlashOffers = flashOffers.slice(0, 3)
 
@@ -46,6 +76,13 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
   // outright the way a full-screen overlay div would.
   const handleGateClick = (e: React.MouseEvent) => {
     if (isLoggedIn) return
+
+    // La ventana de elección de modo queda fuera de la barrera. Se dibuja en
+    // un portal, fuera de este div en el DOM, pero React propaga los eventos
+    // por el árbol de componentes y no por el del DOM: sin esta excepción, sus
+    // dos botones acababan mandando al login en lugar de elegir el modo.
+    if ((e.target as HTMLElement | null)?.closest?.('[role="dialog"]')) return
+
     e.preventDefault()
     e.stopPropagation()
     router.push("/auth/login")
@@ -146,10 +183,56 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
         </div>
       </section>
 
-      {/* Tipos de establecimiento. Sustituye a "Últimos Candidatos": en la
-          portada del candidato, ver a otros candidatos no le aporta nada — lo
-          que busca es dónde trabajar. */}
-      <VenueTypesScroll />
+      {/* Cada portada enseña el otro lado del mercado: al candidato, dónde
+          podría trabajar; a la empresa, a quién podría contratar. */}
+      {esPortadaEmpresa ? (
+      <section className="py-6 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestCandidates")}</h2>
+            </div>
+            <Button asChild variant="ghost">
+              <Link href="/candidates">
+                {t("common.viewAll")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {visibleWorkers.map((worker) => (
+              <WorkerVideoCard key={worker.id} {...worker} />
+            ))}
+          </div>
+
+          {visibleWorkers.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">{t("landing.noCandidatesFound")}</p>
+            </div>
+          )}
+
+          {hasMoreWorkers && (
+            <div className="text-center mt-8">
+              <Button
+                onClick={loadMoreWorkers}
+                size="lg"
+                variant="outline"
+                className="min-w-[200px] bg-background hover:bg-muted"
+              >
+                {t("common.loadMore")}
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2">
+                {t("common.showing")} {visibleWorkers.length} {t("common.of")} {workers.length}{" "}
+                {t("candidates.title").toLowerCase()}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+      ) : (
+        <VenueTypesScroll />
+      )}
 
       <section className="py-8 bg-background">
         <div className="container mx-auto px-4">
@@ -190,6 +273,8 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           </div>
         </div>
       </section>
+
+      <HomeModeDialog abierto={debePreguntar} onElegir={elegir} />
     </div>
   )
 }
