@@ -9,6 +9,11 @@ interface CategoryPageProps {
   params: Promise<{ name: string }>
 }
 
+// Lee la sesión en cada petición para saber el rol de quien mira, así que
+// no puede generarse estáticamente: sin esto Next lanza DYNAMIC_SERVER_USAGE
+// y la página responde 500 en producción sin decir por qué.
+export const dynamic = "force-dynamic"
+
 export default async function CategoryPage({ params }: CategoryPageProps) {
   // Esta página lista candidatos de la categoría, así que queda fuera del
   // alcance de otro candidato.

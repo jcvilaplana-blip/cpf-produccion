@@ -78,18 +78,26 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
 
       <section className="pt-2 pb-6 md:py-6 bg-gradient-to-b from-background to-teal-50/30">
         <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-br from-[#01A89E] to-[#018F86] rounded-2xl overflow-hidden shadow-lg">
+          {/* La tarjeta entera lleva a las ofertas. Antes sólo respondía el
+              botón, así que pulsar sobre el título, el texto o las fotos no
+              hacía nada — que es justo donde cae el dedo en una tarjeta de
+              este tamaño. El botón se mantiene porque señala la acción. */}
+          <Link
+            href="/jobs"
+            className="block bg-gradient-to-br from-[#01A89E] to-[#018F86] rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.99]"
+          >
             <div className="grid md:grid-cols-2 gap-0">
               {/* Contenido de texto */}
               <div className="p-6 md:p-8 flex flex-col justify-center">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t("landing.jobOffersSection")}</h2>
                 <p className="text-white/90 mb-6 text-sm md:text-base">{t("landing.jobOffersDescription")}</p>
-                <Button asChild size="lg" className="bg-white text-[#018F86] hover:bg-teal-50 w-full md:w-auto">
-                  <Link href="/jobs">
-                    {t("landing.exploreAllJobs")}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                {/* Sin `asChild`+Link: la tarjeta entera ya es el enlace y
+                    anidar un <a> dentro de otro es HTML inválido. Aquí sólo
+                    señala la acción. */}
+                <span className="inline-flex h-11 w-full items-center justify-center rounded-md bg-white px-8 text-sm font-medium text-[#018F86] md:w-auto">
+                  {t("landing.exploreAllJobs")}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </span>
               </div>
 
               {/* Grid de imagenes */}
@@ -113,7 +121,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 

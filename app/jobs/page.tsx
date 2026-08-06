@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server"
 import { computeMatchScore } from "@/lib/matching"
 import { blockRole } from "@/lib/role-guard"
 
+// Lee la sesión en cada petición para saber el rol de quien mira, así que
+// no puede generarse estáticamente: sin esto Next lanza DYNAMIC_SERVER_USAGE
+// y la página responde 500 en producción sin decir por qué.
+export const dynamic = "force-dynamic"
+
 export default async function JobsPage() {
   // Las ofertas son el mercado del candidato. Un establecimiento aquí sólo
   // vería lo que publica su competencia.
