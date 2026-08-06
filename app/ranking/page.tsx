@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Trophy, Star, Award, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 
 const ITEMS_PER_ROW = 4
 const INITIAL_ROWS = 4
@@ -17,6 +19,16 @@ const INITIAL_COUNT = ITEMS_PER_ROW * INITIAL_ROWS
 const LOAD_MORE_COUNT = ITEMS_PER_ROW * LOAD_MORE_ROWS
 
 export default function RankingPage() {
+  const router = useRouter()
+  // Barrera de navegación por rol. Va en el cliente porque esta página es un
+  // componente de cliente entero; para las de servidor se usa `blockRole`,
+  // que es más sólido. Aquí sirve para no ofrecer lo que no corresponde, no
+  // como control de acceso a los datos: eso es cosa de RLS en la base.
+  const { user, isLoading: authLoading } = useAuth()
+  useEffect(() => {
+    if (!authLoading && user?.userType === "worker") router.replace("/dashboard")
+  }, [authLoading, user, router])
+
   const [displayedCount, setDisplayedCount] = useState(INITIAL_COUNT)
   const [workers, setWorkers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ProfileDetailContent } from "@/components/profile-detail-content"
 import { createClient } from "@/lib/supabase/server"
 
@@ -41,6 +41,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
       .eq("id", viewer.id)
       .single()
     viewerType = viewerProfile?.is_admin ? "admin" : viewerProfile?.user_type || null
+  }
+
+  // Un candidato no puede consultar la ficha de otro candidato. Sí la suya:
+  // desde el panel se entra aquí para ver cómo lo ven los establecimientos.
+  if (viewerType === "worker" && viewer?.id !== id) {
+    redirect("/dashboard")
   }
 
   return (

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { JobDetailContent } from "@/components/job-detail-content"
 import { notFound } from "next/navigation"
 import { isValidUUID } from "@/lib/validate-uuid"
+import { blockRole } from "@/lib/role-guard"
 
 
 export function generateStaticParams() {
@@ -14,6 +15,8 @@ export function generateStaticParams() {
 export const dynamic = "force-dynamic"
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // La ficha de una oferta es del lado del candidato.
+  await blockRole("business", "/business-dashboard")
   const { id } = await params
 
   if (!isValidUUID(id)) {

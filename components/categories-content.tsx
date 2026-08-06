@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Search, Loader2, Utensils, ArrowLeft } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Loader2, Utensils, ArrowLeft, Briefcase } from "lucide-react"
 
 interface CategoryFromDB {
   id: string
@@ -18,7 +17,6 @@ interface CategoryFromDB {
 
 export function CategoriesContent() {
   const router = useRouter()
-  const [search, setSearch] = useState("")
   const [categories, setCategories] = useState<CategoryFromDB[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -32,15 +30,6 @@ export function CategoriesContent() {
       })
       .catch(() => setLoading(false))
   }, [])
-
-  const filtered = categories.filter((cat) => {
-    const q = search.toLowerCase()
-    if (!q) return true
-    return (
-      cat.name.toLowerCase().includes(q) ||
-      cat.subcategories?.some((s) => s.name.toLowerCase().includes(q))
-    )
-  })
 
   if (loading) {
     return (
@@ -67,43 +56,47 @@ export function CategoriesContent() {
               <p className="text-[13px] text-gray-500 mt-0.5">{categories.length} categorías de empleo</p>
             </div>
           </div>
-          <div className="relative mt-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar categoría o especialidad..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4">
-        <div className="grid grid-cols-4 gap-3">
-          {filtered.map((cat) => (
+      {/* `pt-2` en lugar de `py-4`: al quitar el buscador la rejilla sube y
+          queda más cerca de la cabecera. Tres columnas en vez de cuatro, que
+          en móvil dejaban los iconos y los nombres demasiado pequeños. */}
+      <div className="container mx-auto px-4 pt-2 pb-4">
+        <div className="grid grid-cols-3 gap-3">
+          {categories.map((cat) => (
             <Link
               key={cat.slug}
               href={`/category/${cat.slug}`}
-              className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-white border hover:border-[#01A89E] hover:shadow-md active:scale-95 transition-all text-center"
+              className="flex flex-col items-center gap-2 rounded-xl border bg-white p-3 text-center transition-all hover:border-[#01A89E] hover:shadow-md active:scale-95"
             >
-              <div className="w-12 h-12 flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center">
                 {cat.icon ? (
-                  <img src={cat.icon} alt="" className="w-full h-full object-contain" />
+                  <img src={cat.icon} alt="" className="h-full w-full object-contain" />
                 ) : (
-                  <Utensils className="w-8 h-8 text-[#E73A36]" />
+                  <Utensils className="h-10 w-10 text-[#E73A36]" />
                 )}
               </div>
-              <span className="font-semibold text-[12px] leading-tight text-gray-900 line-clamp-2">{cat.name}</span>
+              <span className="line-clamp-2 text-[14px] font-semibold leading-tight text-gray-900">{cat.name}</span>
             </Link>
           ))}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-sm">No se encontraron empleos para &ldquo;{search}&rdquo;</p>
+        {categories.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-sm text-gray-500">Todavía no hay categorías disponibles.</p>
           </div>
         )}
+
+        {/* Salida hacia las ofertas: quien entra a mirar empleos suele querer
+            acabar viendo las ofertas abiertas, no sólo la lista de categorías. */}
+        <Link
+          href="/jobs"
+          className="mt-6 flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#01A89E] text-[15px] font-bold text-white shadow-lg shadow-[#01A89E]/25 transition-colors active:scale-[0.98] active:bg-[#018F86]"
+        >
+          <Briefcase className="h-5 w-5" />
+          Ver Ofertas de trabajo
+        </Link>
       </div>
     </div>
   )

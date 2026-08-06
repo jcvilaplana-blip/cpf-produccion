@@ -1,8 +1,13 @@
 import { JobsListingContent } from "@/components/jobs-listing-content"
 import { createClient } from "@/lib/supabase/server"
 import { computeMatchScore } from "@/lib/matching"
+import { blockRole } from "@/lib/role-guard"
 
 export default async function JobsPage() {
+  // Las ofertas son el mercado del candidato. Un establecimiento aquí sólo
+  // vería lo que publica su competencia.
+  await blockRole("business", "/business-dashboard")
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

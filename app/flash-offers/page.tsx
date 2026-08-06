@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 
 import { useState, useEffect } from "react"
 import { FlashOfferCard } from "@/components/flash-offer-card"
@@ -13,6 +14,15 @@ import { createClient } from "@/lib/supabase/client"
 
 export default function FlashOffersPage() {
   const router = useRouter()
+  // Barrera de navegación por rol. Va en el cliente porque esta página es un
+  // componente de cliente entero; para las de servidor se usa `blockRole`,
+  // que es más sólido. Aquí sirve para no ofrecer lo que no corresponde, no
+  // como control de acceso a los datos: eso es cosa de RLS en la base.
+  const { user, isLoading: authLoading } = useAuth()
+  useEffect(() => {
+    if (!authLoading && user?.userType === "business") router.replace("/business-dashboard")
+  }, [authLoading, user, router])
+
   const { t } = useLanguage()
   const [sortBy, setSortBy] = useState("fecha")
   const [filterCity, setFilterCity] = useState("todas")
