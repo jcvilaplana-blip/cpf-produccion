@@ -104,7 +104,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
-              <Link href="/business-profile">
+              <Link href="/business-dashboard">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>

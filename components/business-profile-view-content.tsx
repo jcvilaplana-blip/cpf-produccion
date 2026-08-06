@@ -32,7 +32,7 @@ export function BusinessProfileViewContent({ user, profile, businessProfile }: B
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/business-profile">
+              <Link href="/business-dashboard">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>

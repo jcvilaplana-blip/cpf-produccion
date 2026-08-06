@@ -72,7 +72,11 @@ export function TopNavigation() {
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href={userType === "business" ? "/business-profile" : "/edit-profile"}>
+                {/* Los establecimientos van a su perfil público, el mismo que
+                    ven los candidatos. Antes apuntaba a `/business-profile`,
+                    que no era un perfil sino una vista de gestión y ya no
+                    existe. */}
+                <Link href={userType === "business" ? `/business/${user.id}` : "/edit-profile"}>
                   <Pencil className="mr-2 h-4 w-4" />
                   <span>{t("topNav.viewProfile")}</span>
                 </Link>
