@@ -579,7 +579,10 @@ export function CreateProfileWizard() {
       <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b">
         <div className="container max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">
-            <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={120} height={40} style={{ width: "120px", height: "auto" }} />
+            {/* La marca completa en lugar del lazo descolorido de `logo-cpf.png`.
+                Aquí no cabe el bloque apilado del login: esta cabecera es una
+                barra horizontal que comparte fila con el contador de pasos. */}
+            <Image src="/logo-completo-texto-APP.png" alt="CamareroPorFavor" width={150} height={31} className="h-auto w-[150px]" />
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground font-medium">
                 {existingUserId ? `Paso ${Math.max(1, step - 2)} de ${totalSteps - 2}` : `Paso ${step} de ${totalSteps}`}

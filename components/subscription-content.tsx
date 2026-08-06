@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react" 
+import { useState } from "react"
+import { useRouter } from "next/navigation" 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +11,7 @@ import { Check, Crown, ArrowLeft, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function SubscriptionContent() {
+  const router = useRouter()
   const [currentPlan, setCurrentPlan] = useState<"standard" | "premium">("standard")
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
@@ -69,10 +71,8 @@ export function SubscriptionContent() {
       <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm pt-[env(safe-area-inset-top,0px)]">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/business-dashboard">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <Link href="/">
               <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />

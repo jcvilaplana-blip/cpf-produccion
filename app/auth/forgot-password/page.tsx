@@ -67,8 +67,30 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
-          <div className="flex justify-center mb-4">
-            <Image src="/lazo-512-transp.png" alt="CamareroPorFavor" width={140} height={140} style={{ width: "140px", height: "auto" }} priority />
+          {/* Mismo bloque que el login: lazo y marca completa debajo. */}
+          {/* Medidas calculadas desde la imagen de referencia, no a ojo.
+              Ambos PNG llevan margen transparente propio (el lazo, 122px por
+              debajo sobre 512), así que el hueco visible no es el declarado:
+              de ahí el margen negativo. Sobre el ancho de la tarjeta, el lazo
+              ocupa el 26%, el texto el 64% y la separación entre ellos el 3%. */}
+          <div className="mb-7 flex flex-col items-center">
+            <Image
+              src="/lazo-512-transp.png"
+              alt=""
+              aria-hidden="true"
+              width={134}
+              height={134}
+              className="h-auto w-[134px]"
+              priority
+            />
+            <Image
+              src="/logo-completo-texto-APP.png"
+              alt="CamareroPorFavor"
+              width={255}
+              height={53}
+              className="-mt-[28px] h-auto w-[255px] max-w-full"
+              priority
+            />
           </div>
           <Card className="shadow-lg">
             <CardHeader className="text-center">

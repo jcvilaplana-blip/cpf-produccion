@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import { useState, useEffect } from "react"
 import { FlashOfferCard } from "@/components/flash-offer-card"
 import { Button } from "@/components/ui/button"
@@ -10,6 +12,7 @@ import { useLanguage } from "@/lib/i18n/language-context"
 import { createClient } from "@/lib/supabase/client"
 
 export default function FlashOffersPage() {
+  const router = useRouter()
   const { t } = useLanguage()
   const [sortBy, setSortBy] = useState("fecha")
   const [filterCity, setFilterCity] = useState("todas")
@@ -88,11 +91,9 @@ export default function FlashOffersPage() {
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-background md:pt-14">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <Button asChild variant="ghost" className="mb-4">
-            <Link href="/">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t("common.backToHome")}
-            </Link>
+          <Button variant="ghost" className="mb-4" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
           </Button>
 
           <div className="flex items-center gap-3 mb-2">

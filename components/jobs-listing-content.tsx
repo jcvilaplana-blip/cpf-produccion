@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,6 +70,7 @@ interface JobsListingContentProps {
 }
 
 export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProps) {
+  const router = useRouter()
   const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
@@ -166,11 +169,9 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
               <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
               <h1 className="text-lg font-bold">{t("jobs.available")}</h1>
             </div>

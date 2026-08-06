@@ -31,8 +31,26 @@ export const CONTRACT_TYPES = [
 ]
 
 export const LANGUAGE_LIST = [
-  "Espanol", "Ingles", "Frances", "Aleman", "Portugues", "Italiano", "Chino", "Arabe", "Ruso", "Japones",
+  "Español", "Inglés", "Francés", "Alemán", "Portugués", "Italiano", "Chino", "Árabe", "Ruso", "Japonés",
 ]
+
+/**
+ * Compara nombres de idioma ignorando acentos y mayúsculas.
+ *
+ * Hace falta porque en la base de datos conviven las dos grafías: hay filas
+ * guardadas como "Espanol" (de cuando esta lista iba sin acentos) y otras como
+ * "Español" (escritas por otra pantalla). Sin esto, al abrir el formulario un
+ * candidato vería sus idiomas desmarcados y al guardar crearía duplicados.
+ */
+export function sameLanguage(a: unknown, b: unknown): boolean {
+  const norm = (v: unknown) =>
+    String(v ?? "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .trim()
+      .toLowerCase()
+  return norm(a) === norm(b)
+}
 
 export const LANGUAGE_LEVELS = [
   { value: "basic", label: "Basico" },

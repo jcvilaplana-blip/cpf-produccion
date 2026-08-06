@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import { useState, useEffect, useRef } from "react"
 import { PaymentSummaryDialog } from "@/components/payment-summary-dialog"
 import { Button } from "@/components/ui/button"
@@ -25,6 +27,7 @@ export function SubscribeContent({
   currentSubscription,
   isNewBusiness = false,
 }: SubscribeContentProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -93,11 +96,9 @@ export function SubscribeContent({
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             {!isNewBusiness && (
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/business-dashboard">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             )}
             <Image
               src="/logo-cpf.png"

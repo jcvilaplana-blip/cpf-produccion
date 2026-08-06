@@ -96,11 +96,9 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
     <div className="min-h-screen bg-background pb-20 md:pt-14">
       <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur border-b pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center gap-3 px-4 py-3">
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/dashboard">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+            </Button>
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={40} height={40} className="object-contain rounded-full" />
           </Link>

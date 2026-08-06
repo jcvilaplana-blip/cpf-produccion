@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { AddressAutofill } from "@/components/address-autofill"
 import { createJobAction, activateFlashWithCreditAction } from "@/lib/actions"
-import { LANGUAGE_LIST } from "@/lib/profile-constants"
+import { LANGUAGE_LIST, sameLanguage } from "@/lib/profile-constants"
 
 interface Category {
   id: string
@@ -56,8 +56,12 @@ export function CreateJobContent({ userId }: { userId: string }) {
   const [languagesRequired, setLanguagesRequired] = useState<string[]>([])
 
   const toggleLanguage = (lang: string) => {
+    // Quitar compara sin acentos, para poder desmarcar un idioma que se
+    // guardó con la grafía antigua ("Espanol") desde el botón nuevo ("Español").
     setLanguagesRequired((prev) =>
-      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+      prev.some((l) => sameLanguage(l, lang))
+        ? prev.filter((l) => !sameLanguage(l, lang))
+        : [...prev, lang]
     )
   }
 
@@ -258,11 +262,9 @@ export function CreateJobContent({ userId }: { userId: string }) {
     <div className="min-h-screen bg-gray-50 pb-20 md:pt-14">
       <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center gap-3 px-4 py-3">
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/business-dashboard">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+            </Button>
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={40} height={40} className="object-contain rounded-full" />
           </Link>
@@ -482,17 +484,17 @@ export function CreateJobContent({ userId }: { userId: string }) {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Euro className="h-5 w-5 text-primary" />
-                Salario y Beneficios
+                Sueldo y Beneficios
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="salaryMin">Salario Mínimo (€/mes)</Label>
+                  <Label htmlFor="salaryMin">Sueldo Mínimo (€/mes)</Label>
                   <Input id="salaryMin" name="salaryMin" type="number" placeholder="1500" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salaryMax">Salario Máximo (€/mes)</Label>
+                  <Label htmlFor="salaryMax">Sueldo Máximo (€/mes)</Label>
                   <Input id="salaryMax" name="salaryMax" type="number" placeholder="2000" />
                 </div>
               </div>
@@ -547,7 +549,7 @@ export function CreateJobContent({ userId }: { userId: string }) {
                       type="button"
                       onClick={() => toggleLanguage(lang)}
                       className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${
-                        languagesRequired.includes(lang)
+                        languagesRequired.some((l: string) => sameLanguage(l, lang))
                           ? "bg-primary text-white border-primary"
                           : "bg-white text-foreground border-border"
                       }`}

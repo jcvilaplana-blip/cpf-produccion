@@ -245,7 +245,7 @@ export default function BusinessDashboardPage() {
         <div className="grid grid-cols-3 gap-3">
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
             <Link href="/business-profile/edit">
-              <Building2 className="h-5 w-5 text-[#F48221]" />
+              <Building2 className="h-6 w-6 text-[#F48221]" />
               <span className="text-[13px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
             </Link>
           </Button>
@@ -256,7 +256,7 @@ export default function BusinessDashboardPage() {
                   {interviewStats.upcoming}
                 </span>
               )}
-              <CalendarCheck className="h-5 w-5 text-violet-600" />
+              <CalendarCheck className="h-6 w-6 text-violet-600" />
               <span className="text-[13px] font-semibold leading-tight text-center">Mis<br />Entrevistas</span>
             </Link>
           </Button>
@@ -274,7 +274,7 @@ export default function BusinessDashboardPage() {
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
-              <MessageCircle className={cn("h-5 w-5", unreadCount > 0 && "text-red-500")} />
+              <MessageCircle className={cn("h-6 w-6", unreadCount > 0 && "text-red-500")} />
               <span className="text-[13px] font-semibold leading-tight text-center">Mensajes</span>
             </Link>
           </Button>
@@ -284,13 +284,13 @@ export default function BusinessDashboardPage() {
         <div className="grid grid-cols-2 gap-3">
           <Button asChild className="h-auto py-4 flex-col gap-2 bg-[#F97316] hover:bg-[#EA6A0E] text-white rounded-xl">
             <Link href="/jobs/create?flash=true">
-              <Zap className="h-5 w-5" />
+              <Zap className="h-6 w-6" />
               <span className="text-[13px] font-semibold leading-tight text-center">Crear Oferta Flash</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F97316]/30 hover:bg-[#F97316]/5">
             <Link href="/my-jobs?filter=flash">
-              <ListChecks className="h-5 w-5 text-[#F97316]" />
+              <ListChecks className="h-6 w-6 text-[#F97316]" />
               <span className="text-[13px] font-semibold leading-tight text-center">Gestionar Ofertas Flash</span>
             </Link>
           </Button>
@@ -300,13 +300,13 @@ export default function BusinessDashboardPage() {
         <div className="grid grid-cols-2 gap-3">
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F5A623]/30 hover:bg-[#F5A623]/5">
             <Link href="/subscribe">
-              <Crown className="h-5 w-5 text-[#F5A623]" />
+              <Crown className="h-6 w-6 text-[#F5A623]" />
               <span className="text-[13px] font-semibold leading-tight text-center">Suscripción</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
             <Link href="/rewards">
-              <Gift className="h-5 w-5 text-violet-600" />
+              <Gift className="h-6 w-6 text-violet-600" />
               <span className="text-[13px] font-semibold leading-tight text-center">Recompensas<br />Gamificación</span>
             </Link>
           </Button>

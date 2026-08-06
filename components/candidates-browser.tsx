@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react" 
+import { useState, useMemo, useEffect } from "react"
+import { CONTRACT_TYPES, AVAILABILITY_OPTIONS } from "@/lib/profile-constants" 
 import { getHighlightedProfileIds, sortHighlightedFirst } from "@/lib/highlighted-profiles"
 import { WorkerVideoCard } from "@/components/worker-video-card"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, SlidersHorizontal, ChevronDown, ChevronUp, X, MapPin, Loader2, ArrowLeft } from "lucide-react"
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp, X, MapPin, Loader2, ArrowLeft, Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -23,6 +24,10 @@ type Candidate = {
   subcategory_name: string | null
   specialties: string[]
   experience_years: number | null
+  contract_type_sought: string[] | null
+  availability_status: string | null
+  certificates: unknown[] | null
+  rating: number | null
 }
 
 type Category = {
@@ -47,6 +52,12 @@ export function CandidatesBrowser() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterSubcategory, setFilterSubcategory] = useState("all")
   const [filterCity, setFilterCity] = useState("")
+  // Multiselección: un candidato encaja si busca ALGUNO de los contratos marcados.
+  const [filterContracts, setFilterContracts] = useState<string[]>([])
+  const [filterAvailability, setFilterAvailability] = useState("all")
+  const [filterMinExperience, setFilterMinExperience] = useState("all")
+  const [filterHasTraining, setFilterHasTraining] = useState(false)
+  const [filterMinStars, setFilterMinStars] = useState("all")
   const [page, setPage] = useState(1)
 
   // Seed filters from the search wizard (/search) via URL query params
@@ -77,7 +88,8 @@ export function CandidatesBrowser() {
           .from("profiles")
           .select(`
             id, display_name, avatar_url, location, specialties,
-            experience_years,
+            experience_years, contract_type_sought, availability_status,
+            certificates, rating,
             category:categories(name),
             subcategory:subcategories(name)
           `)
@@ -112,6 +124,10 @@ export function CandidatesBrowser() {
           subcategory_name: c.subcategory?.name || null,
           specialties: Array.isArray(c.specialties) ? c.specialties : [],
           experience_years: c.experience_years,
+          contract_type_sought: Array.isArray(c.contract_type_sought) ? c.contract_type_sought : [],
+          availability_status: c.availability_status ?? null,
+          certificates: Array.isArray(c.certificates) ? c.certificates : [],
+          rating: c.rating ?? null,
         }))
 
         // Destacados primero: es lo que el candidato paga con "Destacar mi
@@ -156,21 +172,44 @@ export function CandidatesBrowser() {
         }
       }
       if (filterCity && !(c.location || "").toLowerCase().includes(filterCity.toLowerCase())) return false
+
+      // Tipo de contrato: basta con que busque alguno de los marcados.
+      if (filterContracts.length > 0) {
+        const sought = c.contract_type_sought || []
+        if (!filterContracts.some((t) => sought.includes(t))) return false
+      }
+      if (filterAvailability !== "all" && c.availability_status !== filterAvailability) return false
+      if (filterMinExperience !== "all" && (c.experience_years ?? 0) < Number(filterMinExperience)) return false
+      // "Formación" son los títulos acreditados que guarda `certificates`.
+      if (filterHasTraining && !(Array.isArray(c.certificates) && c.certificates.length > 0)) return false
+      if (filterMinStars !== "all" && (c.rating ?? 0) < Number(filterMinStars)) return false
       return true
     })
-  }, [candidates, categories, subcategories, searchQuery, filterCategory, filterSubcategory, filterCity])
+  }, [candidates, categories, subcategories, searchQuery, filterCategory, filterSubcategory, filterCity,
+      filterContracts, filterAvailability, filterMinExperience, filterHasTraining, filterMinStars])
 
   const displayed = filtered.slice(0, page * PAGE_SIZE)
   const hasMore = displayed.length < filtered.length
 
   const activeCount =
     (filterCategory !== "all" ? 1 : 0) +
-    (filterCity ? 1 : 0)
+    (filterSubcategory !== "all" ? 1 : 0) +
+    (filterCity ? 1 : 0) +
+    (filterContracts.length > 0 ? 1 : 0) +
+    (filterAvailability !== "all" ? 1 : 0) +
+    (filterMinExperience !== "all" ? 1 : 0) +
+    (filterHasTraining ? 1 : 0) +
+    (filterMinStars !== "all" ? 1 : 0)
 
   const clearFilters = () => {
     setFilterCategory("all")
     setFilterSubcategory("all")
     setFilterCity("")
+    setFilterContracts([])
+    setFilterAvailability("all")
+    setFilterMinExperience("all")
+    setFilterHasTraining(false)
+    setFilterMinStars("all")
     setSearchQuery("")
     setPage(1)
   }
@@ -257,17 +296,17 @@ export function CandidatesBrowser() {
                 className="max-h-[60vh] overflow-y-auto overscroll-contain px-4 py-5 space-y-5"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
-                {/* Categoría */}
+                {/* Tipo de empleo (la taxonomía profesional de candidatos) */}
                 <div>
                   <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                    Categoría
+                    Tipo de Empleo
                   </Label>
                   <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setFilterSubcategory("all"); setPage(1) }}>
                     <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-[40vh]">
-                      <SelectItem value="all" className="py-2.5 text-sm">Todas las categorías</SelectItem>
+                      <SelectItem value="all" className="py-2.5 text-sm">Todos los Empleos</SelectItem>
                       {categories.map((c) => (
                         <SelectItem key={c.id} value={c.slug} className="py-2.5 text-sm">{c.name}</SelectItem>
                       ))}
@@ -308,15 +347,116 @@ export function CandidatesBrowser() {
                   />
                 </div>
 
-                {/* Ver en Mapa */}
+                {/* Tipo de contrato: se pueden marcar varios a la vez */}
                 <div>
-                  <Link
-                    href="/map"
-                    className="flex items-center justify-center gap-2.5 w-full h-12 rounded-2xl bg-[#F48221] hover:bg-[#D9721D] text-white text-sm font-bold transition-all active:scale-[0.98] shadow-md shadow-[#F48221]/20"
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Tipo de Contrato
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {CONTRACT_TYPES.map((t) => {
+                      const on = filterContracts.includes(t.value)
+                      return (
+                        <button
+                          key={t.value}
+                          type="button"
+                          onClick={() => {
+                            setFilterContracts((prev) =>
+                              prev.includes(t.value) ? prev.filter((v) => v !== t.value) : [...prev, t.value]
+                            )
+                            setPage(1)
+                          }}
+                          className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                            on
+                              ? "border-[#01A89E] bg-[#01A89E] text-white"
+                              : "border-gray-200 bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Disponibilidad */}
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Disponibilidad
+                  </Label>
+                  <Select value={filterAvailability} onValueChange={(v) => { setFilterAvailability(v); setPage(1) }}>
+                    <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="py-2.5 text-sm">Cualquier disponibilidad</SelectItem>
+                      {AVAILABILITY_OPTIONS.map((a) => (
+                        <SelectItem key={a.value} value={a.value} className="py-2.5 text-sm">{a.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Experiencia mínima */}
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Experiencia
+                  </Label>
+                  <Select value={filterMinExperience} onValueChange={(v) => { setFilterMinExperience(v); setPage(1) }}>
+                    <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="py-2.5 text-sm">Cualquier experiencia</SelectItem>
+                      <SelectItem value="1" className="py-2.5 text-sm">1 año o más</SelectItem>
+                      <SelectItem value="2" className="py-2.5 text-sm">2 años o más</SelectItem>
+                      <SelectItem value="5" className="py-2.5 text-sm">5 años o más</SelectItem>
+                      <SelectItem value="10" className="py-2.5 text-sm">10 años o más</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Formación: los títulos acreditados que guarda `certificates` */}
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Formación
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => { setFilterHasTraining((v) => !v); setPage(1) }}
+                    className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors ${
+                      filterHasTraining
+                        ? "border-[#01A89E] bg-[#01A89E]/5 text-[#01A89E]"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
                   >
-                    <MapPin className="w-4.5 h-4.5" />
-                    Ver en Mapa
-                  </Link>
+                    Solo con formación acreditada
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border ${
+                        filterHasTraining ? "border-[#01A89E] bg-[#01A89E] text-white" : "border-gray-300 bg-white"
+                      }`}
+                    >
+                      {filterHasTraining && <Check className="h-3.5 w-3.5" />}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Valoración media, filtrada por estrellas mínimas */}
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Valoración media
+                  </Label>
+                  <Select value={filterMinStars} onValueChange={(v) => { setFilterMinStars(v); setPage(1) }}>
+                    <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 border-gray-200 px-4">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="py-2.5 text-sm">Cualquier valoración</SelectItem>
+                      <SelectItem value="4.5" className="py-2.5 text-sm">4,5 estrellas o más</SelectItem>
+                      <SelectItem value="4" className="py-2.5 text-sm">4 estrellas o más</SelectItem>
+                      <SelectItem value="3" className="py-2.5 text-sm">3 estrellas o más</SelectItem>
+                      <SelectItem value="2" className="py-2.5 text-sm">2 estrellas o más</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

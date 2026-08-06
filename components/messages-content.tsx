@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import type React from "react"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
@@ -70,6 +72,7 @@ export function MessagesContent({
   conversations: initialConversations,
   initialConversationId,
 }: MessagesContentProps) {
+  const router = useRouter()
   // createClient() returns a new client instance every call - memoize so it
   // doesn't destabilize effect dependency arrays that include `supabase`.
   const supabase = useMemo(() => createClient(), [])
@@ -418,11 +421,9 @@ export function MessagesContent({
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             ) : (
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             )}
             <Image
               src="/logo-cpf.png"

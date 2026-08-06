@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Coins, Loader2, Gift, Zap, Star, Palette, Crown } from "lucide-react"
+import { ArrowLeft, Coins, Loader2, Gift, Zap, Star, Palette, Crown, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { redeemRewardAction } from "@/lib/actions"
 import { toast } from "sonner"
@@ -34,10 +34,27 @@ const BUSINESS_CATALOG: CatalogItem[] = [
   { key: "cosmetic_theme_gold", cost: 200, label: "Personalización — Oro", icon: <Palette className="h-5 w-5 text-yellow-500" /> },
 ]
 
+const DESCRIPTIONS: Record<string, string> = {
+  premium_profile:
+    "Tu perfil pasa a Premium durante 7 días: aparece antes en los listados y muestra el distintivo Premium. Al terminar vuelve a la normalidad sin que tengas que hacer nada.",
+  free_flash_offer:
+    "Un crédito para publicar una Oferta Flash sin pagarla. Las ofertas flash se muestran destacadas y con cuenta atrás, para cubrir un turno con urgencia.",
+  highlight_credit:
+    "Un crédito para destacar una de tus ofertas. La oferta destacada sale en las primeras posiciones de los listados durante su periodo de vigencia.",
+  cosmetic_theme_bronze:
+    "Tema visual Bronce para tu perfil: cambia los colores de acento de tu ficha. Es sólo estético, no afecta a tu posición en los listados.",
+  cosmetic_theme_silver:
+    "Tema visual Plata para tu perfil, con un acabado más llamativo que el Bronce. Es sólo estético, no afecta a tu posición en los listados.",
+  cosmetic_theme_gold:
+    "Tema visual Oro, el acabado más vistoso de los tres. Es sólo estético, no afecta a tu posición en los listados.",
+}
+
 export default function RewardsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [userType, setUserType] = useState<"worker" | "business" | null>(null)
+  // Qué tarjeta tiene la descripción abierta (sólo una a la vez).
+  const [expanded, setExpanded] = useState<string | null>(null)
   const [points, setPoints] = useState(0)
   const [level, setLevel] = useState(1)
   const [redeeming, setRedeeming] = useState<string | null>(null)
@@ -98,39 +115,62 @@ export default function RewardsPage() {
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-[13px] text-muted-foreground">Tu saldo</p>
-              <p className="text-3xl font-bold flex items-center gap-2"><Coins className="h-6 w-6 text-[#F5A623]" /> {points} pts</p>
+              <p className="text-3xl font-bold flex items-center gap-2"><Coins className="h-6 w-6 text-[#F5A623]" /> {points} ptos</p>
             </div>
             <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-0 text-sm px-3 py-1.5">Nivel {level}</Badge>
           </CardContent>
         </Card>
 
         <div className="space-y-3">
-          {catalog.map((item) => (
-            <Card key={item.key}>
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {item.icon}
-                  <div>
-                    <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="text-[13px] text-muted-foreground">{item.cost} pts</p>
+          {catalog.map((item) => {
+            const open = expanded === item.key
+            return (
+              <Card key={item.key}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {item.icon}
+                      <div>
+                        <p className="text-sm font-semibold">{item.label}</p>
+                        <p className="text-[13px] text-muted-foreground">{item.cost} ptos</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={points < item.cost || redeeming === item.key}
+                      onClick={() => handleRedeem(item.key)}
+                      className="bg-[#01A89E] hover:bg-[#018F86]"
+                    >
+                      {redeeming === item.key ? "Canjeando..." : "Canjear"}
+                    </Button>
                   </div>
-                </div>
-                <Button
-                  size="sm"
-                  disabled={points < item.cost || redeeming === item.key}
-                  onClick={() => handleRedeem(item.key)}
-                  className="bg-[#01A89E] hover:bg-[#018F86]"
-                >
-                  {redeeming === item.key ? "Canjeando..." : "Canjear"}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {open && (
+                    <p className="mt-3 border-t pt-3 text-[13px] leading-relaxed text-muted-foreground">
+                      {DESCRIPTIONS[item.key]}
+                    </p>
+                  )}
+
+                  {/* Flecha abajo a la derecha: despliega qué es exactamente
+                      este canje, porque el nombre por sí solo no lo explica. */}
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(open ? null : item.key)}
+                    aria-expanded={open}
+                    aria-label={open ? "Ocultar descripción" : "Ver descripción"}
+                    className="mt-1 ml-auto flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
+                  >
+                    <ChevronDown className={`h-5 w-5 transition-transform ${open ? "rotate-180" : ""}`} />
+                  </button>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         <p className="text-[13px] text-muted-foreground text-center">
           Gana puntos completando tu perfil, siendo contratado, dejando valoraciones, invitando amigos y más.
-          {" "}<Link href="/edit-profile" className="text-[#01A89E] underline">Ver cómo ganar puntos</Link>
+          {" "}<Link href="/rewards/how-to-earn" className="text-[#01A89E] underline font-semibold">Ver cómo ganar puntos</Link>
         </p>
       </div>
     </div>

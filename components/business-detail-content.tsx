@@ -102,6 +102,9 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const [ratingsTotal, setRatingsTotal] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
+  // Un establecimiento no puede guardarse a sí mismo en favoritos: cuando el
+  // que mira es el dueño del perfil, el control de guardado no se ofrece.
+  const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [isPremiumWorker, setIsPremiumWorker] = useState(false)
   const [requestingToWork, setRequestingToWork] = useState(false)
   const [requestedToWork, setRequestedToWork] = useState(false)
@@ -162,6 +165,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (!user) return
+      setIsOwnProfile(user.id === id)
       const [{ data: saved }, { data: profile }] = await Promise.all([
         supabase.from("saved_businesses").select("id").eq("user_id", user.id).eq("business_id", id).maybeSingle(),
         supabase.from("profiles").select("user_type, is_premium, premium_expires_at").eq("id", user.id).single(),
@@ -220,6 +224,9 @@ export function BusinessDetailContent({ id }: { id: string }) {
   }
 
   const handleToggleFavorite = async () => {
+    // Defensa además de ocultar el botón: el estado podría llegar aquí por
+    // otra vía y guardarse a uno mismo no debe ser posible.
+    if (isOwnProfile) return
     setFavoriteLoading(true)
     try {
       const supabase = createClient()
@@ -320,19 +327,23 @@ export function BusinessDetailContent({ id }: { id: string }) {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            {/* Guardado en favoritos, igual que en el perfil del candidato */}
-            <button
-              type="button"
-              onClick={handleToggleFavorite}
-              disabled={favoriteLoading}
-              aria-label={isFavorite ? "Quitar de guardados" : "Guardar establecimiento"}
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-colors active:scale-95",
-                isFavorite ? "bg-rose-500 text-white" : "bg-slate-950/45 text-white"
-              )}
-            >
-              <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
-            </button>
+            {/* Guardado en favoritos, igual que en el perfil del candidato.
+                No se muestra en el propio perfil: guardarse a uno mismo no
+                significa nada y ensuciaría la lista de guardados. */}
+            {!isOwnProfile && (
+              <button
+                type="button"
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+                aria-label={isFavorite ? "Quitar de guardados" : "Guardar establecimiento"}
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-colors active:scale-95",
+                  isFavorite ? "bg-rose-500 text-white" : "bg-slate-950/45 text-white"
+                )}
+              >
+                <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
+              </button>
+            )}
           </div>
 
           <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-6">
@@ -622,17 +633,19 @@ export function BusinessDetailContent({ id }: { id: string }) {
             >
               <MessageCircle className="mr-2 h-5 w-5" /> Contactar
             </Button>
-            <Button
-              variant="outline"
-              className={cn(
-                "h-12 flex-1 rounded-xl text-[14px] font-bold",
-                isFavorite && "border-[#01A89E] bg-[#01A89E]/5 text-[#01A89E]"
-              )}
-              onClick={handleToggleFavorite}
-              disabled={favoriteLoading}
-            >
-              <Heart className={cn("mr-2 h-5 w-5", isFavorite && "fill-[#01A89E]")} /> Favorito
-            </Button>
+            {!isOwnProfile && (
+              <Button
+                variant="outline"
+                className={cn(
+                  "h-12 flex-1 rounded-xl text-[14px] font-bold",
+                  isFavorite && "border-[#01A89E] bg-[#01A89E]/5 text-[#01A89E]"
+                )}
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+              >
+                <Heart className={cn("mr-2 h-5 w-5", isFavorite && "fill-[#01A89E]")} /> Favorito
+              </Button>
+            )}
           </div>
 
           {isPremiumWorker && (

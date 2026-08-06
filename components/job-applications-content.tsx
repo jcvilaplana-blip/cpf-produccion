@@ -1,5 +1,7 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" 
@@ -73,6 +75,7 @@ export function JobApplicationsContent({
   applications: initialApps,
   profile,
 }: JobApplicationsContentProps) {
+  const router = useRouter()
   const [applications, setApplications] = useState(initialApps)
   const [filter, setFilter] = useState<string>("all")
 
@@ -105,11 +108,9 @@ export function JobApplicationsContent({
     <div className="min-h-screen bg-background pb-20 md:pt-14">
       <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur border-b pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center gap-3 px-4 py-3">
-          <Button asChild variant="ghost" size="icon">
-            <Link href="/my-jobs">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+            </Button>
           <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate">Candidatos</h1>

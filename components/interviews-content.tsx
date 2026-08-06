@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +40,7 @@ const TYPE_ICONS: Record<string, typeof Video> = {
 }
 
 export function InterviewsContent({ interviews: initialInterviews }: { interviews: BusinessInterview[] }) {
+  const router = useRouter()
   const [interviews, setInterviews] = useState(initialInterviews)
   const [date, setDate] = useState<Date | undefined>(new Date())
   // El panel enlaza aquí con ?filter=realizadas para abrir directamente el
@@ -103,10 +104,8 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
       <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="icon" className="h-9 w-9">
-              <Link href="/business-dashboard">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={32} height={32} className="object-contain rounded-full" />
