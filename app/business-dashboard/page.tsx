@@ -12,7 +12,12 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import {
   Search, MapPin, Star, Users, Briefcase, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift, CalendarCheck, Crown,
+  Eye, Pencil,
 } from "lucide-react"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { AccountFooterLinks } from "@/components/account-footer-links"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
 import { checkInterviewRemindersAction } from "@/lib/actions"
@@ -43,6 +48,7 @@ export default function BusinessDashboardPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [myJobsCount, setMyJobsCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
+  const [ratingStats, setRatingStats] = useState({ average: 0, total: 0 })
   const [loading, setLoading] = useState(true)
   const dataLoaded = useRef(false)
   const unreadCount = useUnreadMessages(user?.id)
@@ -75,7 +81,7 @@ export default function BusinessDashboardPage() {
       // `getHighlightedProfileIds` viajaba en serie DESPUÉS de estas cuatro
       // consultas, añadiendo un quinto viaje de red antes de poder pintar
       // nada. No depende de sus resultados, así que va en el mismo lote.
-      const [{ data: candidatesData }, { data: activeJobsData }, { count }, { count: saved }, highlighted] = await Promise.all([
+      const [{ data: candidatesData }, { data: activeJobsData }, { count }, { count: saved }, { data: myRatingRow }, highlighted] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, display_name, avatar_url, job_category, location, rating, specialties, experience_years, contract_type_sought")
@@ -101,6 +107,14 @@ export default function BusinessDashboardPage() {
           .from("saved_profiles")
           .select("id", { count: "exact", head: true })
           .eq("business_id", user.id),
+        // Media y número de valoraciones recibidas, para la tarjeta "Mis
+        // Valoraciones". Ya están agregadas en la fila del perfil, así que no
+        // hace falta recorrer la tabla de valoraciones entera.
+        supabase
+          .from("profiles")
+          .select("rating, total_ratings")
+          .eq("id", user.id)
+          .maybeSingle(),
         getHighlightedProfileIds(supabase),
       ])
 
@@ -143,6 +157,10 @@ export default function BusinessDashboardPage() {
 
       setMyJobsCount(count || 0)
       setSavedCount(saved || 0)
+      setRatingStats({
+        average: Number(myRatingRow?.rating) || 0,
+        total: Number(myRatingRow?.total_ratings) || 0,
+      })
       setLoading(false)
       checkInterviewRemindersAction().catch(() => {})
     }
@@ -190,10 +208,27 @@ export default function BusinessDashboardPage() {
               <Button asChild variant="ghost" size="icon" className="h-11 w-11">
                 <Link href="/notifications"><Bell className="h-6 w-6" /></Link>
               </Button>
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={userAvatar} alt={userName} />
-                <AvatarFallback className="bg-[#01A89E] text-white text-sm">{userName[0]}</AvatarFallback>
-              </Avatar>
+              {/* El avatar no hacía nada al pulsarlo. Ahora abre el menú de
+                  perfil, que es donde vive lo que antes colgaba del item
+                  "Perfil" de la barra inferior. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#01A89E]" aria-label="Menú de perfil">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={userAvatar} alt={userName} />
+                      <AvatarFallback className="bg-[#01A89E] text-white text-sm">{userName[0]}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
+                    <Link href="/business-profile"><Eye className="mr-2 h-4 w-4" /><span>Ver Perfil</span></Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
+                    <Link href="/business-profile/edit"><Pencil className="mr-2 h-4 w-4" /><span>Editar Perfil</span></Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -205,7 +240,7 @@ export default function BusinessDashboardPage() {
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
             <Link href="/business-profile/edit">
               <Building2 className="h-5 w-5 text-[#F48221]" />
-              <span className="text-[13px] font-semibold leading-tight text-center">Mi Perfil</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="relative h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
@@ -216,7 +251,7 @@ export default function BusinessDashboardPage() {
                 </span>
               )}
               <CalendarCheck className="h-5 w-5 text-violet-600" />
-              <span className="text-[13px] font-semibold leading-tight text-center">Mis Entrevistas</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Mis<br />Entrevistas</span>
             </Link>
           </Button>
           <Button
@@ -266,7 +301,7 @@ export default function BusinessDashboardPage() {
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
             <Link href="/rewards">
               <Gift className="h-5 w-5 text-violet-600" />
-              <span className="text-[13px] font-semibold leading-tight text-center">Recompensas Gamificación</span>
+              <span className="text-[13px] font-semibold leading-tight text-center">Recompensas<br />Gamificación</span>
             </Link>
           </Button>
         </div>
@@ -281,7 +316,7 @@ export default function BusinessDashboardPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold">{myJobsCount}</p>
-                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mis Ofertas</p>
+                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mis<br />Ofertas</p>
                 </div>
               </CardContent>
             </Card>
@@ -303,27 +338,45 @@ export default function BusinessDashboardPage() {
 
         {/* Línea 5: histórico. Filtra solo las cerradas -celebradas, con
             contratación o sin ella-, no las que siguen en curso. */}
-        <Link href="/interviews?filter=realizadas" className="block">
-          <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="bg-violet-500/10 p-2.5 rounded-xl">
-                <CalendarCheck className="h-6 w-6 text-violet-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xl font-bold">{interviewStats.completed}</p>
-                <p className="text-[13px] font-medium text-muted-foreground leading-snug">
-                  Entrevistas Realizadas, Contrataciones
-                  {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratados` : ""}
-                </p>
-              </div>
-              {interviewStats.upcoming > 0 && (
-                <Badge className="bg-violet-600 text-white border-0 text-[12px]">
-                  {interviewStats.upcoming} pendiente{interviewStats.upcoming === 1 ? "" : "s"}
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/interviews?filter=realizadas" className="block">
+            <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors h-full">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="bg-violet-500/10 p-2.5 rounded-xl">
+                  <CalendarCheck className="h-6 w-6 text-violet-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl font-bold">{interviewStats.completed}</p>
+                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                    Entrevistas<br />Realizadas
+                    {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratados` : ""}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Las valoraciones que ha recibido el establecimiento, con la misma
+              página que ya usan los candidatos pero en su variante de empresa. */}
+          <Link href={`/business/${user.id}/ratings`} className="block">
+            <Card className="bg-amber-500/5 border-amber-500/20 hover:border-amber-500/50 transition-colors h-full">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="bg-amber-500/10 p-2.5 rounded-xl">
+                  <Star className="h-6 w-6 text-amber-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl font-bold">
+                    {ratingStats.total > 0 ? ratingStats.average.toFixed(1) : "—"}
+                  </p>
+                  <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                    Mis<br />Valoraciones
+                    {ratingStats.total > 0 ? ` · ${ratingStats.total}` : ""}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -402,6 +455,8 @@ export default function BusinessDashboardPage() {
             </div>
           )}
         </section>
+
+        <AccountFooterLinks />
       </div>
 
       <BottomNavigation profile={{ user_type: "business" } as any} />
