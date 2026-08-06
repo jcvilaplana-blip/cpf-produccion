@@ -184,7 +184,11 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const workerTypesSought = useMemo(() => {
     const set = new Set<string>()
     for (const job of jobs) {
-      const value = job.position || job.category
+      // `category` es la categoría profesional (Camarero, Cocinero...), la
+      // misma taxonomía que ofrece el buscador en "¿Qué tipo de trabajador
+      // buscas?". `position` es una sub-posición dentro de ella ("Sala"), que
+      // no pertenece a esa lista: sólo sirve de reserva si falta la categoría.
+      const value = job.category || job.position
       if (value) set.add(String(value))
     }
     return [...set]
@@ -544,17 +548,20 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <PortfolioImageViewer images={photos} />
           </Section>
         )}
-      </main>
-
-      {/* 10 — Vídeo del establecimiento, apaisado y al ancho de la galería */}
-      {business.video_url && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setIsVideoOpen(true)}
-            className="relative block w-full overflow-hidden bg-black sm:mx-auto sm:max-w-2xl sm:rounded-3xl"
-            aria-label="Reproducir vídeo del establecimiento"
-          >
+        {/* 10 — Vídeo del establecimiento, apaisado y al ancho de la galería.
+            Va dentro del mismo `main` que el resto: cuando estaba en un bloque
+            aparte, entre dos `<main>`, quedaba fuera del `space-y-3` que marca
+            el ritmo vertical de la página y se abría un hueco desproporcionado
+            justo encima. `-mx-4` lo saca a sangre completa en móvil sin
+            romper ese ritmo. */}
+        {business.video_url && (
+          <div className="-mx-4 sm:mx-0">
+            <button
+              type="button"
+              onClick={() => setIsVideoOpen(true)}
+              className="relative block w-full overflow-hidden bg-black sm:rounded-3xl"
+              aria-label="Reproducir vídeo del establecimiento"
+            >
             {/* `#t=0.1` fuerza a los navegadores móviles a pintar el primer
                 fotograma como portada. */}
             <video
@@ -568,17 +575,16 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <span className="absolute left-1/2 top-1/2 flex h-[70px] w-[70px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-2xl">
               <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
             </span>
-            <div className="absolute inset-x-0 bottom-0 p-5 text-left">
-              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
-                Vídeo del establecimiento
-              </p>
-              <p className="mt-1 text-lg font-semibold text-white">{business.display_name}</p>
-            </div>
-          </button>
-        </div>
-      )}
+              <div className="absolute inset-x-0 bottom-0 p-5 text-left">
+                <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
+                  Vídeo del establecimiento
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white">{business.display_name}</p>
+              </div>
+            </button>
+          </div>
+        )}
 
-      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-3">
         {/* 11 — Información de contacto */}
         {(business.phone || business.website || business.address) && (
           <Section icon={Phone} title="Información de contacto">
