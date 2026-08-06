@@ -168,7 +168,7 @@ export function ReportContentDialog({
                       <RadioGroupItem value={r.value} className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium">{r.label}</p>
-                        <p className="text-xs text-muted-foreground">{r.description}</p>
+                        <p className="text-[13px] text-muted-foreground">{r.description}</p>
                       </div>
                     </label>
                   ))}

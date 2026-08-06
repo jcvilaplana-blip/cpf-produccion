@@ -86,7 +86,7 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
       <CardContent className="pt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs font-medium text-gray-600">Categoría profesional</Label>
+            <Label className="text-[13px] font-medium text-gray-600">Categoría profesional</Label>
             {isLoading ? (
               <div className="mt-1 h-10 flex items-center justify-center border rounded-md">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -101,7 +101,7 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
             )}
           </div>
           <div>
-            <Label className="text-xs font-medium text-gray-600">Subcategoría</Label>
+            <Label className="text-[13px] font-medium text-gray-600">Subcategoría</Label>
             <Select value={p.subcategory} onValueChange={p.setSubcategory} disabled={!p.jobCategory || filteredSubcategories.length === 0}>
               <SelectTrigger className="mt-1"><SelectValue placeholder={p.jobCategory ? "Selecciona subcategoría" : "Primero selecciona categoría"} /></SelectTrigger>
               <SelectContent className="max-h-60">
@@ -113,7 +113,7 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
                 el alta no podía editarse aquí. */}
             {p.subcategory?.toLowerCase() === "otro" && (
               <div className="mt-2">
-                <Label htmlFor="customSub" className="text-xs font-medium text-gray-600">
+                <Label htmlFor="customSub" className="text-[13px] font-medium text-gray-600">
                   Especifica tu especialidad
                 </Label>
                 <Input
@@ -127,15 +127,15 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
             )}
           </div>
           <div>
-            <Label htmlFor="expYears" className="text-xs font-medium text-gray-600">Años de experiencia</Label>
+            <Label htmlFor="expYears" className="text-[13px] font-medium text-gray-600">Años de experiencia</Label>
             <Input id="expYears" type="number" min="0" max="50" value={p.experienceYears} onChange={(e) => p.setExperienceYears(e.target.value)} placeholder="0" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="currentPos" className="text-xs font-medium text-gray-600">Puesto actual</Label>
+            <Label htmlFor="currentPos" className="text-[13px] font-medium text-gray-600">Puesto actual</Label>
             <Input id="currentPos" value={p.currentPosition} onChange={(e) => p.setCurrentPosition(e.target.value)} placeholder="Ej: Camarero, Chef..." className="mt-1" />
           </div>
           <div>
-            <Label className="text-xs font-medium text-gray-600">Disponibilidad</Label>
+            <Label className="text-[13px] font-medium text-gray-600">Disponibilidad</Label>
             <Select value={p.availability} onValueChange={p.setAvailability}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Selecciona" /></SelectTrigger>
               <SelectContent>
@@ -146,14 +146,14 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
         </div>
 
         <div>
-          <Label className="text-xs font-medium text-gray-600 mb-2 block">Tipos de contrato deseados</Label>
+          <Label className="text-[13px] font-medium text-gray-600 mb-2 block">Tipos de contrato deseados</Label>
           <div className="flex flex-wrap gap-2">
             {CONTRACT_TYPES.map((ct) => (
               <button
                 key={ct.value}
                 type="button"
                 onClick={() => p.toggleContractType(ct.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${
                   p.contractTypes.includes(ct.value)
                     ? "bg-[#01A89E] text-white border-[#01A89E]"
                     : "bg-white text-gray-600 border-gray-200 hover:border-[#01A89E]"
@@ -166,13 +166,13 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
         </div>
 
         <div>
-          <Label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1.5">
+          <Label className="text-[13px] font-medium text-gray-600 mb-2 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[#F48221]" />
             Avisarme cuando una oferta coincida al menos
             {!p.isPremium && <Lock className="w-3 h-3 text-muted-foreground" />}
           </Label>
           {!p.isPremium && (
-            <p className="text-xs text-muted-foreground mb-2">Función exclusiva para candidatos premium.</p>
+            <p className="text-[13px] text-muted-foreground mb-2">Función exclusiva para candidatos premium.</p>
           )}
           <div className="flex flex-wrap gap-2">
             {MATCH_ALERT_STEPS.map((step) => (
@@ -181,7 +181,7 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
                 type="button"
                 disabled={!p.isPremium}
                 onClick={() => p.setMatchAlertThreshold(step.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   p.matchAlertThreshold === step.value
                     ? "bg-[#F48221] text-white border-[#F48221]"
                     : "bg-white text-gray-600 border-gray-200 hover:border-[#F48221]"
@@ -195,11 +195,11 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="salMin" className="text-xs font-medium text-gray-600">Salario mínimo deseado</Label>
+            <Label htmlFor="salMin" className="text-[13px] font-medium text-gray-600">Salario mínimo deseado</Label>
             <Input id="salMin" type="number" value={p.salaryMin} onChange={(e) => p.setSalaryMin(e.target.value)} placeholder="1200" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="salMax" className="text-xs font-medium text-gray-600">Salario máximo deseado</Label>
+            <Label htmlFor="salMax" className="text-[13px] font-medium text-gray-600">Salario máximo deseado</Label>
             <Input id="salMax" type="number" value={p.salaryMax} onChange={(e) => p.setSalaryMax(e.target.value)} placeholder="2500" className="mt-1" />
           </div>
         </div>

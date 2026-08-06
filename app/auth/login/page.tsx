@@ -198,7 +198,7 @@ export default function LoginPage() {
                       <Label htmlFor="password">{t("auth.password")}</Label>
                       <Link
                         href="/auth/forgot-password"
-                        className="text-xs text-primary underline underline-offset-4"
+                        className="text-[13px] text-primary underline underline-offset-4"
                       >
                         {t("auth.forgotPassword")}
                       </Link>
@@ -231,7 +231,7 @@ export default function LoginPage() {
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
+                    <div className="relative flex justify-center text-[13px] uppercase">
                       <span className="bg-card px-2 text-muted-foreground">{t("auth.orContinueWith")}</span>
                     </div>
                   </div>

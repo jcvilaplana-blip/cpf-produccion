@@ -80,7 +80,7 @@ export function PushNotification({ notification, onClose, onNavigate }: PushNoti
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 leading-tight">{notification.title}</p>
               <p className="text-sm text-gray-600 mt-1 leading-snug">{notification.message}</p>
-              <p className="text-xs text-gray-400 mt-2">Ahora</p>
+              <p className="text-[13px] text-gray-400 mt-2">Ahora</p>
             </div>
 
             {/* Close button */}

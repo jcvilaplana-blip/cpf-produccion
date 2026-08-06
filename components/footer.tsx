@@ -100,7 +100,7 @@ export function Footer() {
 
         {/* Copyright */}
         <div className="pt-8 pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-0 text-center">
-          <p className="text-[10px] text-white/60 whitespace-nowrap">
+          <p className="text-[12px] text-white/60 whitespace-nowrap">
             {t("footer.copyright").replace("{year}", new Date().getFullYear().toString())}
           </p>
         </div>

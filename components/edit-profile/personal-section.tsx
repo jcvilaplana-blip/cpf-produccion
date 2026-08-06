@@ -27,28 +27,28 @@ export function PersonalSection(p: PersonalSectionProps) {
       <CardContent className="pt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="displayName" className="text-xs font-medium text-gray-600">Nombre completo *</Label>
+            <Label htmlFor="displayName" className="text-[13px] font-medium text-gray-600">Nombre completo *</Label>
             <Input id="displayName" value={p.displayName} onChange={(e) => p.setDisplayName(e.target.value)} placeholder="Tu nombre completo" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="email" className="text-xs font-medium text-gray-600">Email</Label>
+            <Label htmlFor="email" className="text-[13px] font-medium text-gray-600">Email</Label>
             <Input id="email" value={p.email} readOnly className="mt-1 bg-gray-50 text-gray-500 cursor-not-allowed" />
           </div>
           <div>
-            <Label htmlFor="phone" className="text-xs font-medium text-gray-600">Teléfono</Label>
+            <Label htmlFor="phone" className="text-[13px] font-medium text-gray-600">Teléfono</Label>
             <Input id="phone" type="tel" value={p.phone} onChange={(e) => p.setPhone(e.target.value)} placeholder="+34 612 345 678" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="dob" className="text-xs font-medium text-gray-600">Fecha de nacimiento</Label>
+            <Label htmlFor="dob" className="text-[13px] font-medium text-gray-600">Fecha de nacimiento</Label>
             <Input id="dob" type="date" value={p.dateOfBirth} onChange={(e) => p.setDateOfBirth(e.target.value)} className="mt-1" />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="location" className="text-xs font-medium text-gray-600">Ciudad</Label>
+            <Label htmlFor="location" className="text-[13px] font-medium text-gray-600">Ciudad</Label>
             <Input id="location" value={p.location} readOnly className="mt-1 bg-gray-50 text-gray-500 cursor-not-allowed" placeholder="Registrada al crear cuenta" />
           </div>
         </div>
         <div>
-          <Label htmlFor="bio" className="text-xs font-medium text-gray-600">Sobre mí</Label>
+          <Label htmlFor="bio" className="text-[13px] font-medium text-gray-600">Sobre mí</Label>
           <Textarea id="bio" value={p.bio} onChange={(e) => p.setBio(e.target.value)} placeholder="Cuéntanos sobre ti, tu experiencia y lo que te apasiona..." rows={4} className="mt-1 resize-none" />
         </div>
       </CardContent>

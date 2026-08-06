@@ -101,14 +101,14 @@ export function PortfolioSection({ images = [], onImagesChange, maxImages = 3 }:
               ) : (
                 <>
                   <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#01A89E]" />
-                  <span className="text-[10px] text-gray-400">Añadir</span>
+                  <span className="text-[12px] text-gray-400">Añadir</span>
                 </>
               )}
             </button>
           )}
         </div>
         
-        <p className="text-xs text-gray-400 mt-3">JPG, PNG. Maximo 5MB por imagen</p>
+        <p className="text-[13px] text-gray-400 mt-3">JPG, PNG. Maximo 5MB por imagen</p>
         <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
       </CardContent>
     </Card>

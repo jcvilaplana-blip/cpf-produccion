@@ -68,7 +68,7 @@ export function CompaniesCarousel({ companies }: CompaniesCarouselProps) {
                       <div className="w-14 h-14 rounded-2xl bg-[#01A89E]/15 flex items-center justify-center">
                         <span className="text-2xl font-bold text-[#01A89E]">{company.name?.[0] || "E"}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">{company.type}</span>
+                      <span className="text-[13px] text-muted-foreground font-medium">{company.type}</span>
                     </div>
                   ) : (
                     <img
@@ -81,7 +81,7 @@ export function CompaniesCarousel({ companies }: CompaniesCarouselProps) {
                   )}
                   {company.verified && (
                     <div className="absolute top-2 right-2">
-                      <Badge className="bg-[#01A89E] text-white text-[10px] gap-1 px-1.5 py-0.5 shadow-sm">
+                      <Badge className="bg-[#01A89E] text-white text-[12px] gap-1 px-1.5 py-0.5 shadow-sm">
                         <CheckCircle2 className="w-3 h-3" />
                         Verificada
                       </Badge>
@@ -89,7 +89,7 @@ export function CompaniesCarousel({ companies }: CompaniesCarouselProps) {
                   )}
                   {company.activeJobs > 0 && (
                     <div className="absolute bottom-2 left-2">
-                      <Badge className="bg-[#E73A36] text-white text-[10px] px-1.5 py-0.5 shadow-sm">
+                      <Badge className="bg-[#E73A36] text-white text-[12px] px-1.5 py-0.5 shadow-sm">
                         {company.activeJobs} {company.activeJobs === 1 ? "oferta" : "ofertas"}
                       </Badge>
                     </div>
@@ -100,17 +100,17 @@ export function CompaniesCarousel({ companies }: CompaniesCarouselProps) {
                 <div className="p-3 space-y-2">
                   <div>
                     <h3 className="font-bold text-sm truncate">{company.name || "Empresa"}</h3>
-                    <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0">
+                    <Badge variant="secondary" className="mt-1 text-[12px] px-1.5 py-0">
                       {company.type || "General"}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#01A89E]" />
                     <span className="truncate font-medium">{company.location || "Espana"}</span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs pt-1.5 border-t">
+                  <div className="flex items-center justify-between text-[13px] pt-1.5 border-t">
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span className="font-bold">{company.rating || "4.5"}</span>

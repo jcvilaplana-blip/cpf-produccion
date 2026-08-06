@@ -316,7 +316,7 @@ export function ProfileContent({
                   <div className="text-center p-6">
                     <Video className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm font-medium mb-1">Sube tu video de presentación</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       Destaca entre los demás candidatos con un video profesional
                     </p>
                   </div>
@@ -341,7 +341,7 @@ export function ProfileContent({
                   <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-primary/30 hover:border-primary/60 transition-colors cursor-pointer">
                     <div className="text-center p-2">
                       <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
-                      <p className="text-xs text-muted-foreground font-medium">Foto de Perfil</p>
+                      <p className="text-[13px] text-muted-foreground font-medium">Foto de Perfil</p>
                     </div>
                   </div>
                   {/* Gallery image slots (up to 4) */}
@@ -352,12 +352,12 @@ export function ProfileContent({
                     >
                       <div className="text-center p-2">
                         <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-                        <p className="text-xs text-muted-foreground">Imagen {i}</p>
+                        <p className="text-[13px] text-muted-foreground">Imagen {i}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-3">
+                <p className="text-[13px] text-muted-foreground mt-3">
                   Sube 1 imagen de perfil y hasta 4 imágenes adicionales para tu galería profesional
                 </p>
               </div>
@@ -379,7 +379,7 @@ export function ProfileContent({
                   <div className="text-center">
                     <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm font-medium mb-1">Sube tu CV en formato PDF</p>
-                    <p className="text-xs text-muted-foreground">Máximo 5MB</p>
+                    <p className="text-[13px] text-muted-foreground">Máximo 5MB</p>
                   </div>
                 </div>
               </div>
@@ -458,7 +458,7 @@ export function ProfileContent({
                               {statusLabels[application.status as keyof typeof statusLabels]}
                             </Badge>
                           </div>
-                          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                          <div className="mt-3 pt-3 border-t text-[13px] text-muted-foreground">
                             Seleccionado el {new Date(application.created_at).toLocaleDateString("es-ES")}
                           </div>
                         </div>
@@ -547,10 +547,10 @@ export function ProfileContent({
                           <div className="flex items-center gap-1">{renderStars(rating.score)}</div>
                         </div>
                         {rating.job_title && (
-                          <p className="text-xs text-muted-foreground mb-1">Oferta: {rating.job_title}</p>
+                          <p className="text-[13px] text-muted-foreground mb-1">Oferta: {rating.job_title}</p>
                         )}
                         {rating.comment && <p className="text-sm text-muted-foreground">{rating.comment}</p>}
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-[13px] text-muted-foreground mt-2">
                           {new Date(rating.created_at).toLocaleDateString("es-ES")}
                         </p>
                       </div>

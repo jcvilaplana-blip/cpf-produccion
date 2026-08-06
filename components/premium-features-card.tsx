@@ -197,7 +197,7 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
               </div>
               <div>
                 <p className="font-medium text-sm">Destacar mi perfil</p>
-                <p className="text-xs text-muted-foreground">Aparece primero en las búsquedas (7 días)</p>
+                <p className="text-[13px] text-muted-foreground">Aparece primero en las búsquedas (7 días)</p>
               </div>
             </div>
             <div className="text-right">
@@ -231,7 +231,7 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
               </div>
               <div>
                 <p className="font-medium text-sm">Ver quién me ha guardado</p>
-                <p className="text-xs text-muted-foreground">Descubre qué empresas les interesas</p>
+                <p className="text-[13px] text-muted-foreground">Descubre qué empresas les interesas</p>
               </div>
             </div>
             <div className="text-right">
@@ -254,7 +254,7 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
             </div>
           </div>
 
-          <p className="text-[10px] text-center text-muted-foreground pt-2">
+          <p className="text-[12px] text-center text-muted-foreground pt-2">
             Pago seguro con Stripe. IVA incluido.
           </p>
         </CardContent>
@@ -283,7 +283,7 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
               <p className="text-sm text-muted-foreground">
                 Aún no hay empresas que hayan guardado tu perfil.
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[13px] text-muted-foreground mt-1">
                 Completa tu perfil y sube un video para atraer más empresas.
               </p>
             </div>
@@ -309,11 +309,11 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
                     <p className="font-medium text-sm truncate">
                       {match.business_profiles?.company_name || "Empresa"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-[13px] text-muted-foreground truncate">
                       {match.business_profiles?.city || "Sin ubicación"}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-[12px]">
                     {match.interaction_type === "like" ? "Le gustas" : "Guardado"}
                   </Badge>
                 </div>

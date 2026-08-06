@@ -32,7 +32,7 @@ export function MediaSection({ avatarPreview, onAvatarChange }: MediaSectionProp
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
                 <Camera className="w-6 h-6 text-gray-400 group-hover:text-[#01A89E]" />
-                <span className="text-[10px] text-gray-400 mt-1">Subir foto</span>
+                <span className="text-[12px] text-gray-400 mt-1">Subir foto</span>
               </div>
             )}
             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -40,7 +40,7 @@ export function MediaSection({ avatarPreview, onAvatarChange }: MediaSectionProp
             </div>
           </button>
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
-          <p className="text-xs text-gray-500">JPG, PNG. Recomendado 400x400px</p>
+          <p className="text-[13px] text-gray-500">JPG, PNG. Recomendado 400x400px</p>
         </div>
       </CardContent>
     </Card>

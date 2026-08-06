@@ -326,7 +326,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full">
                     {uploadingLogo ? <Loader2 className="w-6 h-6 text-[#01A89E] animate-spin" /> : <Camera className="w-6 h-6 text-gray-400" />}
-                    <span className="text-[10px] text-gray-400 mt-1">Logo</span>
+                    <span className="text-[12px] text-gray-400 mt-1">Logo</span>
                   </div>
                 )}
               </button>
@@ -470,7 +470,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
                   className="aspect-square border-2 border-dashed border-gray-300 hover:border-[#01A89E] rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
                 >
                   {uploadingPhoto ? <Loader2 className="w-5 h-5 text-[#01A89E] animate-spin" /> : <Plus className="w-5 h-5 text-gray-400" />}
-                  <span className="text-[10px] text-gray-400">Añadir</span>
+                  <span className="text-[12px] text-gray-400">Añadir</span>
                 </button>
               )}
             </div>
@@ -506,7 +506,7 @@ export function EditBusinessProfileContent({ userId }: { userId: string }) {
                 className="w-full aspect-video border-2 border-dashed border-gray-300 hover:border-[#01A89E] rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
               >
                 {uploadingVideo ? <Loader2 className="w-6 h-6 text-[#01A89E] animate-spin" /> : <Upload className="w-6 h-6 text-gray-400" />}
-                <span className="text-xs text-gray-400">Subir vídeo del local</span>
+                <span className="text-[13px] text-gray-400">Subir vídeo del local</span>
               </button>
             )}
             <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />

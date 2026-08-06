@@ -48,7 +48,7 @@ export function PaymentSummaryDialog({
           >
             <X className="h-4 w-4" />
           </button>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
+          <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
             Resumen del pago
           </p>
           <DialogTitle className="mt-1 pr-10 text-[20px] font-bold leading-tight text-slate-900">

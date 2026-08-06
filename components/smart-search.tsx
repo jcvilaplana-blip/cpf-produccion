@@ -251,9 +251,9 @@ export function SmartSearch({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{result.title}</p>
-                <p className="text-xs text-gray-500 truncate">{result.subtitle}</p>
+                <p className="text-[13px] text-gray-500 truncate">{result.subtitle}</p>
               </div>
-              <span className="text-[10px] text-gray-400 uppercase font-medium">
+              <span className="text-[12px] text-gray-400 uppercase font-medium">
                 {getTypeLabel(result.type)}
               </span>
             </Link>
@@ -268,7 +268,7 @@ export function SmartSearch({
         >
           <Search className="h-8 w-8 text-gray-300 mx-auto mb-2" />
           <p className="text-sm text-gray-500">No se encontraron resultados para "{query}"</p>
-          <p className="text-xs text-gray-400 mt-1">Intenta con otros terminos</p>
+          <p className="text-[13px] text-gray-400 mt-1">Intenta con otros terminos</p>
         </div>
       )}
     </div>

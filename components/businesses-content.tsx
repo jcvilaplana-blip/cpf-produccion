@@ -111,7 +111,7 @@ export function BusinessesContent({ businesses: initialBusinesses, currentUser }
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-base font-bold flex-1">Empresas en el Mapa</h1>
-          <Badge className="bg-[#01A89E] text-white text-[10px]">{filteredBusinesses.length} empresas</Badge>
+          <Badge className="bg-[#01A89E] text-white text-[12px]">{filteredBusinesses.length} empresas</Badge>
         </div>
         <div ref={mapContainer} className="w-full h-full" />
         {!mapLoaded && (
@@ -122,7 +122,7 @@ export function BusinessesContent({ businesses: initialBusinesses, currentUser }
             </div>
           </div>
         )}
-        <div className="absolute bottom-6 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 text-[11px] flex items-center gap-2">
+        <div className="absolute bottom-6 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 text-[12px] flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#01A89E]" />
           <span className="text-gray-600 font-medium">Empresas que ofrecen empleo</span>
         </div>
@@ -177,7 +177,7 @@ export function BusinessesContent({ businesses: initialBusinesses, currentUser }
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className={`flex-shrink-0 text-xs ${selectedCategory === category ? "bg-[#01A89E] hover:bg-[#018F86]" : ""}`}
+                  className={`flex-shrink-0 text-[13px] ${selectedCategory === category ? "bg-[#01A89E] hover:bg-[#018F86]" : ""}`}
                 >
                   {category}
                 </Button>
@@ -204,7 +204,7 @@ export function BusinessesContent({ businesses: initialBusinesses, currentUser }
                   className="w-full h-full object-cover"
                 />
                 {business.total_jobs > 0 && (
-                  <Badge className="absolute top-1.5 right-1.5 bg-[#01A89E] text-white text-[9px] px-1.5 py-0">
+                  <Badge className="absolute top-1.5 right-1.5 bg-[#01A89E] text-white text-[12px] px-1.5 py-0">
                     {business.total_jobs} ofertas
                   </Badge>
                 )}
@@ -214,12 +214,12 @@ export function BusinessesContent({ businesses: initialBusinesses, currentUser }
               <div className="p-2.5">
                 <h3 className="font-semibold text-sm text-gray-900 truncate">{business.name}</h3>
 
-                <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-1">
+                <div className="flex items-center gap-1 text-[12px] text-gray-500 mt-1">
                   <MapPin className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{business.location}</span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-1.5 text-[11px]">
+                <div className="flex items-center gap-2 mt-1.5 text-[12px]">
                   <div className="flex items-center gap-0.5">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span className="font-medium">{business.rating}</span>

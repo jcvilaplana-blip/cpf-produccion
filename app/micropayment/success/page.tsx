@@ -160,7 +160,7 @@ function MicropaymentSuccessContent() {
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground mt-4">Recibirás un email con el recibo de tu compra.</p>
+          <p className="text-[13px] text-muted-foreground mt-4">Recibirás un email con el recibo de tu compra.</p>
         </CardContent>
       </Card>
     </div>

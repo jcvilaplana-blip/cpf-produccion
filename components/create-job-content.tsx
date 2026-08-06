@@ -268,7 +268,7 @@ export function CreateJobContent({ userId }: { userId: string }) {
           </Link>
           <div>
             <h1 className="text-lg font-bold">Publicar Oferta</h1>
-            <p className="text-xs text-muted-foreground">Crea una nueva oferta de trabajo</p>
+            <p className="text-[13px] text-muted-foreground">Crea una nueva oferta de trabajo</p>
           </div>
         </div>
       </header>
@@ -285,7 +285,7 @@ export function CreateJobContent({ userId }: { userId: string }) {
                   </div>
                   <div>
                     <p className="font-semibold text-sm">Oferta Flash</p>
-                    <p className="text-xs text-muted-foreground">Trabajo urgente y de corta duración, destacado en toda la app</p>
+                    <p className="text-[13px] text-muted-foreground">Trabajo urgente y de corta duración, destacado en toda la app</p>
                   </div>
                 </div>
                 <Switch checked={isFlash} onCheckedChange={setIsFlash} />
@@ -323,7 +323,7 @@ export function CreateJobContent({ userId }: { userId: string }) {
                       className="flex flex-col items-center justify-center gap-2 h-40 rounded-lg border-2 border-dashed border-[#F97316]/40 text-muted-foreground cursor-pointer hover:bg-[#F97316]/5 transition-colors"
                     >
                       <ImagePlus className="h-8 w-8 text-[#F97316]" />
-                      <span className="text-xs">Sube una imagen para la oferta</span>
+                      <span className="text-[13px]">Sube una imagen para la oferta</span>
                     </label>
                   )}
                   <input
@@ -546,7 +546,7 @@ export function CreateJobContent({ userId }: { userId: string }) {
                       key={lang}
                       type="button"
                       onClick={() => toggleLanguage(lang)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${
                         languagesRequired.includes(lang)
                           ? "bg-primary text-white border-primary"
                           : "bg-white text-foreground border-border"

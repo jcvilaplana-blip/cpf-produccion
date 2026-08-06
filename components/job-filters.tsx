@@ -84,7 +84,7 @@ export function JobFiltersComponent({ filters, onFiltersChange, jobCount }: JobF
           <SlidersHorizontal className="h-4 w-4" />
           Filtros
           {activeFiltersCount > 0 && (
-            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[13px] text-primary-foreground">
               {activeFiltersCount}
             </span>
           )}

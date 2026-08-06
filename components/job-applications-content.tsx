@@ -113,7 +113,7 @@ export function JobApplicationsContent({
           <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate">Candidatos</h1>
-            <p className="text-xs text-muted-foreground truncate">{job.title}</p>
+            <p className="text-[13px] text-muted-foreground truncate">{job.title}</p>
           </div>
           <Badge variant="outline">{applications.length} total</Badge>
         </div>
@@ -131,7 +131,7 @@ export function JobApplicationsContent({
               onClick={() => setFilter(status)}
             >
               {status === "all" ? "Todos" : statusLabels[status]}
-              <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 text-xs">
+              <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 text-[13px]">
                 {counts[status]}
               </Badge>
             </Button>
@@ -170,16 +170,16 @@ export function JobApplicationsContent({
                             {app.worker?.display_name || "Usuario"}
                           </h3>
                           {app.worker?.job_category && (
-                            <p className="text-xs text-muted-foreground">{app.worker.job_category}</p>
+                            <p className="text-[13px] text-muted-foreground">{app.worker.job_category}</p>
                           )}
                         </div>
-                        <Badge className={`text-xs flex-shrink-0 ${statusColors[app.status] || ""}`}>
+                        <Badge className={`text-[13px] flex-shrink-0 ${statusColors[app.status] || ""}`}>
                           {statusLabels[app.status] || app.status}
                         </Badge>
                       </div>
 
                       {/* Worker info */}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[13px] text-muted-foreground">
                         {app.worker?.rating && app.worker.rating > 0 && (
                           <div className="flex items-center gap-0.5">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -201,11 +201,11 @@ export function JobApplicationsContent({
                       {/* Cover letter */}
                       {app.cover_letter && (
                         <div className="mt-2 p-2 bg-muted rounded-md">
-                          <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                          <div className="flex items-center gap-1 text-[13px] font-medium mb-1">
                             <FileText className="h-3 w-3" />
                             Carta de presentacion
                           </div>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
+                          <p className="text-[13px] text-muted-foreground line-clamp-2">
                             {app.cover_letter}
                           </p>
                         </div>
@@ -213,13 +213,13 @@ export function JobApplicationsContent({
 
                       {/* Actions */}
                       <div className="flex flex-wrap gap-2 mt-3">
-                        <Button asChild variant="outline" size="sm" className="h-8 text-xs bg-transparent">
+                        <Button asChild variant="outline" size="sm" className="h-8 text-[13px] bg-transparent">
                           <Link href={`/profile/${app.worker_id}`}>Ver Perfil</Link>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs bg-transparent"
+                          className="h-8 text-[13px] bg-transparent"
                           asChild
                         >
                           <Link href={`/messages?candidateId=${app.worker_id}`}>
@@ -231,7 +231,7 @@ export function JobApplicationsContent({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-xs bg-transparent"
+                            className="h-8 text-[13px] bg-transparent"
                             asChild
                           >
                             <a href={`tel:${app.worker.phone}`}>
@@ -247,7 +247,7 @@ export function JobApplicationsContent({
                         <div className="flex gap-2 mt-3 pt-3 border-t">
                           <Button
                             size="sm"
-                            className="h-8 text-xs bg-[#01A89E] hover:bg-[#018F86]"
+                            className="h-8 text-[13px] bg-[#01A89E] hover:bg-[#018F86]"
                             onClick={() => handleStatusChange(app.id, "interview")}
                           >
                             <Calendar className="h-3 w-3 mr-1" />
@@ -255,7 +255,7 @@ export function JobApplicationsContent({
                           </Button>
                           <Button
                             size="sm"
-                            className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                            className="h-8 text-[13px] bg-green-600 hover:bg-green-700"
                             onClick={() => handleStatusChange(app.id, "accepted")}
                           >
                             <Check className="h-3 w-3 mr-1" />
@@ -264,7 +264,7 @@ export function JobApplicationsContent({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 text-xs bg-transparent text-destructive hover:text-destructive"
+                            className="h-8 text-[13px] bg-transparent text-destructive hover:text-destructive"
                             onClick={() => handleStatusChange(app.id, "rejected")}
                           >
                             <X className="h-3 w-3 mr-1" />
@@ -276,7 +276,7 @@ export function JobApplicationsContent({
                         <div className="flex gap-2 mt-3 pt-3 border-t">
                           <Button
                             size="sm"
-                            className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                            className="h-8 text-[13px] bg-green-600 hover:bg-green-700"
                             onClick={() => handleStatusChange(app.id, "accepted")}
                           >
                             <Check className="h-3 w-3 mr-1" />
@@ -285,7 +285,7 @@ export function JobApplicationsContent({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 text-xs bg-transparent text-destructive hover:text-destructive"
+                            className="h-8 text-[13px] bg-transparent text-destructive hover:text-destructive"
                             onClick={() => handleStatusChange(app.id, "rejected")}
                           >
                             <X className="h-3 w-3 mr-1" />

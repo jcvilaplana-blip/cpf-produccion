@@ -64,7 +64,7 @@ export function CategoriesContent() {
             </button>
             <div className="min-w-0">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 whitespace-nowrap truncate">Todos los empleos</h1>
-              <p className="text-xs text-gray-500 mt-0.5">{categories.length} categorías de empleo</p>
+              <p className="text-[13px] text-gray-500 mt-0.5">{categories.length} categorías de empleo</p>
             </div>
           </div>
           <div className="relative mt-3">
@@ -94,7 +94,7 @@ export function CategoriesContent() {
                   <Utensils className="w-8 h-8 text-[#E73A36]" />
                 )}
               </div>
-              <span className="font-semibold text-[11px] leading-tight text-gray-900 line-clamp-2">{cat.name}</span>
+              <span className="font-semibold text-[12px] leading-tight text-gray-900 line-clamp-2">{cat.name}</span>
             </Link>
           ))}
         </div>

@@ -118,7 +118,7 @@ export function AddressAutofill({
               <MapPin className="h-4 w-4 text-[#01A89E] shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{s.text}</p>
-                <p className="text-xs text-gray-500 truncate">{s.place_name}</p>
+                <p className="text-[13px] text-gray-500 truncate">{s.place_name}</p>
               </div>
             </button>
           ))}

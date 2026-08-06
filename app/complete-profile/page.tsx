@@ -376,7 +376,7 @@ export default function CompleteProfilePage() {
           </Card>
         )}
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-[13px] text-muted-foreground mt-6">
           Puedes actualizar esta información más tarde desde tu perfil
         </p>
       </div>

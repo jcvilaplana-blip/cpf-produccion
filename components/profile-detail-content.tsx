@@ -335,7 +335,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           <p className="text-[15px] font-semibold text-slate-900">
             {activelySearching ? "Buscando activamente" : "No busca activamente"}
           </p>
-          <Badge className={cn("rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium", avail.color)}>
+          <Badge className={cn("rounded-full border-0 px-2.5 py-0.5 text-[12px] font-medium", avail.color)}>
             {avail.label}
           </Badge>
         </div>
@@ -412,7 +412,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               <MapPin className="h-5 w-5 text-[#01A89E]" />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</p>
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</p>
               <p className="truncate text-[15px] font-semibold text-slate-900">
                 {worker.location || "No especificada"}
               </p>
@@ -425,7 +425,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-[#01A89E]" />
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Experiencia</p>
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Experiencia</p>
             </div>
             <p className="mt-2 text-3xl font-bold leading-none text-slate-900">
               {experienceYears !== null ? experienceYears : "—"}
@@ -447,7 +447,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">
                   Valoración
                 </p>
               </div>
@@ -478,7 +478,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           icon={Sparkles}
           title="Criterios de valoración"
           action={
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
               1–5 ★
             </span>
           }
@@ -505,7 +505,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               <span className="text-[28px] font-bold leading-none text-slate-900">
                 {totalRatings > 0 ? rating.toFixed(1) : "—"}
               </span>
-              <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+              <span className="mt-0.5 text-[12px] font-medium uppercase tracking-wider text-amber-700">
                 media
               </span>
             </div>
@@ -593,13 +593,13 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
         <Section icon={Trophy} title="Nivel y puntos">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl bg-gradient-to-br from-[#01A89E]/10 to-[#01A89E]/5 p-3.5">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#00776F]">Nivel</p>
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-[#00776F]">Nivel</p>
               <p className="mt-1.5 text-2xl font-bold leading-none text-slate-900">
                 {worker.level ? worker.level : "—"}
               </p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-violet-100/70 to-violet-50 p-3.5">
-              <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-violet-700">
+              <p className="flex items-center gap-1 text-[12px] font-medium uppercase tracking-[0.14em] text-violet-700">
                 <Zap className="h-3 w-3" /> Puntos
               </p>
               <p className="mt-1.5 text-2xl font-bold leading-none text-slate-900">
@@ -647,7 +647,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
             </span>
             <div className="absolute inset-x-0 bottom-0 p-5 text-left">
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/70">
+              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
                 Vídeo de presentación
               </p>
               <p className="mt-1 text-lg font-semibold text-white">{worker.display_name}</p>
@@ -680,7 +680,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
                     </div>
                     <Badge
                       className={cn(
-                        "shrink-0 rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium",
+                        "shrink-0 rounded-full border-0 px-2.5 py-0.5 text-[12px] font-medium",
                         exp.current ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
                       )}
                     >

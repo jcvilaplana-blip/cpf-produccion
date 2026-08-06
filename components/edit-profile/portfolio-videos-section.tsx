@@ -100,7 +100,7 @@ export function PortfolioVideosSection({ videos = [], onVideosChange, maxVideos 
           <Video className="w-4 h-4 text-[#01A89E]" />
           Portfolio de Videos ({currentVideos.length}/{maxVideos})
         </CardTitle>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-[13px] text-gray-500 mt-1">
           Solo se muestran a pantalla completa si la empresa pulsa para verlos
         </p>
       </CardHeader>
@@ -136,14 +136,14 @@ export function PortfolioVideosSection({ videos = [], onVideosChange, maxVideos 
               ) : (
                 <>
                   <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#01A89E]" />
-                  <span className="text-xs text-gray-400">Añadir video</span>
+                  <span className="text-[13px] text-gray-400">Añadir video</span>
                 </>
               )}
             </button>
           )}
         </div>
 
-        <p className="text-xs text-gray-400 mt-3">MP4, WebM o MOV. Maximo 1 minuto y 100MB por video</p>
+        <p className="text-[13px] text-gray-400 mt-3">MP4, WebM o MOV. Maximo 1 minuto y 100MB por video</p>
         <input ref={inputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleUpload} />
       </CardContent>
     </Card>

@@ -188,7 +188,7 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
               </div>
               <div>
                 <h2 className="text-xl font-bold">{t("flash.offers")}</h2>
-                <p className="text-xs text-muted-foreground">{t("flash.expiring")}</p>
+                <p className="text-[13px] text-muted-foreground">{t("flash.expiring")}</p>
               </div>
             </div>
             <FlashOffersCarousel offers={flashOffers} />
@@ -348,7 +348,7 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                   </button>
                 </Badge>
               )}
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs">
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-[13px]">
                 {t("filters.clearAll")}
               </Button>
             </div>
@@ -389,19 +389,19 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                       className="object-cover"
                     />
                     {job.isFlash && (
-                      <Badge className="absolute top-1 left-1 bg-[#F97316] text-white text-[9px] px-1 py-0 h-4 gap-0.5">
+                      <Badge className="absolute top-1 left-1 bg-[#F97316] text-white text-[12px] px-1 py-0 h-4 gap-0.5">
                         <Zap className="h-2 w-2" /> Flash
                       </Badge>
                     )}
                     {!job.isFlash && job.isHighlighted && (
-                      <Badge className="absolute top-1 left-1 bg-[#F48221] text-white text-[9px] px-1 py-0 h-4">
+                      <Badge className="absolute top-1 left-1 bg-[#F48221] text-white text-[12px] px-1 py-0 h-4">
                         Destacada
                       </Badge>
                     )}
                   </div>
                   <CardContent className="p-0.5">
                     <h3 className="font-semibold text-sm line-clamp-1 leading-tight mb-0.5">{job.title}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1 mb-0.5">{job.business.display_name}</p>
+                    <p className="text-[13px] text-muted-foreground line-clamp-1 mb-0.5">{job.business.display_name}</p>
                     <div className="space-y-0 border-t pt-0">
                       <div className="flex items-center gap-0.5 text-sm text-muted-foreground">
                         <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
@@ -422,12 +422,12 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                         </div>
                       )}
                       {job.jobType && (
-                        <Badge variant="outline" className="text-xs w-full justify-center py-0 h-4 mt-0.5">
+                        <Badge variant="outline" className="text-[13px] w-full justify-center py-0 h-4 mt-0.5">
                           {job.jobType}
                         </Badge>
                       )}
                       {typeof job.matchPercent === "number" && job.matchPercent > 0 && (
-                        <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-xs w-full justify-center py-0 h-4 mt-0.5">
+                        <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[13px] w-full justify-center py-0 h-4 mt-0.5">
                           {job.matchPercent}% coincidencia
                         </Badge>
                       )}

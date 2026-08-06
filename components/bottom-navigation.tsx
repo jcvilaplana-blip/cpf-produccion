@@ -30,7 +30,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
             )}
           >
             <BarChart3 className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.metrics")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.metrics")}</span>
           </Link>
 
           {/* Search - business users only ever see Candidatos here */}
@@ -42,7 +42,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
             )}
           >
             <Search className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.search")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.search")}</span>
           </Link>
 
           {/* Create Job (Center button with +) */}
@@ -50,7 +50,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
             <div className="bg-[#01A89E] text-white rounded-full p-3 -mt-6 shadow-lg hover:bg-[#018F86] transition-colors">
               <Plus className="h-6 w-6" />
             </div>
-            <span className="text-xs mt-1 text-gray-600">{t("navigation.create")}</span>
+            <span className="text-[13px] mt-1 text-gray-600">{t("navigation.create")}</span>
           </Link>
 
           {/* Favorites (Saved candidates) */}
@@ -62,7 +62,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
             )}
           >
             <Heart className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.favorites")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.favorites")}</span>
           </Link>
 
           {/* Profile */}
@@ -74,7 +74,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
             )}
           >
             <User className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.profile")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
           </Link>
         </div>
       </nav>
@@ -94,7 +94,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
           )}
         >
           <Briefcase className="h-5 w-5" />
-          <span className="text-xs mt-1">{t("navigation.home")}</span>
+          <span className="text-[13px] mt-1">{t("navigation.home")}</span>
         </Link>
 
         {/* Saved Jobs */}
@@ -106,7 +106,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
           )}
         >
           <Bookmark className="h-5 w-5" />
-          <span className="text-xs mt-1">{t("navigation.saved")}</span>
+          <span className="text-[13px] mt-1">{t("navigation.saved")}</span>
         </Link>
 
         {/* Messages */}
@@ -118,7 +118,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
           )}
         >
           <MessageCircle className="h-5 w-5" />
-          <span className="text-xs mt-1">{t("navigation.messages")}</span>
+          <span className="text-[13px] mt-1">{t("navigation.messages")}</span>
         </Link>
 
         {/* Interviews */}
@@ -130,7 +130,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
           )}
         >
           <Calendar className="h-5 w-5" />
-          <span className="text-xs mt-1">{t("navigation.interviews")}</span>
+          <span className="text-[13px] mt-1">{t("navigation.interviews")}</span>
         </Link>
 
         {/* Profile */}
@@ -142,7 +142,7 @@ export function BottomNavigation({ profile }: BottomNavigationProps) {
           )}
         >
           <User className="h-5 w-5" />
-          <span className="text-xs mt-1">{t("navigation.profile")}</span>
+          <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
         </Link>
       </div>
     </nav>

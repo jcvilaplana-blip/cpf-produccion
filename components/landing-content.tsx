@@ -128,7 +128,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
                 <h2 className="text-xl md:text-2xl lg:text-3xl font-bold whitespace-nowrap">
                   {t("landing.flashOffersTitle")}
                 </h2>
-                <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 truncate">
+                <p className="text-[13px] md:text-sm text-muted-foreground mt-0.5 md:mt-1 truncate">
                   <span className="hidden sm:inline">{t("landing.flashOffersSubtitle")}</span>
                   <span className="sm:hidden">{t("landing.flashOffersSubtitleMobile")}</span>
                 </p>

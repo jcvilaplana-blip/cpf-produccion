@@ -215,8 +215,8 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-white text-balance drop-shadow-md">{business.display_name}</h1>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary" className="bg-white/90 text-foreground text-xs">{business.type}</Badge>
-                {business.verified && <Badge className="gap-1 bg-green-500 text-white text-xs"><CheckCircle className="w-3 h-3" /> Verificada</Badge>}
+                <Badge variant="secondary" className="bg-white/90 text-foreground text-[13px]">{business.type}</Badge>
+                {business.verified && <Badge className="gap-1 bg-green-500 text-white text-[13px]"><CheckCircle className="w-3 h-3" /> Verificada</Badge>}
               </div>
             </div>
           </div>
@@ -241,7 +241,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
             <div className="rounded-2xl border bg-card p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-[15px] font-semibold">Criterios de valoración</h3>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[12px] text-muted-foreground">
                   {ratingsTotal} {ratingsTotal === 1 ? "valoración" : "valoraciones"}
                 </span>
               </div>
@@ -279,7 +279,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
         <div className="flex items-center justify-around bg-muted/50 rounded-2xl py-3 px-2">
           <Link href={`/business/${id}/ratings`} className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity">
             <div className="flex items-center gap-1"><Star className="h-5 w-5 fill-yellow-400 text-yellow-400" /><span className="font-bold text-lg">{business.totalRatings > 0 ? business.rating.toFixed(1) : "—"}</span></div>
-            <span className="text-xs text-muted-foreground">Valoración</span>
+            <span className="text-[13px] text-muted-foreground">Valoración</span>
           </Link>
           <div className="w-px h-8 bg-border" />
           <a
@@ -294,7 +294,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
               <span className="font-bold text-sm text-[#01A89E]">Ver Mapa</span>
               <MapPin className="h-5 w-5 text-[#01A89E]" />
             </div>
-            <span className="text-xs text-muted-foreground text-center">
+            <span className="text-[13px] text-muted-foreground text-center">
               {(business.city || business.location || "").split(",")[0].trim()}
             </span>
           </a>
@@ -304,7 +304,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
             className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity"
           >
             <div className="flex items-center gap-1"><Briefcase className="h-5 w-5 text-[#E73A36]" /><span className="font-bold text-lg">{business.activeJobs}</span></div>
-            <span className="text-xs text-muted-foreground">Ofertas</span>
+            <span className="text-[13px] text-muted-foreground">Ofertas</span>
           </Link>
         </div>
 
@@ -423,11 +423,11 @@ export function BusinessDetailContent({ id }: { id: string }) {
                   <Link key={job.id} href={`/jobs/${job.id}`}>
                     <div className="p-3 border rounded-xl hover:bg-accent transition-colors">
                       <h4 className="font-semibold text-sm">{job.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{job.description}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs flex-wrap">
+                      <p className="text-[13px] text-muted-foreground mt-1 line-clamp-2">{job.description}</p>
+                      <div className="flex items-center gap-3 mt-2 text-[13px] flex-wrap">
                         <span className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3 w-3" /> {job.location || job.city}</span>
-                        {job.salary_min && job.salary_max && <Badge variant="secondary" className="text-xs">{job.salary_min}-{job.salary_max} EUR</Badge>}
-                        {job.contract_type && <Badge variant="outline" className="text-xs">{job.contract_type}</Badge>}
+                        {job.salary_min && job.salary_max && <Badge variant="secondary" className="text-[13px]">{job.salary_min}-{job.salary_max} EUR</Badge>}
+                        {job.contract_type && <Badge variant="outline" className="text-[13px]">{job.contract_type}</Badge>}
                       </div>
                     </div>
                   </Link>
@@ -442,10 +442,10 @@ export function BusinessDetailContent({ id }: { id: string }) {
         <Card><CardContent className="p-4 space-y-3">
           <h3 className="font-semibold mb-2 text-base">Detalles</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-muted-foreground block text-xs">Sector</span><span className="font-medium">{business.type}</span></div>
-            <div><span className="text-muted-foreground block text-xs">Ubicación</span><span className="font-medium">{business.location}</span></div>
-            <div><span className="text-muted-foreground block text-xs">Valoración</span><span className="font-medium flex items-center gap-1">{business.rating} <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /></span></div>
-            <div><span className="text-muted-foreground block text-xs">Estado</span><span className="font-medium flex items-center gap-1">{business.verified ? <><CheckCircle className="w-3 h-3 text-green-500" /> Verificada</> : "Pendiente"}</span></div>
+            <div><span className="text-muted-foreground block text-[13px]">Sector</span><span className="font-medium">{business.type}</span></div>
+            <div><span className="text-muted-foreground block text-[13px]">Ubicación</span><span className="font-medium">{business.location}</span></div>
+            <div><span className="text-muted-foreground block text-[13px]">Valoración</span><span className="font-medium flex items-center gap-1">{business.rating} <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /></span></div>
+            <div><span className="text-muted-foreground block text-[13px]">Estado</span><span className="font-medium flex items-center gap-1">{business.verified ? <><CheckCircle className="w-3 h-3 text-green-500" /> Verificada</> : "Pendiente"}</span></div>
           </div>
         </CardContent></Card>
       </div>

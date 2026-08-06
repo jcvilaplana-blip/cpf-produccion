@@ -86,7 +86,7 @@ export function PhoneVerification({ phone, verified, onVerified, onSkip }: Phone
       )}
       {step === "sent" && (
         <div className="space-y-2">
-          <Label className="text-xs">Código recibido por SMS</Label>
+          <Label className="text-[13px]">Código recibido por SMS</Label>
           <div className="flex gap-2">
             <Input
               value={code}
@@ -99,18 +99,18 @@ export function PhoneVerification({ phone, verified, onVerified, onSkip }: Phone
               {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
             </Button>
           </div>
-          <button type="button" onClick={handleSendCode} disabled={sending} className="text-xs text-primary underline">
+          <button type="button" onClick={handleSendCode} disabled={sending} className="text-[13px] text-primary underline">
             Reenviar código
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-[13px] text-destructive">{error}</p>}
       {error && step === "idle" && onSkip && (
-        <button type="button" onClick={onSkip} className="text-xs text-muted-foreground underline underline-offset-4">
+        <button type="button" onClick={onSkip} className="text-[13px] text-muted-foreground underline underline-offset-4">
           Continuar sin verificar por ahora
         </button>
       )}
-      <p className="text-[10px] leading-tight text-muted-foreground">
+      <p className="text-[12px] leading-tight text-muted-foreground">
         Este sitio está protegido por reCAPTCHA y se aplican la{" "}
         <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">
           Política de Privacidad

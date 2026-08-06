@@ -375,7 +375,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
                   <Label className="text-sm font-semibold">
                     {isActive ? "Perfil visible" : "Perfil oculto"}
                   </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-[13px] text-muted-foreground mt-0.5">
                     {isActive 
                       ? "Las empresas pueden ver tu perfil y contactarte" 
                       : "Tu perfil está oculto. No recibirás ofertas de empleo"}
@@ -390,7 +390,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
             </div>
             {!isActive && (
               <div className="mt-3 p-2 bg-red-100 rounded-lg">
-                <p className="text-xs text-red-700">
+                <p className="text-[13px] text-red-700">
                   Actualmente no estás buscando empleo. Activa tu perfil cuando quieras volver a recibir ofertas.
                 </p>
               </div>

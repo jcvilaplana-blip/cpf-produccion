@@ -62,7 +62,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
                 <FileText className="w-4 h-4 text-[#01A89E]" />
                 <h3 className="font-semibold text-sm">Términos y Condiciones de Uso</h3>
               </div>
-              <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground space-y-2">
+              <div className="bg-muted/50 p-3 rounded-lg text-[13px] text-muted-foreground space-y-2">
                 <p>Al utilizar CamareroPorFavor, aceptas los siguientes términos:</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>Debes tener al menos 18 años para usar esta plataforma.</li>
@@ -85,7 +85,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
                 <Lock className="w-4 h-4 text-[#01A89E]" />
                 <h3 className="font-semibold text-sm">Política de Privacidad</h3>
               </div>
-              <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground space-y-2">
+              <div className="bg-muted/50 p-3 rounded-lg text-[13px] text-muted-foreground space-y-2">
                 <p>Respetamos tu privacidad. Estos son los puntos clave:</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>Recopilamos datos necesarios para el funcionamiento del servicio (nombre, email, ubicación, vídeos).</li>
@@ -107,7 +107,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
                 <Shield className="w-4 h-4 text-[#01A89E]" />
                 <h3 className="font-semibold text-sm">Política de Cookies</h3>
               </div>
-              <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground space-y-2">
+              <div className="bg-muted/50 p-3 rounded-lg text-[13px] text-muted-foreground space-y-2">
                 <p>Utilizamos cookies para mejorar tu experiencia:</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li><strong>Cookies esenciales:</strong> Necesarias para el funcionamiento básico.</li>
@@ -130,7 +130,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
               checked={acceptedTerms} 
               onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
             />
-            <Label htmlFor="terms" className="text-xs leading-relaxed cursor-pointer">
+            <Label htmlFor="terms" className="text-[13px] leading-relaxed cursor-pointer">
               He leído y acepto los <span className="text-[#01A89E] font-medium">Términos y Condiciones</span> de uso de CamareroPorFavor
             </Label>
           </div>
@@ -141,7 +141,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
               checked={acceptedPrivacy} 
               onCheckedChange={(checked) => setAcceptedPrivacy(checked === true)}
             />
-            <Label htmlFor="privacy" className="text-xs leading-relaxed cursor-pointer">
+            <Label htmlFor="privacy" className="text-[13px] leading-relaxed cursor-pointer">
               He leído y acepto la <span className="text-[#01A89E] font-medium">Política de Privacidad</span> y el tratamiento de mis datos
             </Label>
           </div>
@@ -152,7 +152,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
               checked={acceptedCookies} 
               onCheckedChange={(checked) => setAcceptedCookies(checked === true)}
             />
-            <Label htmlFor="cookies" className="text-xs leading-relaxed cursor-pointer">
+            <Label htmlFor="cookies" className="text-[13px] leading-relaxed cursor-pointer">
               Acepto el uso de <span className="text-[#01A89E] font-medium">cookies</span> según la política descrita
             </Label>
           </div>
@@ -175,7 +175,7 @@ export function LegalTermsDialog({ open, onAccept, onDecline }: LegalTermsDialog
         </div>
 
         {!canAccept && (
-          <p className="text-[10px] text-center text-muted-foreground">
+          <p className="text-[12px] text-center text-muted-foreground">
             Debes aceptar todas las condiciones para continuar
           </p>
         )}

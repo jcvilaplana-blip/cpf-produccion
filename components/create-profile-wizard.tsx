@@ -687,7 +687,7 @@ export function CreateProfileWizard() {
                         <p className="text-sm text-destructive mt-1">Las contraseñas no coinciden</p>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       Verificarás tu cuenta por SMS en el siguiente paso, con el número de teléfono que introduzcas.
                     </p>
                   </div>
@@ -779,7 +779,7 @@ export function CreateProfileWizard() {
                   <div className="space-y-5">
                     <div>
                       <Label className="text-base font-semibold">Categorías Profesionales *</Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">Puedes elegir varias si tienes varias habilidades (ej: Cortador de jamón y Camarero de barra)</p>
+                      <p className="text-[13px] text-muted-foreground mt-0.5">Puedes elegir varias si tienes varias habilidades (ej: Cortador de jamón y Camarero de barra)</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 max-h-[260px] overflow-y-auto p-1">
                         {categoriesLoading ? (
                           <p className="col-span-3 text-center text-muted-foreground py-4">Cargando...</p>
@@ -800,7 +800,7 @@ export function CreateProfileWizard() {
                               className={cn("flex items-center justify-center p-3 rounded-xl border-2 transition-all text-center min-h-[60px]",
                                 isSelected ? "border-primary bg-primary/10 text-primary" : "border-muted hover:border-primary/40"
                               )}>
-                              <span className="text-xs font-medium">{cat.name}</span>
+                              <span className="text-[13px] font-medium">{cat.name}</span>
                             </button>
                           )
                         })}
@@ -812,7 +812,7 @@ export function CreateProfileWizard() {
                       return (
                         <div key={sel.categoryId}>
                           <Label className="text-base font-semibold">Especialidad de {sel.categoryName}</Label>
-                          <p className="text-xs text-muted-foreground mt-0.5">Puedes elegir varias (ej: Sala y Barra)</p>
+                          <p className="text-[13px] text-muted-foreground mt-0.5">Puedes elegir varias (ej: Sala y Barra)</p>
                           <div className="grid grid-cols-2 gap-2 mt-3 max-h-[180px] overflow-y-auto p-1">
                             {[...subs.filter((s) => s.name.toLowerCase() !== "otro"), ...subs.filter((s) => s.name.toLowerCase() === "otro")].map((sub) => {
                               const subSelected = sel.subcategoryIds.includes(sub.id)
@@ -846,7 +846,7 @@ export function CreateProfileWizard() {
                                 className={cn("p-3 rounded-xl border-2 transition-all text-center",
                                   subSelected ? "border-primary bg-primary/10 text-primary" : "border-muted hover:border-primary/40"
                                 )}>
-                                <span className="text-xs font-medium">{sub.name}</span>
+                                <span className="text-[13px] font-medium">{sub.name}</span>
                               </button>
                             )})}
                           </div>
@@ -894,7 +894,7 @@ export function CreateProfileWizard() {
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-2">
                                 <Label className="font-semibold">{lang.name}</Label>
-                                {isSpanish && <Badge variant="outline" className="text-[10px]">Por defecto</Badge>}
+                                {isSpanish && <Badge variant="outline" className="text-[12px]">Por defecto</Badge>}
                               </div>
                               {!isSpanish && (
                                 <Switch checked={!!sel} onCheckedChange={(checked) => {
@@ -905,7 +905,7 @@ export function CreateProfileWizard() {
                             </div>
                             {sel && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-xs text-muted-foreground">Nivel:</Label>
+                                <Label className="text-[13px] text-muted-foreground">Nivel:</Label>
                                 <Select value={sel.level} onValueChange={(level) =>
                                   update("languages", form.languages.map(l => l.name === lang.name ? { ...l, level } : l))
                                 }>
@@ -955,7 +955,7 @@ export function CreateProfileWizard() {
                           <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) update("profilePhoto", f) }} />
                         </label>
                       </div>
-                      {form.profilePhoto && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />{form.profilePhoto.name}</p>}
+                      {form.profilePhoto && <p className="text-[13px] text-green-600 mt-2 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />{form.profilePhoto.name}</p>}
                     </div>
 
                     {/* Vídeos solo para candidatos */}
@@ -977,7 +977,7 @@ export function CreateProfileWizard() {
                                   </div>
                                   <div>
                                     <p className="font-medium text-sm">{file ? file.name : label}</p>
-                                    <p className="text-xs text-muted-foreground">{hint}</p>
+                                    <p className="text-[13px] text-muted-foreground">{hint}</p>
                                   </div>
                                 </div>
                                 <label className={cn("px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors", num === 1 ? "bg-primary text-white hover:bg-primary/90" : "bg-muted text-muted-foreground hover:bg-muted/80")}>
@@ -999,9 +999,9 @@ export function CreateProfileWizard() {
                           <Label className="text-base font-semibold">
                             {isWorker ? "Galería de fotos (máx. 6)" : "Fotos del establecimiento (máx. 6)"}
                           </Label>
-                          <span className="text-xs text-muted-foreground">{form.galleryImages.length}/6</span>
+                          <span className="text-[13px] text-muted-foreground">{form.galleryImages.length}/6</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[13px] text-muted-foreground">
                           {isWorker
                             ? "Fotos tuyas trabajando, montajes, presentaciones… Se mostrarán en tu perfil público."
                             : "Sala, barra, terraza, equipo… Ayudan a que los candidatos se hagan una idea del local."}
@@ -1029,7 +1029,7 @@ export function CreateProfileWizard() {
                           {form.galleryImages.length < 6 && (
                             <label className="aspect-square rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/40">
                               <Upload className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-[11px] text-muted-foreground">Añadir</span>
+                              <span className="text-[12px] text-muted-foreground">Añadir</span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -1087,7 +1087,7 @@ export function CreateProfileWizard() {
                         <CreditCard className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-semibold text-sm">Siguiente paso: Elegir plan</p>
-                          <p className="text-xs text-muted-foreground mt-1">Al crear tu cuenta serás redirigido a seleccionar y pagar tu plan de suscripción para poder publicar ofertas.</p>
+                          <p className="text-[13px] text-muted-foreground mt-1">Al crear tu cuenta serás redirigido a seleccionar y pagar tu plan de suscripción para poder publicar ofertas.</p>
                         </div>
                       </div>
                     )}

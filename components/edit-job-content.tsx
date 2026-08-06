@@ -303,7 +303,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
           </Link>
           <div>
             <h1 className="text-lg font-bold">Editar Oferta</h1>
-            <p className="text-xs text-muted-foreground">Actualiza los detalles de tu oferta</p>
+            <p className="text-[13px] text-muted-foreground">Actualiza los detalles de tu oferta</p>
           </div>
         </div>
       </header>
@@ -320,7 +320,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
                   </div>
                   <div>
                     <p className="font-semibold text-sm">Oferta Flash</p>
-                    <p className="text-xs text-muted-foreground">Trabajo urgente y de corta duración, destacado en toda la app</p>
+                    <p className="text-[13px] text-muted-foreground">Trabajo urgente y de corta duración, destacado en toda la app</p>
                   </div>
                 </div>
                 <Switch checked={isFlash} onCheckedChange={setIsFlash} />
@@ -358,7 +358,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
                       className="flex flex-col items-center justify-center gap-2 h-40 rounded-lg border-2 border-dashed border-[#F97316]/40 text-muted-foreground cursor-pointer hover:bg-[#F97316]/5 transition-colors"
                     >
                       <ImagePlus className="h-8 w-8 text-[#F97316]" />
-                      <span className="text-xs">Sube una imagen para la oferta</span>
+                      <span className="text-[13px]">Sube una imagen para la oferta</span>
                     </label>
                   )}
                   <input
@@ -583,7 +583,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
                       key={lang}
                       type="button"
                       onClick={() => toggleLanguage(lang)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${
                         languagesRequired.includes(lang)
                           ? "bg-primary text-white border-primary"
                           : "bg-white text-foreground border-border"

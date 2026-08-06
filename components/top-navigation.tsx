@@ -55,11 +55,11 @@ export function TopNavigation() {
               <div className="flex items-center gap-2 p-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                  <AvatarFallback className="bg-[#01A89E] text-white text-xs">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-[#01A89E] text-white text-[13px]">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
                   <p className="text-sm font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">{roleLabel}</p>
+                  <p className="text-[13px] text-muted-foreground">{roleLabel}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />

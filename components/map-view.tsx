@@ -595,7 +595,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
               )}
               <div className="flex-1">
                 <h1 className="text-lg font-bold">Mapa CamareroPorFavor</h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {filteredMarkers.length} resultados - {roleDescription}
                 </p>
               </div>
@@ -658,7 +658,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
                   <MapPin className="h-4 w-4 text-[#01A89E] shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{result.text}</p>
-                    <p className="text-xs text-muted-foreground truncate">{result.place_name}</p>
+                    <p className="text-[13px] text-muted-foreground truncate">{result.place_name}</p>
                   </div>
                 </button>
               ))}
@@ -720,7 +720,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
       {/* Geolocating indicator */}
       {geolocating && (
         <div className="bg-teal-50 border-b border-teal-200 px-4 py-2 text-center z-20 shrink-0">
-          <p className="text-xs text-[#018F86] flex items-center justify-center gap-2">
+          <p className="text-[13px] text-[#018F86] flex items-center justify-center gap-2">
             <Navigation className="h-3 w-3 animate-pulse" />
             Obteniendo tu ubicacion...
           </p>
@@ -733,24 +733,24 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur rounded-lg shadow-lg p-3 z-10">
-          <p className="text-xs font-semibold mb-2">Leyenda</p>
+          <p className="text-[13px] font-semibold mb-2">Leyenda</p>
           <div className="space-y-1.5">
             {(userRole === "business" || userRole === "admin") && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#EF4444]" />
-                <span className="text-xs">Candidatos</span>
+                <span className="text-[13px]">Candidatos</span>
               </div>
             )}
             {(userRole === "candidate" || userRole === "admin") && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#01A89E]" />
-                <span className="text-xs">Empresas</span>
+                <span className="text-[13px]">Empresas</span>
               </div>
             )}
             {userRole === "admin" && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#F97316]" />
-                <span className="text-xs">Ofertas Flash</span>
+                <span className="text-[13px]">Ofertas Flash</span>
               </div>
             )}
           </div>
@@ -786,7 +786,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
                     )}
                     <div>
                       <p className="font-semibold text-sm">{selectedMarker.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
+                      <p className="text-[13px] text-muted-foreground capitalize">
                         {selectedMarker.type === "candidate"
                           ? "Candidato"
                           : selectedMarker.type === "business"
@@ -802,7 +802,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
 
                 <div className="space-y-1.5 mb-3">
                   {selectedMarker.city && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                       <MapPin className="h-3 w-3" />
                       {selectedMarker.city}
                     </div>
@@ -810,7 +810,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
                   {selectedMarker.category && (
                     <Badge
                       variant="secondary"
-                      className="text-xs"
+                      className="text-[13px]"
                       style={{
                         backgroundColor: `${categoryColors[selectedMarker.category] || "#999"}20`,
                         color: categoryColors[selectedMarker.category] || "#999",
@@ -820,7 +820,7 @@ export function MapView({ userRole = "admin", fullscreen = false, onClose, showH
                     </Badge>
                   )}
                   {selectedMarker.rating !== undefined && selectedMarker.rating > 0 && (
-                    <div className="flex items-center gap-1 text-xs">
+                    <div className="flex items-center gap-1 text-[13px]">
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                       <span>{selectedMarker.rating.toFixed(1)}</span>
                     </div>

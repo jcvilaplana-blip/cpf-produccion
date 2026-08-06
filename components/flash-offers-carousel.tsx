@@ -100,10 +100,10 @@ export function FlashOffersCarousel({ offers }: FlashOffersCarouselProps) {
               )}
               <CardContent className="p-2.5 space-y-1.5">
                 {/* Job Type Badge */}
-                <Badge className="bg-[#E73A36] text-white text-xs">{offer.jobType}</Badge>
+                <Badge className="bg-[#E73A36] text-white text-[13px]">{offer.jobType}</Badge>
 
                 {/* Contract Days */}
-                <div className="flex items-center gap-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-[13px]">
                   <Calendar className="w-3.5 h-3.5 text-[#E73A36]" />
                   <span className="font-semibold">{offer.contractDays} días</span>
                 </div>
@@ -113,18 +113,18 @@ export function FlashOffersCarousel({ offers }: FlashOffersCarouselProps) {
                   <Euro className="w-4 h-4 text-green-600" />
                   <span className="text-base font-bold text-green-600">
                     €{offer.salary}
-                    <span className="text-xs font-normal text-muted-foreground">/{offer.salaryPeriod}</span>
+                    <span className="text-[13px] font-normal text-muted-foreground">/{offer.salaryPeriod}</span>
                   </span>
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                   <MapPin className="w-3.5 h-3.5" />
                   <span className="truncate">{offer.location}</span>
                 </div>
 
                 {/* Time Remaining */}
-                <div className="flex items-center gap-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-[13px]">
                   <Clock className="w-3.5 h-3.5 text-red-500" />
                   <span className="font-semibold text-red-500">{timeRemaining[offer.id] || "Calculando..."}</span>
                 </div>

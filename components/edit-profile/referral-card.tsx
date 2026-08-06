@@ -53,17 +53,17 @@ export function ReferralCard({ referralCode }: { referralCode?: string | null })
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Gana 150 puntos por cada persona que se registre con tu enlace y complete su perfil.
         </p>
         <div className="flex gap-2">
-          <Input readOnly value={link} className="text-xs" />
+          <Input readOnly value={link} className="text-[13px]" />
           <Button type="button" variant="outline" size="icon" onClick={handleCopy} className="flex-shrink-0">
             {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
         {completedCount !== null && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             {completedCount} {completedCount === 1 ? "amigo ha completado" : "amigos han completado"} su perfil gracias a ti.
           </p>
         )}

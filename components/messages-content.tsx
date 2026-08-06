@@ -446,7 +446,7 @@ export function MessagesContent({
                     {selectedConversation.other_participant?.display_name}
                   </h1>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       {selectedConversation.other_participant?.user_type === "business"
                         ? "Empresa"
                         : "Trabajador"}
@@ -456,7 +456,7 @@ export function MessagesContent({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "text-[10px] px-1.5 py-0 h-4 border-0",
+                            "text-[12px] px-1.5 py-0 h-4 border-0",
                             availabilityMap[selectedConversation.other_participant.availability_status]?.color ||
                               "bg-slate-100 text-slate-600"
                           )}
@@ -568,16 +568,16 @@ export function MessagesContent({
                         <span className="font-semibold text-sm truncate">
                           {conversation.other_participant?.display_name}
                         </span>
-                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                        <span className="text-[13px] text-muted-foreground flex-shrink-0">
                           {formatTime(conversation.last_message_at)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-[13px] text-muted-foreground truncate">
                           {conversation.last_message || "Inicia una conversacion"}
                         </p>
                         {(conversation.unread_count || 0) > 0 && (
-                          <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 flex items-center justify-center flex-shrink-0">
+                          <Badge className="bg-primary text-primary-foreground text-[13px] h-5 min-w-5 flex items-center justify-center flex-shrink-0">
                             {conversation.unread_count}
                           </Badge>
                         )}
@@ -628,7 +628,7 @@ export function MessagesContent({
                             <div key={message.id}>
                               {showDaySeparator && (
                                 <div className="flex justify-center py-3">
-                                  <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-medium capitalize text-muted-foreground">
+                                  <span className="rounded-full bg-muted px-3 py-1 text-[12px] font-medium capitalize text-muted-foreground">
                                     {formatDayLabel(message.created_at)}
                                   </span>
                                 </div>
@@ -651,7 +651,7 @@ export function MessagesContent({
                                       isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
                                     )}
                                   >
-                                    <span className="text-[10px]">
+                                    <span className="text-[12px]">
                                       {new Date(message.created_at).toLocaleTimeString("es-ES", {
                                         hour: "2-digit",
                                         minute: "2-digit",
@@ -691,7 +691,7 @@ export function MessagesContent({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs"
+                                className="h-7 text-[13px]"
                                 onClick={() => setShowInterviewDialog(true)}
                               >
                                 <CalendarCheck className="h-3 w-3 mr-1" />
@@ -700,7 +700,7 @@ export function MessagesContent({
                             )}
                             <Button
                               size="sm"
-                              className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                              className="h-7 text-[13px] bg-green-600 hover:bg-green-700"
                               disabled={isUpdatingStatus}
                               onClick={() => handleApplicationStatusChange("accepted")}
                             >
@@ -710,7 +710,7 @@ export function MessagesContent({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs text-destructive"
+                              className="h-7 text-[13px] text-destructive"
                               disabled={isUpdatingStatus}
                               onClick={() => handleApplicationStatusChange("rejected")}
                             >
@@ -722,7 +722,7 @@ export function MessagesContent({
                       {activeApplication.status === "accepted" && !alreadyRated && (
                         <Button
                           size="sm"
-                          className="h-7 text-xs bg-primary hover:bg-primary/90"
+                          className="h-7 text-[13px] bg-primary hover:bg-primary/90"
                           onClick={() => setShowRatingDialog(true)}
                         >
                           <Star className="h-3 w-3 mr-1" />
@@ -730,7 +730,7 @@ export function MessagesContent({
                         </Button>
                       )}
                       {activeApplication.status === "accepted" && alreadyRated && (
-                        <Badge variant="outline" className="h-7 text-xs px-2 flex items-center gap-1 border-0 bg-emerald-50 text-emerald-700">
+                        <Badge variant="outline" className="h-7 text-[13px] px-2 flex items-center gap-1 border-0 bg-emerald-50 text-emerald-700">
                           <Check className="h-3 w-3" />
                           Ya has valorado esta contratación
                         </Badge>
@@ -740,7 +740,7 @@ export function MessagesContent({
 
                   {/* Active interview request banner */}
                   {selectedConversation && activeInterview && (
-                    <div className="mx-1 mb-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs space-y-1.5">
+                    <div className="mx-1 mb-3 rounded-lg border bg-muted/40 px-3 py-2 text-[13px] space-y-1.5">
                       <div className="flex items-center gap-1.5 font-medium">
                         <CalendarCheck className="h-3.5 w-3.5 text-[#01A89E]" />
                         Entrevista {activeInterview.status === "pending" ? "propuesta" : "confirmada"}:{" "}
@@ -753,7 +753,7 @@ export function MessagesContent({
                           : ""}
                       </div>
                       {activeInterview.rescheduled_count ? (
-                        <p className="text-[11px] text-amber-700">
+                        <p className="text-[12px] text-amber-700">
                           Fecha cambiada {activeInterview.rescheduled_count}{" "}
                           {activeInterview.rescheduled_count === 1 ? "vez" : "veces"}
                           {activeInterview.reschedule_reason ? ` · ${activeInterview.reschedule_reason}` : ""}
@@ -766,7 +766,7 @@ export function MessagesContent({
                           activeInterview.last_proposed_by !== user.id && (
                             <Button
                               size="sm"
-                              className="h-6 text-[11px] bg-green-600 hover:bg-green-700"
+                              className="h-6 text-[12px] bg-green-600 hover:bg-green-700"
                               disabled={isUpdatingInterview}
                               onClick={() => handleInterviewResponse("confirmed")}
                             >
@@ -775,7 +775,7 @@ export function MessagesContent({
                           )}
                         {activeInterview.status === "pending" &&
                           activeInterview.last_proposed_by === user.id && (
-                            <span className="text-[11px] text-muted-foreground py-1">
+                            <span className="text-[12px] text-muted-foreground py-1">
                               Esperando confirmación de la otra parte
                             </span>
                           )}
@@ -786,7 +786,7 @@ export function MessagesContent({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 text-[11px]"
+                              className="h-6 text-[12px]"
                               onClick={() => setInterviewDialog({ open: true, mode: "reschedule" })}
                             >
                               <CalendarClock className="h-3 w-3 mr-1" />
@@ -795,7 +795,7 @@ export function MessagesContent({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 text-[11px] text-destructive"
+                              className="h-6 text-[12px] text-destructive"
                               onClick={() => setInterviewDialog({ open: true, mode: "cancel" })}
                             >
                               Cancelar
@@ -806,13 +806,13 @@ export function MessagesContent({
                         {/* Cierre tras celebrarse: solo el establecimiento. */}
                         {activeInterview.status === "confirmed" && profile?.user_type === "business" && (
                           <div className="w-full mt-1 pt-2 border-t">
-                            <p className="text-[11px] text-muted-foreground mb-1.5">
+                            <p className="text-[12px] text-muted-foreground mb-1.5">
                               Cuando termine la entrevista, indica el resultado:
                             </p>
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 size="sm"
-                                className="h-7 text-[11px] bg-green-600 hover:bg-green-700"
+                                className="h-7 text-[12px] bg-green-600 hover:bg-green-700"
                                 disabled={isUpdatingInterview}
                                 onClick={() => handleInterviewResolve("approved")}
                               >
@@ -822,7 +822,7 @@ export function MessagesContent({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px]"
+                                className="h-7 text-[12px]"
                                 disabled={isUpdatingInterview}
                                 onClick={() => handleInterviewResolve("not_hired")}
                               >

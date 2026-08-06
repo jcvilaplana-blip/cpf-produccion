@@ -172,7 +172,7 @@ export default function BusinessesPage() {
               <SlidersHorizontal className="w-4 h-4 text-gray-500" />
               <span className="font-semibold text-gray-700 dark:text-gray-200">Filtrar</span>
               {activeCount > 0 && (
-                <Badge className="bg-[#01A89E] text-white text-[10px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">
+                <Badge className="bg-[#01A89E] text-white text-[12px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">
                   {activeCount}
                 </Badge>
               )}
@@ -193,7 +193,7 @@ export default function BusinessesPage() {
               >
                 {/* Tipo de local */}
                 <div>
-                  <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Tipo de local
                   </Label>
                   <Select
@@ -218,7 +218,7 @@ export default function BusinessesPage() {
 
                 {/* Ciudad */}
                 <div>
-                  <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Ciudad
                   </Label>
                   <CityAutocomplete
@@ -234,7 +234,7 @@ export default function BusinessesPage() {
 
                 {/* Verificacion - Big touch chips */}
                 <div>
-                  <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Estado de verificacion
                   </Label>
                   <div className="flex flex-wrap gap-2.5">
@@ -299,7 +299,7 @@ export default function BusinessesPage() {
 
       {/* Results count */}
       <div className="px-4 pt-3 pb-1">
-        <p className="text-xs text-[#01A89E] font-semibold">
+        <p className="text-[13px] text-[#01A89E] font-semibold">
           {loading ? "Cargando..." : `${filtered.length} empresas encontradas`}
         </p>
       </div>
@@ -333,7 +333,7 @@ export default function BusinessesPage() {
                               {(business.company_name || "E")[0]}
                             </span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground font-medium px-2 text-center line-clamp-1">
+                          <span className="text-[12px] text-muted-foreground font-medium px-2 text-center line-clamp-1">
                             {business.business_type}
                           </span>
                         </div>
@@ -348,7 +348,7 @@ export default function BusinessesPage() {
                       )}
                       {business.verified && (
                         <div className="absolute top-2 left-2">
-                          <Badge className="bg-[#01A89E] text-white text-[9px] gap-0.5 px-1.5 py-0.5 shadow-sm">
+                          <Badge className="bg-[#01A89E] text-white text-[12px] gap-0.5 px-1.5 py-0.5 shadow-sm">
                             <CheckCircle className="w-2.5 h-2.5" />
                             Verificada
                           </Badge>
@@ -356,7 +356,7 @@ export default function BusinessesPage() {
                       )}
                       {business.activeJobs > 0 && (
                         <div className="absolute bottom-2 right-2">
-                          <Badge className="bg-[#E73A36] text-white text-[9px] px-1.5 py-0.5 shadow-sm">
+                          <Badge className="bg-[#E73A36] text-white text-[12px] px-1.5 py-0.5 shadow-sm">
                             {business.activeJobs} ofertas
                           </Badge>
                         </div>
@@ -365,18 +365,18 @@ export default function BusinessesPage() {
 
                     {/* Info */}
                     <CardContent className="p-2.5">
-                      <h3 className="font-bold text-xs line-clamp-1 mb-0.5">{business.company_name}</h3>
-                      <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5">
+                      <h3 className="font-bold text-[13px] line-clamp-1 mb-0.5">{business.company_name}</h3>
+                      <p className="text-[12px] text-muted-foreground line-clamp-1 mb-1.5">
                         {business.business_type}
                       </p>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1 text-[12px] text-muted-foreground">
                           <MapPin className="w-3 h-3 text-[#01A89E] flex-shrink-0" />
                           <span className="truncate max-w-[70px]">{business.city}</span>
                         </div>
                         <div className="flex items-center gap-0.5">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span className="text-[10px] font-bold">{business.rating}</span>
+                          <span className="text-[12px] font-bold">{business.rating}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -394,7 +394,7 @@ export default function BusinessesPage() {
                 >
                   Ver mas
                 </Button>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-[13px] text-gray-400 mt-2">
                   Mostrando {displayed.length} de {filtered.length}
                 </p>
               </div>

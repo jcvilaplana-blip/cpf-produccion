@@ -242,7 +242,7 @@ export function CandidatesBrowser() {
               <SlidersHorizontal className="w-4 h-4 text-gray-500" />
               <span className="font-semibold text-gray-700">Filtrar</span>
               {activeCount > 0 && (
-                <Badge className="bg-[#01A89E] text-white text-[10px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">{activeCount}</Badge>
+                <Badge className="bg-[#01A89E] text-white text-[12px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">{activeCount}</Badge>
               )}
             </div>
             {showFilters ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -259,7 +259,7 @@ export function CandidatesBrowser() {
               >
                 {/* Categoría */}
                 <div>
-                  <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Categoría
                   </Label>
                   <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setFilterSubcategory("all"); setPage(1) }}>
@@ -278,7 +278,7 @@ export function CandidatesBrowser() {
                 {/* Subcategoría - only shown when the chosen category has any */}
                 {subcategoriesForSelected.length > 0 && (
                   <div>
-                    <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                       Especialidad
                     </Label>
                     <Select value={filterSubcategory} onValueChange={(v) => { setFilterSubcategory(v); setPage(1) }}>
@@ -297,7 +297,7 @@ export function CandidatesBrowser() {
 
                 {/* Ciudad */}
                 <div>
-                  <Label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                     Ciudad
                   </Label>
                   <CityAutocomplete
@@ -347,7 +347,7 @@ export function CandidatesBrowser() {
 
       {/* Results count */}
       <div className="px-4 pt-3 pb-1">
-        <p className="text-xs text-[#01A89E] font-semibold">{filtered.length} candidatos encontrados</p>
+        <p className="text-[13px] text-[#01A89E] font-semibold">{filtered.length} candidatos encontrados</p>
       </div>
 
       {/* Grid 2 columns */}
@@ -396,7 +396,7 @@ export function CandidatesBrowser() {
             >
               Ver mas
             </Button>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-[13px] text-gray-400 mt-2">
               Mostrando {displayed.length} de {filtered.length}
             </p>
           </div>

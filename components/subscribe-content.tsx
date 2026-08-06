@@ -125,7 +125,7 @@ export function SubscribeContent({
             <div className="mb-8 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
+                  <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-primary">
                     Tu suscripción
                   </p>
                   <h2 className="mt-1 text-2xl font-bold">
@@ -152,7 +152,7 @@ export function SubscribeContent({
                     )}
                   </p>
                   {currentSubscription.current_period_start && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
                       Periodo iniciado el{" "}
                       {new Date(currentSubscription.current_period_start).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
                     </p>

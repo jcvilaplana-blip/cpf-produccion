@@ -58,10 +58,10 @@ export function SkillsSection({ skills, addSkill, removeSkill }: SkillsSectionPr
         </div>
 
         <div>
-          <p className="text-xs text-gray-400 mb-1.5">Sugerencias:</p>
+          <p className="text-[13px] text-gray-400 mb-1.5">Sugerencias:</p>
           <div className="flex flex-wrap gap-1">
             {SKILL_SUGGESTIONS.filter((s) => !skills.includes(s)).slice(0, 8).map((s) => (
-              <button key={s} type="button" onClick={() => addSkill(s)} className="text-[11px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 hover:border-[#01A89E] hover:text-[#01A89E] transition-colors">
+              <button key={s} type="button" onClick={() => addSkill(s)} className="text-[12px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 hover:border-[#01A89E] hover:text-[#01A89E] transition-colors">
                 + {s}
               </button>
             ))}

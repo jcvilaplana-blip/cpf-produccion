@@ -27,22 +27,22 @@ export function EducationSection({ education, addEducation, removeEducation, upd
         {education.map((edu, idx) => (
           <div key={edu.id} className="relative border border-gray-100 rounded-xl p-4 bg-gray-50/50 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400">Formacion {idx + 1}</span>
+              <span className="text-[13px] font-semibold text-gray-400">Formacion {idx + 1}</span>
               <button type="button" onClick={() => removeEducation(edu.id)} className="text-gray-400 hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-gray-500">Centro / Institucion</Label>
+                <Label className="text-[13px] text-gray-500">Centro / Institucion</Label>
                 <Input value={edu.institution} onChange={(e) => updateEducation(edu.id, "institution", e.target.value)} placeholder="Universidad, academia..." className="mt-1" />
               </div>
               <div>
-                <Label className="text-xs text-gray-500">Titulo / Certificacion</Label>
+                <Label className="text-[13px] text-gray-500">Titulo / Certificacion</Label>
                 <Input value={edu.title} onChange={(e) => updateEducation(edu.id, "title", e.target.value)} placeholder="Grado, master, curso..." className="mt-1" />
               </div>
               <div>
-                <Label className="text-xs text-gray-500">Ano</Label>
+                <Label className="text-[13px] text-gray-500">Ano</Label>
                 <Input type="number" min="1970" max="2030" value={edu.year} onChange={(e) => updateEducation(edu.id, "year", e.target.value)} placeholder="2024" className="mt-1" />
               </div>
             </div>

@@ -97,7 +97,7 @@ export default function RewardsPage() {
         <Card className="bg-gradient-to-r from-[#01A89E]/10 to-[#F48221]/10 border-0">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Tu saldo</p>
+              <p className="text-[13px] text-muted-foreground">Tu saldo</p>
               <p className="text-3xl font-bold flex items-center gap-2"><Coins className="h-6 w-6 text-[#F5A623]" /> {points} pts</p>
             </div>
             <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-0 text-sm px-3 py-1.5">Nivel {level}</Badge>
@@ -112,7 +112,7 @@ export default function RewardsPage() {
                   {item.icon}
                   <div>
                     <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.cost} pts</p>
+                    <p className="text-[13px] text-muted-foreground">{item.cost} pts</p>
                   </div>
                 </div>
                 <Button
@@ -128,7 +128,7 @@ export default function RewardsPage() {
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-[13px] text-muted-foreground text-center">
           Gana puntos completando tu perfil, siendo contratado, dejando valoraciones, invitando amigos y más.
           {" "}<Link href="/edit-profile" className="text-[#01A89E] underline">Ver cómo ganar puntos</Link>
         </p>

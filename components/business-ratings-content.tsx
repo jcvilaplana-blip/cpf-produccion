@@ -283,7 +283,7 @@ export function BusinessRatingsContent({ businessId, currentUserId }: BusinessRa
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
                         <h4 className="font-semibold">{review.reviewer_name}</h4>
-                        <p className="text-xs text-muted-foreground">{formatDate(review.created_at)}</p>
+                        <p className="text-[13px] text-muted-foreground">{formatDate(review.created_at)}</p>
                       </div>
                       <Badge variant="secondary" className="flex-shrink-0">Trabajador</Badge>
                     </div>

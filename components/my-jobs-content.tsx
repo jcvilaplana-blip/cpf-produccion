@@ -106,7 +106,7 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-bold">Mis Ofertas</h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               {jobs.filter(j => j.is_active).length} activas de {jobs.length} total
             </p>
           </div>
@@ -124,13 +124,13 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setShowFlashOnly(false)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!showFlashOnly ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
+              className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${!showFlashOnly ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
             >
               Todas ({jobs.length})
             </button>
             <button
               onClick={() => setShowFlashOnly(true)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${showFlashOnly ? "bg-[#F97316] text-white border-[#F97316]" : "bg-white text-foreground border-border"}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${showFlashOnly ? "bg-[#F97316] text-white border-[#F97316]" : "bg-white text-foreground border-border"}`}
             >
               <Zap className="h-3 w-3" /> Flash ({jobs.filter(j => j.is_flash).length})
             </button>
@@ -167,13 +167,13 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {job.is_flash && (
-                          <Badge className="bg-[#F97316] text-white text-[10px] px-1.5 py-0 gap-0.5">
+                          <Badge className="bg-[#F97316] text-white text-[12px] px-1.5 py-0 gap-0.5">
                             <Zap className="h-2.5 w-2.5" /> Flash
                           </Badge>
                         )}
                         <CardTitle className="text-base truncate">{job.title}</CardTitle>
                       </div>
-                      <CardDescription className="flex items-center gap-1 text-xs mt-1">
+                      <CardDescription className="flex items-center gap-1 text-[13px] mt-1">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{job.city || job.location}</span>
                       </CardDescription>
@@ -192,19 +192,19 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                     <div className="text-center p-2 bg-[#01A89E]/5 rounded-lg border border-[#01A89E]/10">
                       <Eye className="h-4 w-4 text-[#01A89E] mx-auto mb-1" />
                       <p className="text-lg font-bold">{job.views || 0}</p>
-                      <p className="text-xs text-muted-foreground">Vistas</p>
+                      <p className="text-[13px] text-muted-foreground">Vistas</p>
                     </div>
                     <div className="text-center p-2 bg-green-500/5 rounded-lg border border-green-500/10">
                       <Users className="h-4 w-4 text-green-600 mx-auto mb-1" />
                       <p className="text-lg font-bold">{job.applications_count || 0}</p>
-                      <p className="text-xs text-muted-foreground">Candidatos</p>
+                      <p className="text-[13px] text-muted-foreground">Candidatos</p>
                     </div>
                     <div className="text-center p-2 bg-primary/5 rounded-lg border border-primary/10">
                       <MessageCircle className="h-4 w-4 text-primary mx-auto mb-1" />
                       <p className="text-lg font-bold">
                         {job.applications?.filter(a => a.status === "interview").length || 0}
                       </p>
-                      <p className="text-xs text-muted-foreground">Entrevistas</p>
+                      <p className="text-[13px] text-muted-foreground">Entrevistas</p>
                     </div>
                   </div>
 
@@ -227,20 +227,20 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                   {/* Recent applicants */}
                   {job.applications && job.applications.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Candidatos recientes:</p>
+                      <p className="text-[13px] font-medium text-muted-foreground">Candidatos recientes:</p>
                       <div className="flex items-center gap-2">
                         <div className="flex -space-x-2">
                           {job.applications.slice(0, 3).map((app) => (
                             <Avatar key={app.id} className="h-8 w-8 border-2 border-background">
                               <AvatarImage src={app.worker?.avatar_url || undefined} />
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              <AvatarFallback className="text-[13px] bg-primary/10 text-primary">
                                 {app.worker?.display_name?.[0] || "U"}
                               </AvatarFallback>
                             </Avatar>
                           ))}
                         </div>
                         {(job.applications_count || 0) > 3 && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             +{(job.applications_count || 0) - 3} mas
                           </span>
                         )}
@@ -250,10 +250,10 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button asChild variant="outline" size="sm" className="flex-1 bg-transparent text-xs">
+                    <Button asChild variant="outline" size="sm" className="flex-1 bg-transparent text-[13px]">
                       <Link href={`/jobs/${job.id}`}>Ver</Link>
                     </Button>
-                    <Button asChild size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-xs">
+                    <Button asChild size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-[13px]">
                       <Link href={`/jobs/${job.id}/edit`}>Editar</Link>
                     </Button>
                     <Button

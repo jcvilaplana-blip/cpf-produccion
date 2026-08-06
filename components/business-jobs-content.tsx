@@ -61,7 +61,7 @@ export function BusinessJobsContent({ businessId }: BusinessJobsContentProps) {
             </Button>
             <div>
               <h1 className="text-lg font-bold">Ofertas de {businessName}</h1>
-              <p className="text-xs text-muted-foreground">{jobs.length} ofertas publicadas</p>
+              <p className="text-[13px] text-muted-foreground">{jobs.length} ofertas publicadas</p>
             </div>
           </div>
         </div>
@@ -71,19 +71,19 @@ export function BusinessJobsContent({ businessId }: BusinessJobsContentProps) {
         <div className="flex gap-2 mb-5">
           <button
             onClick={() => setFilter("all")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filter === "all" ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${filter === "all" ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
           >
             Todas ({jobs.length})
           </button>
           <button
             onClick={() => setFilter("regular")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filter === "regular" ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${filter === "regular" ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border"}`}
           >
             Ofertas ({regularJobs.length})
           </button>
           <button
             onClick={() => setFilter("flash")}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filter === "flash" ? "bg-[#F97316] text-white border-[#F97316]" : "bg-white text-foreground border-border"}`}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${filter === "flash" ? "bg-[#F97316] text-white border-[#F97316]" : "bg-white text-foreground border-border"}`}
           >
             <Zap className="h-3 w-3" /> Flash ({flashJobs.length})
           </button>
@@ -104,21 +104,21 @@ export function BusinessJobsContent({ businessId }: BusinessJobsContentProps) {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-1.5 mb-1">
                       {job.is_flash && (
-                        <Badge className="bg-[#F97316] text-white text-[10px] px-1.5 py-0 gap-0.5">
+                        <Badge className="bg-[#F97316] text-white text-[12px] px-1.5 py-0 gap-0.5">
                           <Zap className="h-2.5 w-2.5" /> Flash
                         </Badge>
                       )}
                       <h3 className="font-semibold text-sm">{job.title}</h3>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{job.description}</p>
-                    <div className="flex items-center gap-3 flex-wrap text-xs">
+                    <p className="text-[13px] text-muted-foreground mb-2 line-clamp-2">{job.description}</p>
+                    <div className="flex items-center gap-3 flex-wrap text-[13px]">
                       <span className="flex items-center gap-1 text-muted-foreground">
                         <MapPin className="h-3 w-3" /> {job.city || job.location}
                       </span>
                       {job.salary_min && job.salary_max && (
-                        <Badge variant="secondary" className="text-xs">{job.salary_min}-{job.salary_max} EUR</Badge>
+                        <Badge variant="secondary" className="text-[13px]">{job.salary_min}-{job.salary_max} EUR</Badge>
                       )}
-                      {job.contract_type && <Badge variant="outline" className="text-xs">{job.contract_type}</Badge>}
+                      {job.contract_type && <Badge variant="outline" className="text-[13px]">{job.contract_type}</Badge>}
                     </div>
                   </CardContent>
                 </Card>

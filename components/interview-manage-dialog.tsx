@@ -153,7 +153,7 @@ export function InterviewManageDialog({
             <X className="h-4 w-4" />
           </button>
 
-          <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
+          <p className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
             <Icon className="h-3.5 w-3.5" />
             {mode === "cancel" ? "Cancelar entrevista" : "Cambiar la fecha"}
           </p>
@@ -200,7 +200,7 @@ export function InterviewManageDialog({
 
               <div className="grid grid-cols-7 pb-1">
                 {WEEKDAYS.map((d) => (
-                  <span key={d} className="text-center text-[11px] font-medium text-slate-400">{d}</span>
+                  <span key={d} className="text-center text-[12px] font-medium text-slate-400">{d}</span>
                 ))}
               </div>
 

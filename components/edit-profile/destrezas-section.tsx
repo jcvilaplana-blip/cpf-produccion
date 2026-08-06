@@ -28,14 +28,14 @@ export function DestrezasSection({ skills, toggleSkill }: DestrezasSectionProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4 space-y-2">
-        <Label className="text-xs font-medium text-gray-600 block">¿Qué tareas dominas?</Label>
+        <Label className="text-[13px] font-medium text-gray-600 block">¿Qué tareas dominas?</Label>
         <div className="flex flex-wrap gap-2">
           {DESTREZAS_LIST.map((skill) => (
             <button
               key={skill}
               type="button"
               onClick={() => toggleSkill(skill)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors ${
                 skills.includes(skill)
                   ? "bg-[#01A89E] text-white border-[#01A89E]"
                   : "bg-white text-gray-600 border-gray-200 hover:border-[#01A89E]"

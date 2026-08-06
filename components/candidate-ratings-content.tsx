@@ -144,7 +144,7 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
               <span className="text-[32px] font-bold leading-none text-slate-900">
                 {total > 0 ? average.toFixed(1) : "—"}
               </span>
-              <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-amber-700">media</span>
+              <span className="mt-1 text-[12px] font-medium uppercase tracking-wider text-amber-700">media</span>
             </div>
             <div className="min-w-0 flex-1">
               <Stars value={average} />
@@ -278,7 +278,7 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
                         </h4>
                         <p className="text-[11.5px] text-slate-400">{formatDate(review.created_at)}</p>
                       </div>
-                      <Badge className="shrink-0 rounded-full border-0 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                      <Badge className="shrink-0 rounded-full border-0 bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-600">
                         {review.reviewer_type === "business" ? "Empresa" : "Trabajador"}
                       </Badge>
                     </div>

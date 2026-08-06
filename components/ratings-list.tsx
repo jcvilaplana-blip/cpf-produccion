@@ -62,11 +62,11 @@ export function RatingsList({ ratings, emptyMessage = "Aún no hay valoraciones"
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h4 className="font-semibold">{rating.rater.display_name}</h4>
-                    {rating.job && <p className="text-xs text-muted-foreground">Trabajo: {rating.job.title}</p>}
+                    {rating.job && <p className="text-[13px] text-muted-foreground">Trabajo: {rating.job.title}</p>}
                   </div>
                   <div className="flex items-center gap-1">{renderStars(rating.rating)}</div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {new Date(rating.created_at).toLocaleDateString("es-ES", {
                     year: "numeric",
                     month: "long",

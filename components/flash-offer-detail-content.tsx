@@ -304,7 +304,7 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
                   Aceptar Oferta Flash
                 </Button>
 
-                <p className="text-xs text-center text-muted-foreground">
+                <p className="text-[13px] text-center text-muted-foreground">
                   Al aceptar, se abrira un chat con la empresa para coordinar los detalles
                 </p>
               </CardContent>

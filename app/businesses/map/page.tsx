@@ -287,7 +287,7 @@ export default function BusinessesMapPage() {
             </Link>
             <div className="flex-1">
               <h1 className="text-lg font-bold">Mapa de Empresas</h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {loading ? "Cargando..." : `${markers.length} empresas`}
               </p>
             </div>
@@ -332,7 +332,7 @@ export default function BusinessesMapPage() {
                 <MapPin className="h-4 w-4 text-[#01A89E] shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{result.text}</p>
-                  <p className="text-xs text-muted-foreground truncate">{result.place_name}</p>
+                  <p className="text-[13px] text-muted-foreground truncate">{result.place_name}</p>
                 </div>
               </button>
             ))}
@@ -343,7 +343,7 @@ export default function BusinessesMapPage() {
       {/* Geolocating indicator */}
       {geolocating && (
         <div className="bg-teal-50 border-b border-teal-200 px-4 py-2 text-center z-20 shrink-0">
-          <p className="text-xs text-[#018F86] flex items-center justify-center gap-2">
+          <p className="text-[13px] text-[#018F86] flex items-center justify-center gap-2">
             <Navigation className="h-3 w-3 animate-pulse" />
             Obteniendo tu ubicacion...
           </p>
@@ -364,7 +364,7 @@ export default function BusinessesMapPage() {
         <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur rounded-xl shadow-lg p-3 z-10">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-[#01A89E]" />
-            <span className="text-xs font-medium">Empresas</span>
+            <span className="text-[13px] font-medium">Empresas</span>
           </div>
         </div>
 
@@ -389,7 +389,7 @@ export default function BusinessesMapPage() {
                     )}
                     <div>
                       <p className="font-bold text-sm">{selectedMarker.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedMarker.type}</p>
+                      <p className="text-[13px] text-muted-foreground">{selectedMarker.type}</p>
                     </div>
                   </div>
                   <button onClick={() => setSelectedMarker(null)}>
@@ -397,7 +397,7 @@ export default function BusinessesMapPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 mb-3 text-xs">
+                <div className="flex items-center gap-3 mb-3 text-[13px]">
                   {selectedMarker.city && (
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="h-3 w-3" />
@@ -405,7 +405,7 @@ export default function BusinessesMapPage() {
                     </span>
                   )}
                   {selectedMarker.verified && (
-                    <Badge className="bg-green-100 text-green-700 text-[10px] gap-0.5">
+                    <Badge className="bg-green-100 text-green-700 text-[12px] gap-0.5">
                       <CheckCircle className="w-2.5 h-2.5" />
                       Verificada
                     </Badge>

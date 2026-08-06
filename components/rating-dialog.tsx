@@ -140,7 +140,7 @@ export function RatingDialog({
             <X className="h-4 w-4" />
           </button>
 
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
+          <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
             Valoración
           </p>
           <DialogTitle className="mt-1 pr-10 text-[20px] font-bold leading-tight text-slate-900">
@@ -186,7 +186,7 @@ export function RatingDialog({
               maxLength={500}
               className="resize-none rounded-xl"
             />
-            <p className="mt-1 text-right text-[11px] text-slate-400">{review.length}/500</p>
+            <p className="mt-1 text-right text-[12px] text-slate-400">{review.length}/500</p>
           </div>
 
           {error && (

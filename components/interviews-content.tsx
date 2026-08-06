@@ -75,7 +75,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
     const config = variants[status]
     const Icon = config.icon
     return (
-      <Badge variant={config.variant} className="gap-1 text-xs">
+      <Badge variant={config.variant} className="gap-1 text-[13px]">
         <Icon className="h-3 w-3" />
         {config.text}
       </Badge>
@@ -112,7 +112,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
               <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={32} height={32} className="object-contain rounded-full" />
               <div className="hidden sm:block">
                 <h1 className="text-base font-bold leading-tight">Entrevistas</h1>
-                <p className="text-xs text-muted-foreground">Gestiona tus citas</p>
+                <p className="text-[13px] text-muted-foreground">Gestiona tus citas</p>
               </div>
             </Link>
           </div>
@@ -154,7 +154,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{interview.workerName}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                               <Clock className="h-3 w-3" />
                               <span>{new Date(interview.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
@@ -172,16 +172,16 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
       </header>
 
       <div className="px-4 py-4">
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-[13px] text-muted-foreground mb-3">
           Las entrevistas se solicitan desde la ficha de cada candidato o desde el chat.
         </p>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4 h-auto">
-            <TabsTrigger value="todas" className="text-xs sm:text-sm py-2">Todas</TabsTrigger>
-            <TabsTrigger value="pendientes" className="text-xs sm:text-sm py-2">Pendientes</TabsTrigger>
-            <TabsTrigger value="confirmadas" className="text-xs sm:text-sm py-2">Confirmadas</TabsTrigger>
-            <TabsTrigger value="contratados" className="text-xs sm:text-sm py-2">Contratados</TabsTrigger>
-            <TabsTrigger value="realizadas" className="text-xs sm:text-sm py-2">Realizadas</TabsTrigger>
+            <TabsTrigger value="todas" className="text-[13px] sm:text-sm py-2">Todas</TabsTrigger>
+            <TabsTrigger value="pendientes" className="text-[13px] sm:text-sm py-2">Pendientes</TabsTrigger>
+            <TabsTrigger value="confirmadas" className="text-[13px] sm:text-sm py-2">Confirmadas</TabsTrigger>
+            <TabsTrigger value="contratados" className="text-[13px] sm:text-sm py-2">Contratados</TabsTrigger>
+            <TabsTrigger value="realizadas" className="text-[13px] sm:text-sm py-2">Realizadas</TabsTrigger>
           </TabsList>
 
           <TabsContent value={selectedTab} className="space-y-3 mt-0">
@@ -217,11 +217,11 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <div className="min-w-0 flex-1">
                                   <h3 className="font-semibold text-sm truncate">{interview.workerName}</h3>
-                                  <p className="text-xs text-muted-foreground truncate">{interview.jobTitle}</p>
+                                  <p className="text-[13px] text-muted-foreground truncate">{interview.jobTitle}</p>
                                 </div>
                                 {getStatusBadge(interview.status)}
                               </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                              <div className="flex items-center gap-3 text-[13px] text-muted-foreground mt-2">
                                 <div className="flex items-center gap-1">
                                   <CalendarIcon className="h-3 w-3" />
                                   <span>{new Date(interview.scheduledAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
@@ -264,7 +264,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                               <CalendarIcon className="h-5 w-5 text-primary" />
                               <div>
-                                <p className="text-xs text-muted-foreground">Fecha</p>
+                                <p className="text-[13px] text-muted-foreground">Fecha</p>
                                 <p className="text-sm font-medium">
                                   {new Date(interview.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                                 </p>
@@ -273,7 +273,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                               <Clock className="h-5 w-5 text-primary" />
                               <div>
-                                <p className="text-xs text-muted-foreground">Hora</p>
+                                <p className="text-[13px] text-muted-foreground">Hora</p>
                                 <p className="text-sm font-medium">
                                   {new Date(interview.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                                 </p>
@@ -282,7 +282,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                               <TypeIcon className="h-5 w-5 text-primary" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Tipo</p>
+                                <p className="text-[13px] text-muted-foreground">Tipo</p>
                                 <p className="text-sm font-medium truncate">
                                   {TYPE_LABELS[interview.interviewType]}
                                   {interview.interviewType === "other" && interview.otherTypeDetail ? ` - ${interview.otherTypeDetail}` : ""}
@@ -293,7 +293,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
                               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                                 <Phone className="h-5 w-5 text-primary" />
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Teléfono</p>
+                                  <p className="text-[13px] text-muted-foreground">Teléfono</p>
                                   <p className="text-sm font-medium">{interview.workerPhone}</p>
                                 </div>
                               </div>

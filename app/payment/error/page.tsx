@@ -104,7 +104,7 @@ function PaymentErrorContent() {
           </div>
 
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Si necesitas ayuda, contacta con{" "}
               <a href="mailto:soporte@camareroporfavor.com" className="text-primary hover:underline">
                 soporte@camareroporfavor.com

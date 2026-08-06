@@ -124,7 +124,7 @@ export function FlashOfferCard({
             />
             <div>
               <p className="font-semibold text-sm">{business.name}</p>
-              <p className="text-xs text-muted-foreground">⭐ {business.rating} · Ver empresa</p>
+              <p className="text-[13px] text-muted-foreground">⭐ {business.rating} · Ver empresa</p>
             </div>
           </Link>
         </div>

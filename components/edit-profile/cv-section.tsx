@@ -65,7 +65,7 @@ export function CvSection({ cvFileName, cvUrl, onCvUploaded, onRemoveCv }: CvSec
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{cvFileName || "CV.pdf"}</p>
-              <p className="text-xs text-gray-400">PDF subido</p>
+              <p className="text-[13px] text-gray-400">PDF subido</p>
             </div>
             {cvUrl && (
               <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-[#01A89E] hover:text-[#018F86]">
@@ -89,7 +89,7 @@ export function CvSection({ cvFileName, cvUrl, onCvUploaded, onRemoveCv }: CvSec
               <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#01A89E]" />
             )}
             <span className="text-sm text-gray-600">{uploading ? "Subiendo..." : "Sube tu CV en PDF"}</span>
-            <span className="text-xs text-gray-400">Maximo 10MB</span>
+            <span className="text-[13px] text-gray-400">Maximo 10MB</span>
           </button>
         )}
         <input ref={cvInputRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleUpload} />

@@ -308,17 +308,17 @@ export function JobDetailContent({
                   {job.business.display_name}
                 </Link>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  <Badge variant="secondary" className="gap-1 text-xs">
+                  <Badge variant="secondary" className="gap-1 text-[13px]">
                     <MapPin className="h-3 w-3" />
                     {job.city || job.location}
                   </Badge>
                   {job.category && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-[13px]">
                       {categoryLabels[job.category] || job.category}
                     </Badge>
                   )}
                   {job.contract_type && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-[13px]">
                       {contractTypeLabels[job.contract_type] || job.contract_type}
                     </Badge>
                   )}
@@ -332,7 +332,7 @@ export function JobDetailContent({
         <div className="grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground text-[13px] mb-1">
                 <Euro className="h-4 w-4" />
                 <span>Salario</span>
               </div>
@@ -349,7 +349,7 @@ export function JobDetailContent({
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground text-[13px] mb-1">
                 <Briefcase className="h-4 w-4" />
                 <span>Tipo</span>
               </div>
@@ -360,7 +360,7 @@ export function JobDetailContent({
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground text-[13px] mb-1">
                 <Calendar className="h-4 w-4" />
                 <span>Inicio</span>
               </div>
@@ -373,7 +373,7 @@ export function JobDetailContent({
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground text-[13px] mb-1">
                 <Clock className="h-4 w-4" />
                 <span>Horario</span>
               </div>

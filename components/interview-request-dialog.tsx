@@ -206,7 +206,7 @@ export function InterviewRequestDialog({
             <X className="h-4 w-4" />
           </button>
 
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
+          <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#01A89E]">
             Entrevista con {workerName}
           </p>
           <DialogTitle className="mt-1 pr-10 text-[20px] font-bold leading-tight text-slate-900">
@@ -306,7 +306,7 @@ export function InterviewRequestDialog({
 
               <div className="grid grid-cols-7 pb-1">
                 {WEEKDAYS.map((d) => (
-                  <span key={d} className="text-center text-[11px] font-medium text-slate-400">
+                  <span key={d} className="text-center text-[12px] font-medium text-slate-400">
                     {d}
                   </span>
                 ))}

@@ -33,14 +33,14 @@ export function WorkerVideoCard({ id, name, category, location, rating, avatarUr
 
         {/* Category badge */}
         <div className="absolute top-3 left-3 pointer-events-none">
-          <Badge className="bg-primary/90 text-primary-foreground text-[10px] backdrop-blur-sm">{category}</Badge>
+          <Badge className="bg-primary/90 text-primary-foreground text-[12px] backdrop-blur-sm">{category}</Badge>
         </div>
 
         {/* Info overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-3.5 space-y-1.5 pointer-events-none">
           <h3 className="font-bold text-white text-base leading-tight">{name}</h3>
-          <p className="text-white/70 text-[11px]">{experience}</p>
-          <div className="flex items-center gap-2 text-white/90 text-xs">
+          <p className="text-white/70 text-[12px]">{experience}</p>
+          <div className="flex items-center gap-2 text-white/90 text-[13px]">
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
               <span className="font-semibold">{rating.toFixed(1)}</span>

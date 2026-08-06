@@ -168,7 +168,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
               )}
             >
               <Home className="h-5 w-5" />
-              <span className="text-xs mt-1">{t("navigation.home")}</span>
+              <span className="text-[13px] mt-1">{t("navigation.home")}</span>
             </Link>
 
             <Link
@@ -182,7 +182,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
               )}
             >
               <Search className="h-5 w-5" />
-              <span className="text-xs mt-1">{t("navigation.search")}</span>
+              <span className="text-[13px] mt-1">{t("navigation.search")}</span>
             </Link>
 
           <button onClick={handleCenterButtonClick} className="flex flex-col items-center justify-center">
@@ -202,7 +202,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
               )}
             >
               <Heart className="h-5 w-5" />
-              <span className="text-xs mt-1">{t("navigation.saved")}</span>
+              <span className="text-[13px] mt-1">{t("navigation.saved")}</span>
             </Link>
 
             <DropdownMenu>
@@ -218,23 +218,23 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                   {avatarUrl ? (
                     <Avatar className={`h-6 w-6 ring-1 ${ringColor}`}>
                       <AvatarImage src={avatarUrl} alt={displayName} />
-                      <AvatarFallback className="bg-[#01A89E] text-white text-[8px]">{initials}</AvatarFallback>
+                      <AvatarFallback className="bg-[#01A89E] text-white text-[12px]">{initials}</AvatarFallback>
                     </Avatar>
                   ) : (
                     <User className="h-5 w-5" />
                   )}
-                  <span className="text-xs mt-1">{t("navigation.profile")}</span>
+                  <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="top" className="w-56 mb-2">
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="bg-[#01A89E] text-white text-xs">{initials}</AvatarFallback>
+                    <AvatarFallback className="bg-[#01A89E] text-white text-[13px]">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="text-sm font-medium">{displayName}</p>
-                    <p className="text-xs text-muted-foreground">{t("topNav.business")}</p>
+                    <p className="text-[13px] text-muted-foreground">{t("topNav.business")}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -287,49 +287,49 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <MessageCircle className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">Chat</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">Chat</span>
                   </Link>
                   <Link href="/notifications" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <Bell className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">{t("navigation.notifications")}</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">{t("navigation.notifications")}</span>
                   </Link>
                   <Link href="/help" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <HelpCircle className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">{t("navigation.help")}</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">{t("navigation.help")}</span>
                   </Link>
                   <button onClick={() => { setDarkMode(!darkMode) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       {darkMode ? <Moon className="h-6 w-6 text-teal-600" /> : <Sun className="h-6 w-6 text-teal-600" />}
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">{darkMode ? "Oscuro" : "Claro"}</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">{darkMode ? "Oscuro" : "Claro"}</span>
                   </button>
                   <button onClick={() => { handleShare(); setShowMenuModal(false) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <Share2 className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">Compartir</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">Compartir</span>
                   </button>
                   <button onClick={() => { handleRate(); setShowMenuModal(false) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <Star className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">Valorar</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">Valorar</span>
                   </button>
                   <Link href="/terms" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <FileText className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">Terminos</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">Terminos</span>
                   </Link>
                   <Link href="/privacy" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                       <Shield className="h-6 w-6 text-teal-600" />
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">Privacidad</span>
+                    <span className="text-[13px] font-medium text-center leading-tight">Privacidad</span>
                   </Link>
                 </div>
                 {/* Language selector */}
@@ -371,7 +371,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
             )}
           >
             <Home className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.home")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.home")}</span>
           </Link>
 
           <Link
@@ -385,7 +385,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
             )}
           >
             <Search className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.search")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.search")}</span>
           </Link>
 
           <button onClick={handleCenterButtonClick} className="flex flex-col items-center justify-center">
@@ -405,7 +405,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
             )}
           >
             <Heart className="h-5 w-5" />
-            <span className="text-xs mt-1">{t("navigation.saved")}</span>
+            <span className="text-[13px] mt-1">{t("navigation.saved")}</span>
           </Link>
 
           {isLoggedIn ? (
@@ -422,23 +422,23 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                   {avatarUrl ? (
                     <Avatar className={`h-6 w-6 ring-1 ${ringColor}`}>
                       <AvatarImage src={avatarUrl} alt={displayName} />
-                      <AvatarFallback className="bg-[#01A89E] text-white text-[8px]">{initials}</AvatarFallback>
+                      <AvatarFallback className="bg-[#01A89E] text-white text-[12px]">{initials}</AvatarFallback>
                     </Avatar>
                   ) : (
                     <User className="h-5 w-5" />
                   )}
-                  <span className="text-xs mt-1">{t("navigation.profile")}</span>
+                  <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="top" className="w-56 mb-2">
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="bg-[#01A89E] text-white text-xs">{initials}</AvatarFallback>
+                    <AvatarFallback className="bg-[#01A89E] text-white text-[13px]">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="text-sm font-medium">{displayName}</p>
-                    <p className="text-xs text-muted-foreground">{t("topNav.worker")}</p>
+                    <p className="text-[13px] text-muted-foreground">{t("topNav.worker")}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -477,7 +477,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
               )}
             >
               <User className="h-5 w-5" />
-              <span className="text-xs mt-1">{t("navigation.profile")}</span>
+              <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
             </Link>
           )}
         </div>
@@ -506,49 +506,49 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <MessageCircle className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">Chat</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">Chat</span>
                 </Link>
                 <Link href="/notifications" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <Bell className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">{t("navigation.notifications")}</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">{t("navigation.notifications")}</span>
                 </Link>
                 <Link href="/help" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <HelpCircle className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">{t("navigation.help")}</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">{t("navigation.help")}</span>
                 </Link>
                 <button onClick={() => { setDarkMode(!darkMode) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     {darkMode ? <Moon className="h-6 w-6 text-teal-600" /> : <Sun className="h-6 w-6 text-teal-600" />}
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">{darkMode ? "Oscuro" : "Claro"}</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">{darkMode ? "Oscuro" : "Claro"}</span>
                 </button>
                 <button onClick={() => { handleShare(); setShowMenuModal(false) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <Share2 className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">Compartir</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">Compartir</span>
                 </button>
                 <button onClick={() => { handleRate(); setShowMenuModal(false) }} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <Star className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">Valorar</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">Valorar</span>
                 </button>
                 <Link href="/terms" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <FileText className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">Terminos</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">Terminos</span>
                 </Link>
                 <Link href="/privacy" onClick={() => setShowMenuModal(false)} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
                     <Shield className="h-6 w-6 text-teal-600" />
                   </div>
-                  <span className="text-xs font-medium text-center leading-tight">Privacidad</span>
+                  <span className="text-[13px] font-medium text-center leading-tight">Privacidad</span>
                 </Link>
               </div>
               {/* Language selector */}

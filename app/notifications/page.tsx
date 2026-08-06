@@ -73,7 +73,7 @@ export default function NotificationsPage() {
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-3" />
               <p className="text-sm font-medium">No tienes notificaciones</p>
-              <p className="text-xs text-muted-foreground mt-1">Aquí verás avisos de ofertas, entrevistas y más.</p>
+              <p className="text-[13px] text-muted-foreground mt-1">Aquí verás avisos de ofertas, entrevistas y más.</p>
             </CardContent>
           </Card>
         ) : (
@@ -87,10 +87,10 @@ export default function NotificationsPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold leading-tight">{n.title}</p>
-                    {!n.is_read && <Badge className="bg-[#01A89E] text-white text-[10px] flex-shrink-0">Nueva</Badge>}
+                    {!n.is_read && <Badge className="bg-[#01A89E] text-white text-[12px] flex-shrink-0">Nueva</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{n.body}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-[13px] text-muted-foreground mt-2">
                     {new Date(n.created_at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
                   </p>
                 </CardContent>
