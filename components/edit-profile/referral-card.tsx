@@ -30,9 +30,12 @@ export function ReferralCard({ referralCode }: { referralCode?: string | null })
 
   if (!referralCode) return null
 
-  // /auth/sign-up redirects to /create-profile without forwarding query
-  // params, so the referral link points straight at the wizard.
-  const link = typeof window !== "undefined" ? `${window.location.origin}/create-profile?ref=${referralCode}` : ""
+  // Se comparte /invite/<código> y no el asistente directamente: esa página
+  // resuelve en el servidor quién invita y genera los metadatos Open Graph, de
+  // modo que al pegar el enlace en WhatsApp aparezca el texto de invitación y
+  // la foto de perfil en lugar de una URL pelada. Desde allí se continúa al
+  // asistente con el mismo código.
+  const link = typeof window !== "undefined" ? `${window.location.origin}/invite/${referralCode}` : ""
 
   const handleCopy = async () => {
     try {
