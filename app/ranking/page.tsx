@@ -38,7 +38,9 @@ export default function RankingPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        // Columnas explícitas: `select("*")` incluye las personales, que el
+        // rol anónimo ya no puede leer y harían fallar la consulta entera.
+        .select("id, display_name, avatar_url, location, job_category, job_subcategory, category_id, subcategory_id, custom_subcategory, specialties, experience_years, rating, total_ratings, points, level, video_reel_url, mux_playback_id, is_premium, availability_status")
         .eq("user_type", "worker")
         .order("total_ratings", { ascending: false })
 

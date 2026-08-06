@@ -1,5 +1,6 @@
 import { LandingContent } from "@/components/landing-content"
-import { createClient } from "@/lib/supabase/server" 
+import { createClient } from "@/lib/supabase/server"
+import { createShowcaseClient, CAMPOS_PUBLICOS_CANDIDATO } from "@/lib/supabase/public-showcase"
 
 
 export default async function HomePage() {
@@ -21,7 +22,11 @@ export default async function HomePage() {
   let totalBusinesses = 0
 
   try {
-    const supabase = await createClient()
+    // El escaparate va por el servidor: a `anon` se le retiraron las columnas
+    // personales de `profiles`, así que un `select("*")` o un filtro por
+    // `is_admin` con esa clave fallan. Si no hubiera clave de servicio se
+    // sigue con la anónima, que basta para las tablas sin datos sensibles.
+    const supabase = createShowcaseClient() ?? (await createClient())
 
     // Run ALL queries in parallel for faster page load
     const results = await Promise.all([
@@ -49,7 +54,7 @@ export default async function HomePage() {
         .eq("is_active", true),
       supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_type", "worker"),
       supabase
         .from("business_profiles")

@@ -56,22 +56,25 @@ const slideVariants = {
 export function CreateProfileWizard() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
-  // ?ref=<referral_code> resolved to the referrer's profile id (referred_by
-  // is a uuid FK, not the code itself). Public profiles are readable
-  // unauthenticated (same as /api/profile/[id]), so this lookup works
-  // before the visitor has signed up.
+  // ?ref=<referral_code> se traduce al id del perfil de quien invita, porque
+  // `referred_by` es una clave foránea uuid, no el código en sí.
   const [referrerId, setReferrerId] = useState<string | null>(null)
 
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get("ref")
     if (!ref) return
-    supabase
-      .from("profiles")
-      .select("id")
-      .eq("referral_code", ref)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setReferrerId(data.id) })
-  }, [supabase])
+    // Va por el servidor: quien se registra aún no tiene sesión, y al rol
+    // anónimo se le retiró `referral_code` para que nadie pueda recorrer la
+    // tabla cosechando códigos ajenos.
+    fetch("/api/referral/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: ref }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => { if (json?.referrerId) setReferrerId(json.referrerId) })
+      .catch(() => {})
+  }, [])
 
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(1)
