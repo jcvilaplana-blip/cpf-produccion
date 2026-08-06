@@ -3,13 +3,12 @@
 import type React from "react"
 import { HeroSlider } from "@/components/hero-slider"
 import { CategoriesScroll } from "@/components/categories-scroll"
-import { WorkerVideoCard } from "@/components/worker-video-card"
+import { VenueTypesScroll } from "@/components/venue-types-scroll"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { CompaniesCarousel } from "@/components/companies-carousel"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Zap } from "lucide-react"
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -28,31 +27,13 @@ interface LandingContentProps {
   isLoggedIn?: boolean
 }
 
-const INITIAL_WORKERS_COUNT = 6
-const LOAD_MORE_COUNT = 12
-
 export function LandingContent({ featuredJobs, stats, businesses, workers: workersData = [], flashOffers = [], isLoggedIn = false }: LandingContentProps) {
   const { t } = useLanguage()
   const router = useRouter()
-  const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
 
-  // Map workers from database format
-  const workers = workersData.map((profile: any) => ({
-    id: profile.id,
-    name: profile.display_name,
-    category: profile.job_category || "General",
-    location: profile.location ? profile.location.split(",")[0].trim() : "Espana",
-    rating: profile.rating || 0,
-    avatarUrl: profile.avatar_url || "/placeholder.svg",
-    experience: `${profile.experience_years || 0} ${t("candidates.years")} ${t("candidates.yearsExperience")}`,
-  }))
-
-  const visibleWorkers = workers.slice(0, displayedWorkers)
-  const hasMoreWorkers = displayedWorkers < workers.length
-
-  const loadMoreWorkers = () => {
-    setDisplayedWorkers((prev) => Math.min(prev + LOAD_MORE_COUNT, workers.length))
-  }
+  // `workersData` sigue llegando por props aunque esta portada ya no pinte
+  // candidatos: la portada del establecimiento, que va después, sí los
+  // necesita y comparte este mismo componente.
 
   const featuredFlashOffers = flashOffers.slice(0, 3)
 
@@ -165,50 +146,10 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
         </div>
       </section>
 
-      <section className="py-6 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestCandidates")}</h2>
-            </div>
-            <Button asChild variant="ghost">
-              <Link href="/candidates">
-                {t("common.viewAll")}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {visibleWorkers.map((worker) => (
-              <WorkerVideoCard key={worker.id} {...worker} />
-            ))}
-          </div>
-
-          {visibleWorkers.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">{t("landing.noCandidatesFound")}</p>
-            </div>
-          )}
-
-          {hasMoreWorkers && (
-            <div className="text-center mt-8">
-              <Button
-                onClick={loadMoreWorkers}
-                size="lg"
-                variant="outline"
-                className="min-w-[200px] bg-background hover:bg-muted"
-              >
-                {t("common.loadMore")}
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2">
-                {t("common.showing")} {visibleWorkers.length} {t("common.of")} {workers.length}{" "}
-                {t("candidates.title").toLowerCase()}
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Tipos de establecimiento. Sustituye a "Últimos Candidatos": en la
+          portada del candidato, ver a otros candidatos no le aporta nada — lo
+          que busca es dónde trabajar. */}
+      <VenueTypesScroll />
 
       <section className="py-8 bg-background">
         <div className="container mx-auto px-4">
