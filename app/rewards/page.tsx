@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Coins, Loader2, Gift, Zap, Star, Palette, Crown, ChevronDown } from "lucide-react"
+import { ArrowLeft, Coins, Loader2, Gift, Zap, Star, Crown, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { redeemRewardAction } from "@/lib/actions"
 import { toast } from "sonner"
@@ -20,18 +20,12 @@ interface CatalogItem {
 
 const WORKER_CATALOG: CatalogItem[] = [
   { key: "premium_profile", cost: 500, label: "Perfil Premium (7 días)", icon: <Crown className="h-5 w-5 text-[#F5A623]" /> },
-  { key: "cosmetic_theme_bronze", cost: 100, label: "Personalización — Bronce", icon: <Palette className="h-5 w-5 text-amber-700" /> },
-  { key: "cosmetic_theme_silver", cost: 150, label: "Personalización — Plata", icon: <Palette className="h-5 w-5 text-slate-400" /> },
-  { key: "cosmetic_theme_gold", cost: 200, label: "Personalización — Oro", icon: <Palette className="h-5 w-5 text-yellow-500" /> },
 ]
 
 const BUSINESS_CATALOG: CatalogItem[] = [
   { key: "premium_profile", cost: 500, label: "Perfil Premium (7 días)", icon: <Crown className="h-5 w-5 text-[#F5A623]" /> },
   { key: "free_flash_offer", cost: 300, label: "Oferta Flash gratuita", icon: <Zap className="h-5 w-5 text-[#F97316]" /> },
   { key: "highlight_credit", cost: 200, label: "Destacar oferta gratis", icon: <Star className="h-5 w-5 text-[#F48221]" /> },
-  { key: "cosmetic_theme_bronze", cost: 100, label: "Personalización — Bronce", icon: <Palette className="h-5 w-5 text-amber-700" /> },
-  { key: "cosmetic_theme_silver", cost: 150, label: "Personalización — Plata", icon: <Palette className="h-5 w-5 text-slate-400" /> },
-  { key: "cosmetic_theme_gold", cost: 200, label: "Personalización — Oro", icon: <Palette className="h-5 w-5 text-yellow-500" /> },
 ]
 
 const DESCRIPTIONS: Record<string, string> = {
@@ -41,12 +35,6 @@ const DESCRIPTIONS: Record<string, string> = {
     "Un crédito para publicar una Oferta Flash sin pagarla. Las ofertas flash se muestran destacadas y con cuenta atrás, para cubrir un turno con urgencia.",
   highlight_credit:
     "Un crédito para destacar una de tus ofertas. La oferta destacada sale en las primeras posiciones de los listados durante su periodo de vigencia.",
-  cosmetic_theme_bronze:
-    "Tema visual Bronce para tu perfil: cambia los colores de acento de tu ficha. Es sólo estético, no afecta a tu posición en los listados.",
-  cosmetic_theme_silver:
-    "Tema visual Plata para tu perfil, con un acabado más llamativo que el Bronce. Es sólo estético, no afecta a tu posición en los listados.",
-  cosmetic_theme_gold:
-    "Tema visual Oro, el acabado más vistoso de los tres. Es sólo estético, no afecta a tu posición en los listados.",
 }
 
 export default function RewardsPage() {

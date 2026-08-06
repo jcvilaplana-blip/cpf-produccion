@@ -1065,16 +1065,8 @@ const REWARD_CATALOG: Record<string, RewardDef> = {
   premium_profile: { cost: 500, roles: ["worker", "business"], label: "Perfil Premium (7 días)" },
   free_flash_offer: { cost: 300, roles: ["business"], label: "Oferta Flash gratuita" },
   highlight_credit: { cost: 200, roles: ["business"], label: "Destacar oferta gratis" },
-  cosmetic_theme_bronze: { cost: 100, roles: ["worker", "business"], label: "Personalización — Bronce" },
-  cosmetic_theme_silver: { cost: 150, roles: ["worker", "business"], label: "Personalización — Plata" },
-  cosmetic_theme_gold: { cost: 200, roles: ["worker", "business"], label: "Personalización — Oro" },
 }
 
-const THEME_BY_REWARD: Record<string, string> = {
-  cosmetic_theme_bronze: "bronze",
-  cosmetic_theme_silver: "silver",
-  cosmetic_theme_gold: "gold",
-}
 
 export async function redeemRewardAction(rewardKey: string) {
   const supabase = await createClient()
@@ -1105,8 +1097,6 @@ export async function redeemRewardAction(rewardKey: string) {
   } else if (rewardKey === "highlight_credit") {
     const { data: biz } = await serviceClient.from("business_profiles").select("highlight_credits").eq("id", user.id).single()
     await serviceClient.from("business_profiles").update({ highlight_credits: (biz?.highlight_credits || 0) + 1 }).eq("id", user.id)
-  } else if (THEME_BY_REWARD[rewardKey]) {
-    await serviceClient.from(table).update({ profile_theme: THEME_BY_REWARD[rewardKey] }).eq("id", user.id)
   }
 
   await awardPoints(serviceClient, user.id, -reward.cost, `redeem_${rewardKey}`, undefined, role)

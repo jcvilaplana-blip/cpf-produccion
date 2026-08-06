@@ -865,7 +865,7 @@ insert into public.categories (name, slug, sort_order) values
   ('Cocinero', 'cocinero', 6),
   ('Cortador de jamon', 'cortador-de-jamon', 7),
   ('Office', 'office', 8),
-  ('Recepcionista/Host', 'recepcionista-host', 9),
+  ('Recepción', 'recepcionista-host', 9),
   ('Platero', 'platero', 10),
   ('Repartidor', 'repartidor', 11),
   ('Encargado', 'encargado', 12),

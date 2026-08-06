@@ -164,7 +164,7 @@ export default function HowToEarnPage() {
             {[
               { n: 1, t: "Haces algo que suma", d: "Completas el perfil, te contratan, valoras a alguien…" },
               { n: 2, t: "Los puntos entran solos", d: "El sistema lo detecta y los abona. No hay que pedirlos ni justificarlos." },
-              { n: 3, t: "Los canjeas cuando quieras", d: "Cambias tu saldo por Perfil Premium, ofertas destacadas o temas visuales." },
+              { n: 3, t: "Los canjeas cuando quieras", d: "Cambias tu saldo por Perfil Premium, una Oferta Flash gratuita o destacar una oferta." },
             ].map((step) => (
               <li key={step.n} className="flex gap-4">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#01A89E] text-[15px] font-bold text-white">
@@ -253,7 +253,6 @@ export default function HowToEarnPage() {
             <li><strong className="text-slate-800">Perfil Premium (500 ptos)</strong> — 7 días por delante en los listados, con distintivo.</li>
             <li><strong className="text-slate-800">Oferta Flash gratuita (300 ptos)</strong> — publica una oferta urgente sin pagarla.</li>
             <li><strong className="text-slate-800">Destacar oferta (200 ptos)</strong> — una de tus ofertas sube a los primeros puestos.</li>
-            <li><strong className="text-slate-800">Temas Bronce, Plata y Oro (100–200 ptos)</strong> — acabado visual de tu ficha. Sólo estético.</li>
           </ul>
           <Link
             href="/rewards"

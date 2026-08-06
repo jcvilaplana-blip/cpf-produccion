@@ -67,7 +67,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     slug: "recepcionista-host",
-    name: "Recepcionista/Host",
+    name: "Recepción",
     icon: "ConciergeBell",
     subcategories: [],
   },

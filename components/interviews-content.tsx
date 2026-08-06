@@ -92,6 +92,7 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
     // contratación o sin ella. Las canceladas quedan fuera porque nunca
     // ocurrieron: mezclarlas falsearía el histórico.
     if (selectedTab === "realizadas") return ["approved", "not_hired"].includes(interview.status)
+    if (selectedTab === "canceladas") return interview.status === "cancelled"
     return true
   })
 
@@ -175,13 +176,32 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
           Las entrevistas se solicitan desde la ficha de cada candidato o desde el chat.
         </p>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4 h-auto">
-            <TabsTrigger value="todas" className="text-[13px] sm:text-sm py-2">Todas</TabsTrigger>
-            <TabsTrigger value="pendientes" className="text-[13px] sm:text-sm py-2">Pendientes</TabsTrigger>
-            <TabsTrigger value="confirmadas" className="text-[13px] sm:text-sm py-2">Confirmadas</TabsTrigger>
-            <TabsTrigger value="contratados" className="text-[13px] sm:text-sm py-2">Contratados</TabsTrigger>
-            <TabsTrigger value="realizadas" className="text-[13px] sm:text-sm py-2">Realizadas</TabsTrigger>
-          </TabsList>
+          {/* Carrusel deslizable en lugar de una rejilla de columnas iguales.
+              Con `grid-cols-5` cada pestaña recibía la quinta parte del ancho,
+              así que "Confirmadas" o "Contratados" no cabían y se montaban unas
+              sobre otras. Ahora cada una ocupa lo que necesita y la tira se
+              arrastra con el dedo. El `-mx-4 px-4` deja que el desplazamiento
+              llegue de borde a borde sin romper el margen de la página. */}
+          <div className="-mx-4 mb-4 overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="inline-flex h-auto w-max gap-1">
+              {[
+                { value: "todas", label: "Todas" },
+                { value: "pendientes", label: "Pendientes" },
+                { value: "confirmadas", label: "Confirmadas" },
+                { value: "contratados", label: "Contratados" },
+                { value: "realizadas", label: "Realizadas" },
+                { value: "canceladas", label: "Canceladas" },
+              ].map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="whitespace-nowrap px-4 py-2 text-[13px] sm:text-sm"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           <TabsContent value={selectedTab} className="space-y-3 mt-0">
             {filteredInterviews.length === 0 ? (

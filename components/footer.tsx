@@ -12,13 +12,17 @@ export function Footer() {
 
   if (pathname?.startsWith("/admin")) return null
 
-  // On mobile, only the homepage shows the footer - everywhere else (search,
-  // chat, auth forms, etc.) it just added extra scroll for no benefit on a
-  // small screen. Desktop keeps showing it on every page as before.
-  const isHome = pathname === "/"
+  // En móvil el footer sólo sale en unas pocas páginas. En el resto -búsqueda,
+  // chat, formularios- únicamente añadía scroll sin aportar nada en una
+  // pantalla pequeña. En escritorio sigue apareciendo en todas.
+  //
+  // La suscripción es una de las excepciones: es una página de decisión de
+  // compra, y ahí los enlaces legales y de contacto del footer sí importan.
+  const MOSTRAR_EN_MOVIL = ["/", "/subscribe"]
+  const visibleEnMovil = MOSTRAR_EN_MOVIL.includes(pathname || "")
 
   return (
-    <footer className={`bg-[#01A89E] text-white/80 py-12 mt-auto ${isHome ? "" : "hidden md:block"}`}>
+    <footer className={`bg-[#01A89E] text-white/80 py-12 mt-auto ${visibleEnMovil ? "" : "hidden md:block"}`}>
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Logo y descripcion */}

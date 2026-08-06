@@ -45,7 +45,6 @@ export interface Profile {
   work_experience?: Array<{ company: string; position: string; startDate: string; endDate: string; current: boolean; description: string }>
   referral_code?: string
   referred_by?: string | null
-  profile_theme?: string | null
   languages?: Array<{ language: string; level: string }> | string[]
   created_at: string
   updated_at: string
