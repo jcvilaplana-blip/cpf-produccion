@@ -1,23 +1,21 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { requestToWorkHereAction } from "@/lib/actions"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
-import { PortfolioVideoViewer } from "@/components/portfolio-video-viewer"
 import { BUSINESS_RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 import {
   ArrowLeft, MapPin, Star, Briefcase, CheckCircle, MessageCircle, Heart,
-  Send, X, Loader2, Phone, Globe, Clock, Sparkles,
-  Image as ImageIcon, Video as VideoIcon, ChevronRight,
+  Send, X, Loader2, Phone, Globe, Sparkles, Users, BadgeCheck,
+  Image as ImageIcon, ChevronRight, Play, Pause,
 } from "lucide-react"
 
 interface BusinessData {
@@ -44,6 +42,52 @@ interface BusinessData {
   longitude?: number | null
 }
 
+function Stars({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "h-5 w-5" : "h-3.5 w-3.5"
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={cn(
+            cls,
+            i < Math.round(value) ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Section({
+  icon: Icon,
+  title,
+  action,
+  children,
+  className,
+}: {
+  icon?: React.ComponentType<{ className?: string }>
+  title?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn("rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm", className)}>
+      {title && (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {Icon && <Icon className="h-4 w-4 text-[#01A89E]" />}
+            <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+          </div>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  )
+}
+
 export function BusinessDetailContent({ id }: { id: string }) {
   const router = useRouter()
   const [business, setBusiness] = useState<BusinessData | null>(null)
@@ -61,6 +105,10 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const [isPremiumWorker, setIsPremiumWorker] = useState(false)
   const [requestingToWork, setRequestingToWork] = useState(false)
   const [requestedToWork, setRequestedToWork] = useState(false)
+  const [isVideoOpen, setIsVideoOpen] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [showVideoOverlay, setShowVideoOverlay] = useState(true)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const loadBusiness = useCallback(async () => {
     setLoading(true)
@@ -128,6 +176,30 @@ export function BusinessDetailContent({ id }: { id: string }) {
     checkFavorite()
   }, [id])
 
+  // "Tipo de trabajador que busca" y "búsqueda activa" no son campos de
+  // `business_profiles`: no existen en el esquema. Se derivan de sus ofertas
+  // abiertas, que es el dato real y además siempre está al día — un campo
+  // manual quedaría obsoleto en cuanto cerrara una oferta y se olvidara de
+  // actualizarlo.
+  const workerTypesSought = useMemo(() => {
+    const set = new Set<string>()
+    for (const job of jobs) {
+      const value = job.position || job.category
+      if (value) set.add(String(value))
+    }
+    return [...set]
+  }, [jobs])
+
+  const isActivelyHiring = jobs.length > 0
+
+  const criteriaRows = useMemo(
+    () =>
+      BUSINESS_RATING_CRITERIA
+        .map((criterion) => ({ label: criterion.label, value: readCriterion(criteriaSummary, criterion) }))
+        .filter((row) => typeof row.value === "number"),
+    [criteriaSummary]
+  )
+
   const handleRequestToWork = async () => {
     setRequestingToWork(true)
     try {
@@ -190,6 +262,20 @@ export function BusinessDetailContent({ id }: { id: string }) {
     } finally { setSending(false) }
   }
 
+  const toggleVideoPlayback = () => {
+    const el = videoRef.current
+    if (!el) return
+    if (el.paused) el.play().catch(() => {})
+    else el.pause()
+  }
+
+  const handleCloseVideo = () => {
+    videoRef.current?.pause()
+    setIsVideoOpen(false)
+    setIsVideoPlaying(false)
+    setShowVideoOverlay(true)
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center pb-20"><Loader2 className="h-8 w-8 animate-spin text-[#01A89E]" /></div>
   if (!business) return (
     <div className="min-h-screen flex items-center justify-center pb-20">
@@ -201,254 +287,439 @@ export function BusinessDetailContent({ id }: { id: string }) {
     </div>
   )
 
+  const photos = business.photos || []
+  const mapQuery = business.address || business.location || business.city || business.display_name
+
   return (
-    <div className="min-h-screen bg-background pb-24 md:pt-14">
-      <div className="relative w-full h-56 overflow-hidden">
-        <img src={business.logo} alt={business.display_name} className="w-full h-full object-cover" crossOrigin="anonymous" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-end gap-3">
-            <Avatar className="h-20 w-20 border-4 border-white shadow-lg flex-shrink-0">
-              <AvatarImage src={business.logo} alt={business.display_name} />
-              <AvatarFallback className="text-2xl font-bold bg-[#01A89E] text-white">{business.display_name[0]}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-white text-balance drop-shadow-md">{business.display_name}</h1>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary" className="bg-white/90 text-foreground text-[13px]">{business.type}</Badge>
-                {business.verified && <Badge className="gap-1 bg-green-500 text-white text-[13px]"><CheckCircle className="w-3 h-3" /> Verificada</Badge>}
-              </div>
+    <div className="min-h-screen bg-slate-50 pb-24 md:pt-14">
+      {/* 1 — Cabecera: imagen con el nombre y el tipo de establecimiento dentro */}
+      <header className="relative">
+        <div className="relative aspect-[3/4] max-h-[74vh] w-full overflow-hidden bg-slate-900 sm:aspect-[16/10]">
+          {business.logo ? (
+            <img
+              src={business.logo}
+              alt={business.display_name}
+              className="absolute inset-0 h-full w-full object-cover"
+              crossOrigin="anonymous"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/20" />
+
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Volver"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950/45 text-white backdrop-blur-md active:scale-95"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            {/* Guardado en favoritos, igual que en el perfil del candidato */}
+            <button
+              type="button"
+              onClick={handleToggleFavorite}
+              disabled={favoriteLoading}
+              aria-label={isFavorite ? "Quitar de guardados" : "Guardar establecimiento"}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-colors active:scale-95",
+                isFavorite ? "bg-rose-500 text-white" : "bg-slate-950/45 text-white"
+              )}
+            >
+              <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
+            </button>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-6">
+            <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-sm">
+              {business.display_name}
+            </h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <p className="text-[16px] font-medium leading-snug text-white/90 drop-shadow-sm">
+                {business.type}
+              </p>
+              {business.verified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[12px] font-semibold text-white">
+                  <BadgeCheck className="h-3.5 w-3.5" /> Verificada
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <div className="absolute top-4 left-4">
-          <Button variant="ghost" size="icon" className="bg-white/80 hover:bg-white rounded-full shadow" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
+      </header>
 
-      <div className="px-4 py-4 space-y-4">
-        {/* Criterios de valoración, como en el perfil del candidato pero con
-            los que un trabajador puede juzgar de un local. Solo aparece si
-            alguien ha valorado: una lista de guiones no aporta nada. */}
-        {(() => {
-          const rows = BUSINESS_RATING_CRITERIA
-            .map((criterion) => ({ label: criterion.label, value: readCriterion(criteriaSummary, criterion) }))
-            .filter((row) => typeof row.value === "number")
-          if (rows.length === 0) return null
-          return (
-            <div className="rounded-2xl border bg-card p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-[15px] font-semibold">Criterios de valoración</h3>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[12px] text-muted-foreground">
-                  {ratingsTotal} {ratingsTotal === 1 ? "valoración" : "valoraciones"}
-                </span>
-              </div>
-              <div className="divide-y">
-                {rows.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{row.label}</p>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-3.5 w-3.5 ${i < Math.round(row.value!) ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="w-7 text-right text-[13px] font-semibold tabular-nums">
-                        {row.value!.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Link
-                href={`/business/${id}/ratings`}
-                className="mt-3 flex items-center justify-between rounded-xl bg-muted/60 px-4 py-2.5 text-sm font-medium"
-              >
-                Ver todas las reseñas
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            </div>
-          )
-        })()}
-
-        <div className="flex items-center justify-around bg-muted/50 rounded-2xl py-3 px-2">
-          <Link href={`/business/${id}/ratings`} className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity">
-            <div className="flex items-center gap-1"><Star className="h-5 w-5 fill-yellow-400 text-yellow-400" /><span className="font-bold text-lg">{business.totalRatings > 0 ? business.rating.toFixed(1) : "—"}</span></div>
-            <span className="text-[13px] text-muted-foreground">Valoración</span>
-          </Link>
-          <div className="w-px h-8 bg-border" />
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              business.address || business.location || business.city || business.display_name
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity"
-          >
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-sm text-[#01A89E]">Ver Mapa</span>
+      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-4">
+        {/* 2 — Ubicación */}
+        <Section>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#01A89E]/10">
               <MapPin className="h-5 w-5 text-[#01A89E]" />
-            </div>
-            <span className="text-[13px] text-muted-foreground text-center">
-              {(business.city || business.location || "").split(",")[0].trim()}
             </span>
-          </a>
-          <div className="w-px h-8 bg-border" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</p>
+              <p className="truncate text-[15px] font-semibold text-slate-900">
+                {business.location || "No especificada"}
+              </p>
+            </div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-[13px] font-semibold text-slate-700 active:bg-slate-200"
+            >
+              Ver mapa
+            </a>
+          </div>
+        </Section>
+
+        {/* 3 — Ofertas publicadas (izquierda) y valoraciones (derecha) */}
+        <div className="grid grid-cols-2 gap-3">
           <Link
             href={`/business/${id}/jobs`}
-            className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity"
+            className="group flex flex-col rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors active:bg-slate-50"
           >
-            <div className="flex items-center gap-1"><Briefcase className="h-5 w-5 text-[#E73A36]" /><span className="font-bold text-lg">{business.activeJobs}</span></div>
-            <span className="text-[13px] text-muted-foreground">Ofertas</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-[#01A89E]" />
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Ofertas</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-active:translate-x-0.5" />
+            </div>
+            <p className="mt-2 text-3xl font-bold leading-none text-slate-900">{business.activeJobs}</p>
+            <p className="mt-1.5 text-[12px] leading-snug text-slate-500">
+              {business.activeJobs === 1 ? "oferta publicada" : "ofertas publicadas"}
+            </p>
+          </Link>
+
+          <Link
+            href={`/business/${id}/ratings`}
+            className="group flex flex-col rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors active:bg-slate-50"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Valoración</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-active:translate-x-0.5" />
+            </div>
+            <p className="mt-2 text-3xl font-bold leading-none text-slate-900">
+              {business.totalRatings > 0 ? business.rating.toFixed(1) : "—"}
+            </p>
+            <div className="mt-1.5">
+              <Stars value={business.rating} />
+            </div>
+            <p className="mt-1 text-[12px] leading-snug text-slate-500">
+              {business.totalRatings} {business.totalRatings === 1 ? "valoración" : "valoraciones"}
+            </p>
           </Link>
         </div>
 
-        <div className="flex gap-3">
-          <Button className="flex-1 h-12 rounded-xl bg-[#01A89E] hover:bg-[#018F86] text-white font-bold text-sm" onClick={() => setShowContactForm(!showContactForm)}>
-            <MessageCircle className="h-5 w-5 mr-2" /> Contactar
-          </Button>
-          <Button
-            variant="outline"
-            className={`flex-1 h-12 rounded-xl font-bold text-sm ${isFavorite ? "border-[#01A89E] text-[#01A89E] bg-[#01A89E]/5" : ""}`}
-            onClick={handleToggleFavorite}
-            disabled={favoriteLoading}
-          >
-            <Heart className={`h-5 w-5 mr-2 ${isFavorite ? "fill-[#01A89E]" : ""}`} /> Favorito
-          </Button>
-        </div>
+        {/* 4 — Tipo de trabajador que busca */}
+        <Section icon={Users} title="Tipo de trabajador que busca">
+          {workerTypesSought.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {workerTypesSought.map((type) => (
+                <span
+                  key={type}
+                  className="rounded-full bg-[#01A89E]/10 px-3 py-1.5 text-[13px] font-semibold text-[#01A89E]"
+                >
+                  {type}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[14px] text-slate-500">No tiene ofertas abiertas ahora mismo.</p>
+          )}
+        </Section>
 
-        {isPremiumWorker && (
-          <Button
-            variant="outline"
-            className="w-full h-12 rounded-xl font-bold text-sm border-[#F48221]/40 text-[#F48221] hover:bg-[#F48221]/5 disabled:opacity-60"
-            onClick={handleRequestToWork}
-            disabled={requestingToWork || requestedToWork}
+        {/* 5 — Indicador de búsqueda activa */}
+        <Section>
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                isActivelyHiring ? "bg-emerald-100" : "bg-slate-100"
+              )}
+            >
+              <span className={cn("h-3 w-3 rounded-full", isActivelyHiring ? "bg-emerald-500" : "bg-slate-400")} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-slate-900">
+                {isActivelyHiring ? "Busca personal activamente" : "No busca personal ahora mismo"}
+              </p>
+              <p className="mt-0.5 text-[12px] leading-snug text-slate-500">
+                {isActivelyHiring
+                  ? `Tiene ${business.activeJobs} ${business.activeJobs === 1 ? "oferta abierta" : "ofertas abiertas"}.`
+                  : "No tiene ofertas abiertas en este momento."}
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        {/* 6 — Criterios de valoración. Solo si alguien ha valorado: una lista
+            de guiones no aporta nada. */}
+        {criteriaRows.length > 0 && (
+          <Section
+            icon={Sparkles}
+            title="Criterios de valoración"
+            action={
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                1–5 ★
+              </span>
+            }
           >
-            <Sparkles className="h-5 w-5 mr-2" />
-            {requestedToWork ? "Interés enviado" : requestingToWork ? "Enviando..." : "Quiero trabajar aquí"}
-          </Button>
+            <div className="divide-y divide-slate-100">
+              {criteriaRows.map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <p className="min-w-0 flex-1 text-[14px] leading-snug text-slate-700">{row.label}</p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Stars value={row.value || 0} />
+                    <span className="w-7 text-right text-[13px] font-semibold tabular-nums text-slate-900">
+                      {row.value!.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link
+              href={`/business/${id}/ratings`}
+              className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-[14px] font-semibold text-slate-900 active:bg-slate-100"
+            >
+              Ver valoraciones y reseñas
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+            </Link>
+          </Section>
         )}
 
-        {showContactForm && (
-          <Card className="border-[#01A89E]/30 bg-teal-50/50">
-            <CardContent className="p-4">
+        {/* 7 — Sobre la empresa */}
+        <Section icon={MessageCircle} title="Sobre la empresa">
+          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-600">
+            {business.description || business.company_description || "Empresa registrada en la plataforma CamareroPorFavor."}
+          </p>
+          {business.service_description && (
+            <>
+              <p className="mt-4 text-[13px] font-semibold uppercase tracking-wider text-slate-400">Tipo de servicio</p>
+              <p className="mt-1 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-600">
+                {business.service_description}
+              </p>
+            </>
+          )}
+        </Section>
+
+        {/* 8 — Estadísticas */}
+        <Section icon={Briefcase} title="Estadísticas">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Sector</span>
+              <span className="text-[15px] font-semibold text-slate-900">{business.type}</span>
+            </div>
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</span>
+              <span className="text-[15px] font-semibold text-slate-900">{business.location}</span>
+            </div>
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Valoración</span>
+              <span className="flex items-center gap-1 text-[15px] font-semibold text-slate-900">
+                {business.totalRatings > 0 ? business.rating.toFixed(1) : "—"}
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              </span>
+            </div>
+            <div>
+              <span className="block text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Estado</span>
+              <span className="flex items-center gap-1 text-[15px] font-semibold text-slate-900">
+                {business.verified ? <><CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> Verificada</> : "Pendiente"}
+              </span>
+            </div>
+          </div>
+        </Section>
+
+        {/* 9 — Galería en cuadrícula */}
+        {photos.length > 0 && (
+          <Section
+            icon={ImageIcon}
+            title="Galería"
+            action={<span className="text-[12px] text-slate-400">{photos.length}</span>}
+          >
+            <PortfolioImageViewer images={photos} />
+          </Section>
+        )}
+      </main>
+
+      {/* 10 — Vídeo del establecimiento, apaisado y al ancho de la galería */}
+      {business.video_url && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setIsVideoOpen(true)}
+            className="relative block w-full overflow-hidden bg-black sm:mx-auto sm:max-w-2xl sm:rounded-3xl"
+            aria-label="Reproducir vídeo del establecimiento"
+          >
+            {/* `#t=0.1` fuerza a los navegadores móviles a pintar el primer
+                fotograma como portada. */}
+            <video
+              src={`${business.video_url}#t=0.1`}
+              muted
+              playsInline
+              preload="metadata"
+              className="aspect-video w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
+            <span className="absolute left-1/2 top-1/2 flex h-[70px] w-[70px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-2xl">
+              <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
+            </span>
+            <div className="absolute inset-x-0 bottom-0 p-5 text-left">
+              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
+                Vídeo del establecimiento
+              </p>
+              <p className="mt-1 text-lg font-semibold text-white">{business.display_name}</p>
+            </div>
+          </button>
+        </div>
+      )}
+
+      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-3">
+        {/* 11 — Información de contacto */}
+        {(business.phone || business.website || business.address) && (
+          <Section icon={Phone} title="Información de contacto">
+            <div className="space-y-3">
+              {business.phone && (
+                <div className="flex items-center gap-3 text-[14px] text-slate-700">
+                  <Phone className="h-4 w-4 shrink-0 text-slate-400" />
+                  <a href={`tel:${business.phone}`} className="hover:underline">{business.phone}</a>
+                </div>
+              )}
+              {business.website && (
+                <div className="flex items-center gap-3 text-[14px]">
+                  <Globe className="h-4 w-4 shrink-0 text-slate-400" />
+                  <a href={business.website} target="_blank" rel="noopener noreferrer" className="truncate text-[#01A89E] hover:underline">
+                    {business.website}
+                  </a>
+                </div>
+              )}
+              {business.address && (
+                <div className="flex items-center gap-3 text-[14px] text-slate-700">
+                  <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+                  <span>{business.address}</span>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* 12 — Acciones rápidas */}
+        <Section icon={Sparkles} title="Acciones rápidas">
+          <div className="flex gap-3">
+            <Button
+              className="h-12 flex-1 rounded-xl bg-[#01A89E] text-[14px] font-bold text-white hover:bg-[#018F86]"
+              onClick={() => setShowContactForm(!showContactForm)}
+            >
+              <MessageCircle className="mr-2 h-5 w-5" /> Contactar
+            </Button>
+            <Button
+              variant="outline"
+              className={cn(
+                "h-12 flex-1 rounded-xl text-[14px] font-bold",
+                isFavorite && "border-[#01A89E] bg-[#01A89E]/5 text-[#01A89E]"
+              )}
+              onClick={handleToggleFavorite}
+              disabled={favoriteLoading}
+            >
+              <Heart className={cn("mr-2 h-5 w-5", isFavorite && "fill-[#01A89E]")} /> Favorito
+            </Button>
+          </div>
+
+          {isPremiumWorker && (
+            <Button
+              variant="outline"
+              className="mt-3 h-12 w-full rounded-xl border-[#F48221]/40 text-[14px] font-bold text-[#F48221] hover:bg-[#F48221]/5 disabled:opacity-60"
+              onClick={handleRequestToWork}
+              disabled={requestingToWork || requestedToWork}
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              {requestedToWork ? "Interés enviado" : requestingToWork ? "Enviando..." : "Quiero trabajar aquí"}
+            </Button>
+          )}
+
+          {showContactForm && (
+            <div className="mt-3 rounded-2xl border border-[#01A89E]/30 bg-teal-50/50 p-4">
               {sent ? (
-                <div className="text-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3"><CheckCircle className="w-6 h-6 text-green-600" /></div>
+                <div className="py-4 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
                   <p className="font-semibold text-green-700">Mensaje enviado</p>
-                  <p className="text-sm text-muted-foreground mt-1">Redirigiendo al chat...</p>
+                  <p className="mt-1 text-[14px] text-slate-500">Redirigiendo al chat...</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-sm">Enviar mensaje a {business.display_name}</h3>
-                    <button onClick={() => setShowContactForm(false)} className="p-1 rounded-full hover:bg-gray-200"><X className="w-4 h-4" /></button>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-[14px] font-semibold">Enviar mensaje a {business.display_name}</h3>
+                    <button onClick={() => setShowContactForm(false)} className="rounded-full p-1 hover:bg-slate-200">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hola, me interesa trabajar con ustedes..." className="min-h-[100px] text-sm bg-white border-gray-200 rounded-xl mb-3 resize-none" />
-                  <Button className="w-full h-11 rounded-xl bg-[#01A89E] hover:bg-[#018F86] text-white font-bold" onClick={handleSendMessage} disabled={sending || !message.trim()}>
-                    {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</> : <><Send className="w-4 h-4 mr-2" /> Enviar mensaje</>}
+                  <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Hola, me interesa trabajar con ustedes..."
+                    className="mb-3 min-h-[100px] resize-none rounded-xl border-slate-200 bg-white text-[14px]"
+                  />
+                  <Button
+                    className="h-11 w-full rounded-xl bg-[#01A89E] font-bold text-white hover:bg-[#018F86]"
+                    onClick={handleSendMessage}
+                    disabled={sending || !message.trim()}
+                  >
+                    {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : <><Send className="mr-2 h-4 w-4" /> Enviar mensaje</>}
                   </Button>
                 </>
               )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card><CardContent className="p-4"><h3 className="font-semibold mb-2 text-base">Sobre la empresa</h3><p className="text-sm text-muted-foreground leading-relaxed">{business.description || business.company_description || "Empresa registrada en la plataforma CamareroPorFavor."}</p></CardContent></Card>
-
-        {business.service_description && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-2 text-base">Tipo de servicio</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{business.service_description}</p>
-          </CardContent></Card>
-        )}
-
-        {(business.phone || business.website || business.address) && (
-          <Card><CardContent className="p-4 space-y-3">
-            <h3 className="font-semibold text-base">Información de contacto</h3>
-            {business.phone && <div className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" /><span>{business.phone}</span></div>}
-            {business.website && <div className="flex items-center gap-3 text-sm"><Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" /><a href={business.website} target="_blank" rel="noopener noreferrer" className="text-[#01A89E] hover:underline truncate">{business.website}</a></div>}
-            {business.address && <div className="flex items-center gap-3 text-sm"><MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" /><span>{business.address}</span></div>}
-          </CardContent></Card>
-        )}
-
-        {(business.address || business.location || business.city) && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 text-base">Ubicación</h3>
-            <div className="aspect-video w-full bg-muted rounded-lg overflow-hidden">
-              <iframe
-                src={
-                  business.latitude && business.longitude
-                    ? `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${business.latitude},${business.longitude}&zoom=15`
-                    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(
-                        business.address || business.location || business.city || business.display_name
-                      )}`
-                }
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
             </div>
-          </CardContent></Card>
-        )}
+          )}
+        </Section>
+      </main>
 
-        {business.photos && business.photos.length > 0 && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 text-base flex items-center gap-1.5"><ImageIcon className="h-4 w-4 text-[#01A89E]" /> Fotos del local</h3>
-            <PortfolioImageViewer images={business.photos} />
-          </CardContent></Card>
-        )}
+      {/* Reel del vídeo, igual que en el perfil del candidato */}
+      {isVideoOpen && business.video_url && (
+        <div className="fixed inset-0 z-[60] bg-black">
+          <button
+            type="button"
+            onClick={handleCloseVideo}
+            aria-label="Cerrar vídeo"
+            className="absolute right-4 top-[calc(env(safe-area-inset-top,0px)+1rem)] z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md active:scale-95"
+          >
+            <X className="h-5 w-5" />
+          </button>
 
-        {business.video_url && (
-          <Card><CardContent className="p-4">
-            <h3 className="font-semibold mb-3 text-base flex items-center gap-1.5"><VideoIcon className="h-4 w-4 text-[#01A89E]" /> Vídeo del local</h3>
-            <PortfolioVideoViewer videos={[business.video_url]} />
-          </CardContent></Card>
-        )}
-
-        <Card id="ofertas-activas">
-          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Briefcase className="w-5 h-5" /> Ofertas Activas ({jobs.length})</CardTitle></CardHeader>
-          <CardContent>
-            {jobs.length > 0 ? (
-              <div className="space-y-3">
-                {jobs.map((job: any) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`}>
-                    <div className="p-3 border rounded-xl hover:bg-accent transition-colors">
-                      <h4 className="font-semibold text-sm">{job.title}</h4>
-                      <p className="text-[13px] text-muted-foreground mt-1 line-clamp-2">{job.description}</p>
-                      <div className="flex items-center gap-3 mt-2 text-[13px] flex-wrap">
-                        <span className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3 w-3" /> {job.location || job.city}</span>
-                        {job.salary_min && job.salary_max && <Badge variant="secondary" className="text-[13px]">{job.salary_min}-{job.salary_max} EUR</Badge>}
-                        {job.contract_type && <Badge variant="outline" className="text-[13px]">{job.contract_type}</Badge>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8"><Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" /><p className="text-muted-foreground text-sm">No hay ofertas activas en este momento</p></div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card><CardContent className="p-4 space-y-3">
-          <h3 className="font-semibold mb-2 text-base">Detalles</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-muted-foreground block text-[13px]">Sector</span><span className="font-medium">{business.type}</span></div>
-            <div><span className="text-muted-foreground block text-[13px]">Ubicación</span><span className="font-medium">{business.location}</span></div>
-            <div><span className="text-muted-foreground block text-[13px]">Valoración</span><span className="font-medium flex items-center gap-1">{business.rating} <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /></span></div>
-            <div><span className="text-muted-foreground block text-[13px]">Estado</span><span className="font-medium flex items-center gap-1">{business.verified ? <><CheckCircle className="w-3 h-3 text-green-500" /> Verificada</> : "Pendiente"}</span></div>
+          <div className="relative h-full w-full" onClick={toggleVideoPlayback}>
+            <video
+              ref={videoRef}
+              src={business.video_url}
+              playsInline
+              autoPlay
+              className="h-full w-full object-contain"
+              onPlay={() => { setIsVideoPlaying(true); setShowVideoOverlay(false) }}
+              onPause={() => { setIsVideoPlaying(false); setShowVideoOverlay(true) }}
+              onEnded={() => { setIsVideoPlaying(false); setShowVideoOverlay(true) }}
+            />
+            {/* Único control: play/pause centrado */}
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200",
+                showVideoOverlay || !isVideoPlaying ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
+                {isVideoPlaying ? (
+                  <Pause className="h-8 w-8 fill-white text-white" />
+                ) : (
+                  <Play className="ml-1 h-8 w-8 fill-white text-white" />
+                )}
+              </span>
+            </div>
           </div>
-        </CardContent></Card>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
