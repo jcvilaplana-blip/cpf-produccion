@@ -19,6 +19,20 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://cpf.fullstark.es',
     cleartext: false,
+    // El WebView sólo navega dentro del dominio de arriba: cualquier otro se
+    // abría en el navegador del sistema, y el usuario salía de la aplicación
+    // justo al ir a pagar. El pago redirige a checkout.stripe.com, así que sus
+    // dominios se declaran aquí para que el proceso ocurra dentro de la app.
+    // Las URL de retorno ya apuntan a cpf.fullstark.es, de modo que al terminar
+    // vuelve solo.
+    //
+    // Se listan sólo los de Stripe a propósito: abrir la navegación a todo
+    // convertiría cualquier enlace externo en una pantalla más de la
+    // aplicación, sin barra de direcciones ni forma de ver a dónde se ha ido.
+    allowNavigation: [
+      '*.stripe.com',
+      'stripe.com',
+    ],
   },
   plugins: {
     SplashScreen: {
