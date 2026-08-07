@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { PaymentSummaryDialog } from "@/components/payment-summary-dialog"
+import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 import { formatEuros } from "@/lib/tax"
 
 // Mismo importe que FEATURE_PRICES en app/api/micropayments/create/route.ts.
@@ -74,6 +75,14 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
   // Handle highlight profile purchase
   // Antes de la pasarela se muestra el desglose del importe.
   const [showSummary, setShowSummary] = useState(false)
+  // Cobro en curso. El formulario se pinta en un diálogo dentro de la app en
+  // lugar de mandar al usuario a checkout.stripe.com.
+  const [pago, setPago] = useState<{
+    clientSecret: string
+    resumen: ResumenPago
+    micropaymentId: string
+    featureType: string
+  } | null>(null)
 
   const handleHighlightProfile = async () => {
     if (!user?.id) return
@@ -91,9 +100,15 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
       })
 
       const data = await response.json()
-      
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
+
+      if (data.clientSecret) {
+        setShowSummary(false)
+        setPago({
+          clientSecret: data.clientSecret,
+          resumen: data.resumen,
+          micropaymentId: data.micropaymentId,
+          featureType: "highlight_profile",
+        })
       } else if (data.success) {
         // Direct success (for testing or already highlighted)
         setIsHighlighted(true)
@@ -132,9 +147,14 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
         })
 
         const data = await response.json()
-        
-        if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl
+
+        if (data.clientSecret) {
+          setPago({
+            clientSecret: data.clientSecret,
+            resumen: data.resumen,
+            micropaymentId: data.micropaymentId,
+            featureType: "view_matches",
+          })
         }
       }
     } catch (error) {
@@ -332,6 +352,30 @@ export function PremiumFeaturesCard({ onPurchaseComplete }: PremiumFeaturesCardP
         totalCents={HIGHLIGHT_PROFILE_PRICE_CENTS}
         loading={loading === "highlight"}
         onConfirm={handleHighlightProfile}
+      />
+
+      <StripePaymentDialog
+        clientSecret={pago?.clientSecret ?? null}
+        resumen={pago?.resumen ?? null}
+        returnUrl={
+          typeof window !== "undefined" && pago
+            ? `${window.location.origin}/micropayment/success?mp_id=${pago.micropaymentId}`
+            : ""
+        }
+        onClose={() => setPago(null)}
+        onSuccess={() => {
+          if (!pago) return
+          // "Destacar perfil" se compra desde Editar perfil y se confirma allí
+          // mismo, sin sacar al usuario de su pantalla; el resto pasa por la
+          // página de éxito, que espera a que el webhook active la compra.
+          if (pago.featureType === "highlight_profile") {
+            setPago(null)
+            setIsHighlighted(true)
+            onPurchaseComplete?.()
+            return
+          }
+          window.location.href = `/micropayment/success?mp_id=${pago.micropaymentId}`
+        }}
       />
     </>
   )

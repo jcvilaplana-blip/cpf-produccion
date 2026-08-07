@@ -11,6 +11,7 @@ import { ArrowLeft, Check, Crown, Sparkles, CreditCard, Loader2, PartyPopper } f
 import Link from "next/link"
 import Image from "next/image"
 import type { SubscriptionPlan } from "@/lib/subscription-plans"
+import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 
 interface SubscribeContentProps {
   user: any
@@ -48,6 +49,9 @@ export function SubscribeContent({
   // Pulsar el plan ya no va directo a la pasarela: primero se muestra el
   // desglose (servicio + IVA + total) y solo al confirmar se abre Stripe.
   const [summaryPlan, setSummaryPlan] = useState<{ id: string; name: string; priceInCents: number } | null>(null)
+  // Alta de suscripción en curso: la suscripción ya existe en Stripe en estado
+  // "incomplete" y se activa en cuanto se paga su primera factura.
+  const [pago, setPago] = useState<{ clientSecret: string; resumen: ResumenPago } | null>(null)
 
   const handleSubscribe = (planId: string, planName: string, priceInCents: number) => {
     if (planId === "free") return
@@ -73,7 +77,13 @@ export function SubscribeContent({
         throw new Error(data.error || "Error al iniciar el pago")
       }
 
-      window.location.href = data.checkoutUrl
+      // El pago se confirma en un diálogo dentro de la aplicación; antes esto
+      // saltaba a checkout.stripe.com, que en el móvil abría el navegador del
+      // sistema y sacaba al usuario de la app.
+      setSummaryPlan(null)
+      setPago({ clientSecret: data.clientSecret, resumen: data.resumen })
+      setIsLoading(false)
+      setLoadingPlanId(null)
     } catch (error) {
       console.error("Error starting payment:", error)
       alert(error instanceof Error ? error.message : "Error al iniciar el proceso de pago")
@@ -340,6 +350,19 @@ export function SubscribeContent({
           onConfirm={startCheckout}
         />
       )}
+
+      <StripePaymentDialog
+        clientSecret={pago?.clientSecret ?? null}
+        resumen={pago?.resumen ?? null}
+        returnUrl={typeof window !== "undefined" ? `${window.location.origin}/payment/success` : ""}
+        onClose={() => setPago(null)}
+        onSuccess={() => {
+          setPago(null)
+          // La suscripción se activa en el webhook (`invoice.paid`); la página
+          // de éxito espera a que llegue en lugar de darlo por hecho.
+          router.push("/payment/success")
+        }}
+      />
     </div>
   )
 }

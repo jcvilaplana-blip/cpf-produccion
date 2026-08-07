@@ -30,6 +30,7 @@ import { useLanguage } from "@/lib/i18n/language-context"
 import { applyToJobAction, withdrawApplicationAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
 import { toast } from "sonner"
 import type { Profile } from "@/lib/types"
+import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 
 interface JobData {
   id: string
@@ -111,6 +112,12 @@ export function JobDetailContent({
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isHighlighting, setIsHighlighting] = useState(false)
+  // Cobro de "destacar oferta" en curso, pagado dentro de la propia pantalla.
+  const [pago, setPago] = useState<{
+    clientSecret: string
+    resumen: ResumenPago
+    micropaymentId: string
+  } | null>(null)
 
   const handleApply = async () => {
     if (!userId) {
@@ -209,12 +216,19 @@ export function JobDetailContent({
         body: JSON.stringify({ featureType: "highlight_job", userId, jobId: job.id }),
       })
       const data = await res.json()
-      if (!res.ok || !data.checkoutUrl) {
+      if (!res.ok || !data.clientSecret) {
         toast.error(data.error || "Error al iniciar el pago")
         setIsHighlighting(false)
         return
       }
-      window.location.href = data.checkoutUrl
+      // El formulario de pago se abre sobre esta pantalla; antes esto saltaba a
+      // checkout.stripe.com y, dentro de la app, al navegador del sistema.
+      setPago({
+        clientSecret: data.clientSecret,
+        resumen: data.resumen,
+        micropaymentId: data.micropaymentId,
+      })
+      setIsHighlighting(false)
     } catch {
       toast.error("Error al iniciar el pago")
       setIsHighlighting(false)
@@ -530,6 +544,20 @@ export function JobDetailContent({
         </div>
       )}
 
+      <StripePaymentDialog
+        clientSecret={pago?.clientSecret ?? null}
+        resumen={pago?.resumen ?? null}
+        returnUrl={
+          typeof window !== "undefined" && pago
+            ? `${window.location.origin}/micropayment/success?mp_id=${pago.micropaymentId}`
+            : ""
+        }
+        onClose={() => setPago(null)}
+        onSuccess={() => {
+          if (!pago) return
+          router.push(`/micropayment/success?mp_id=${pago.micropaymentId}`)
+        }}
+      />
     </div>
   )
 }

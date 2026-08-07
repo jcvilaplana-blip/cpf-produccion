@@ -23,21 +23,15 @@ function getStripe() {
   })
 }
 
-// Stripe activa "Managed Payments" por defecto en cuentas nuevas: con él Stripe
-// pasa a ser vendedor de registro, calcula y liquida el IVA, y por eso exige un
-// código fiscal en cada producto creado al vuelo. Sin desactivarlo la sesión NI
-// SE CREA -"the product tax code is missing"-, así que el botón de pagar fallaba
-// tanto en suscripciones como en micropagos.
+// Nota sobre "Managed Payments": con él activado Stripe pasa a ser vendedor de
+// registro y exige un código fiscal en cada producto creado al vuelo, lo que
+// impedía crear las Checkout Sessions ("the product tax code is missing"). Este
+// endpoint ya no crea productos -un PaymentIntent es sólo un importe-, así que
+// el problema no se plantea. Sigue haciendo falta desactivarlo en la cuenta
+// para las suscripciones, que sí usan Sessions.
 //
-// Se desactiva porque CamareroPorFavor es quien factura y liquida el IVA: el
-// desglose se calcula aquí (lib/tax.ts) y viaja como una línea propia del
-// cobro, en lugar de delegar el impuesto en Stripe como vendedor de registro.
-//
-// El cast existe porque el SDK v19 todavía no tipa este campo, más reciente que
-// la versión de API que tenemos fijada; el endpoint sí lo acepta.
-const MANAGED_PAYMENTS_OFF = {
-  managed_payments: { enabled: false },
-} as unknown as Stripe.Checkout.SessionCreateParams
+// CamareroPorFavor es quien factura y liquida el IVA: el desglose se calcula
+// aquí (lib/tax.ts) y viaja en los metadatos del cobro.
 
 const FEATURE_PRICES = {
   highlight_profile: 99,  // 0.99€ in cents
@@ -133,66 +127,60 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create Stripe Checkout Session
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://camareroporfavor.com"
+    // El cobro se crea como PaymentIntent, no como Checkout Session: la Session
+    // sólo se puede pagar en checkout.stripe.com, y llegar allí sacaba al
+    // usuario de la aplicación al navegador del sistema justo en el momento de
+    // pagar. Con un PaymentIntent el formulario se pinta dentro de la propia
+    // app (components/stripe-payment-dialog.tsx) y el proceso entero ocurre
+    // sin salir de ella.
     const stripe = getStripe()
-    
-    const session = await stripe.checkout.sessions.create({
-      // Ver la nota junto a MANAGED_PAYMENTS_OFF.
-      ...MANAGED_PAYMENTS_OFF,
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalCents,
+      currency: "eur",
+      // Sólo tarjeta, deliberadamente. `automatic_payment_methods` ofrecería
+      // también medios como Bizum, que se cobran redirigiendo al banco: dentro
+      // del WebView eso volvería a expulsar al usuario de la aplicación, que es
+      // exactamente lo que esta migración viene a resolver.
       payment_method_types: ["card"],
-      // Servicio e IVA como líneas separadas, para que el desglose se vea
-      // también en la pantalla de Stripe y no solo en el resumen previo.
-      line_items: [
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: `CamareroPorFavor - ${name}`,
-              description: `Acceso a ${name} por ${validityDays} días`,
-            },
-            unit_amount: baseCents,
-          },
-          quantity: 1,
-        },
-        {
-          price_data: {
-            currency: "eur",
-            product_data: { name: VAT_LABEL },
-            unit_amount: vatCents,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      // "Destacar mi perfil" se compra desde Editar perfil, así que se vuelve
-      // allí y la confirmación se da en un modal, sin sacar al usuario de su
-      // pantalla. El resto de compras siguen usando la página de éxito.
-      success_url:
-        featureType === "highlight_profile"
-          ? `${baseUrl}/edit-profile?destacado=1`
-          : `${baseUrl}/micropayment/success?session_id={CHECKOUT_SESSION_ID}&feature=${featureType}&mp_id=${micropayment.id}`,
-      cancel_url: `${baseUrl}/micropayment/cancel?mp_id=${micropayment.id}`,
-      customer_email: user?.email,
+      description: `CamareroPorFavor - ${name}`,
+      receipt_email: user?.email ?? undefined,
+      // El desglose del IVA ya no puede viajar como líneas del cobro -eso era
+      // cosa de las Sessions-, así que se guarda en los metadatos para que
+      // quede en el registro de Stripe, y se muestra al usuario en el resumen
+      // del formulario antes de pagar.
       metadata: {
         micropayment_id: micropayment.id,
         user_id: userId,
         feature_type: featureType,
+        base_cents: String(baseCents),
+        vat_cents: String(vatCents),
+        vat_label: VAT_LABEL,
         ...(jobId ? { job_id: jobId } : {}),
         ...(flashDurationHours ? { flash_duration_hours: String(flashDurationHours) } : {}),
       },
     })
 
-    // Update micropayment with Stripe session ID
+    // Guarda el id del PaymentIntent. Antes esta columna guardaba el id de la
+    // Session pese a llamarse `stripe_payment_intent_id`; ahora el nombre y el
+    // contenido por fin coinciden.
     await supabase
       .from("micropayments")
-      .update({ stripe_payment_intent_id: session.id })
+      .update({ stripe_payment_intent_id: paymentIntent.id })
       .eq("id", micropayment.id)
 
     return NextResponse.json({
-      checkoutUrl: session.url,
-      sessionId: session.id,
+      clientSecret: paymentIntent.client_secret,
       micropaymentId: micropayment.id,
+      // Para el resumen que se pinta junto al formulario.
+      resumen: {
+        nombre: name,
+        validezDias: validityDays,
+        baseCents,
+        vatCents,
+        totalCents,
+        vatLabel: VAT_LABEL,
+      },
     })
   } catch (error) {
     console.error("Error in micropayments/create:", error)

@@ -13,21 +13,74 @@ function getStripe() {
   return new Stripe(key, { apiVersion: "2024-06-20" as Stripe.LatestApiVersion })
 }
 
-// Stripe activa "Managed Payments" por defecto en cuentas nuevas: con él Stripe
-// pasa a ser vendedor de registro, calcula y liquida el IVA, y por eso exige un
-// código fiscal en cada producto creado al vuelo. Sin desactivarlo la sesión NI
-// SE CREA -"the product tax code is missing"-, así que el botón de pagar fallaba
-// tanto en suscripciones como en micropagos.
-//
-// Se desactiva porque CamareroPorFavor es quien factura y liquida el IVA: el
-// desglose se calcula aquí (lib/tax.ts) y viaja como una línea propia del
-// cobro, en lugar de delegar el impuesto en Stripe como vendedor de registro.
-//
-// El cast existe porque el SDK v19 todavía no tipa este campo, más reciente que
-// la versión de API que tenemos fijada; el endpoint sí lo acepta.
-const MANAGED_PAYMENTS_OFF = {
-  managed_payments: { enabled: false },
-} as unknown as Stripe.Checkout.SessionCreateParams
+/**
+ * Alta de suscripción cobrada dentro de la aplicación.
+ *
+ * Antes esto creaba una Checkout Session y devolvía su URL, que sólo se puede
+ * pagar en checkout.stripe.com: dentro del WebView de Capacitor eso abría el
+ * navegador del sistema y expulsaba al usuario de la aplicación justo al ir a
+ * pagar. Ahora se crea la suscripción por API en estado `incomplete` y se
+ * devuelve el `clientSecret` de su primera factura, que el Payment Element
+ * confirma sin salir de la pantalla.
+ *
+ * Diferencia importante respecto al checkout: `subscriptions.create` no acepta
+ * productos al vuelo -eso era exclusivo de `line_items[].price_data` en las
+ * Sessions-, así que hace falta un Product y un Price de verdad en Stripe. Se
+ * crean bajo demanda con identificadores deterministas y se reutilizan.
+ */
+
+/** Product estable por plan: el mismo plan siempre apunta al mismo producto. */
+async function obtenerProducto(stripe: Stripe, planId: string, planName: string) {
+  const productId = `cpf-plan-${planId}`
+  try {
+    return await stripe.products.retrieve(productId)
+  } catch {
+    return await stripe.products.create({
+      id: productId,
+      name: `CamareroPorFavor - ${planName}`,
+      // El IVA no viaja como línea aparte porque una suscripción por API no
+      // admite dos precios recurrentes creados al vuelo. El importe cobrado es
+      // el mismo (el precio configurado ya lo incluye) y el desglose se
+      // muestra al usuario antes de pagar y queda en los metadatos.
+      description: `Suscripción mensual. Precio con IVA incluido.`,
+    })
+  }
+}
+
+/**
+ * Price estable por plan e importe. El importe entra en la clave a propósito:
+ * si algún día sube el precio del plan, se crea un Price nuevo en lugar de
+ * cobrar el viejo, y los suscriptores actuales conservan el suyo.
+ */
+async function obtenerPrecio(stripe: Stripe, productId: string, planId: string, totalCents: number) {
+  const lookupKey = `cpf-${planId}-${totalCents}-eur-mes`
+  const existentes = await stripe.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 1,
+  })
+  if (existentes.data.length > 0) return existentes.data[0]
+
+  return await stripe.prices.create({
+    product: productId,
+    currency: "eur",
+    unit_amount: totalCents,
+    recurring: { interval: "month" },
+    lookup_key: lookupKey,
+  })
+}
+
+/** Reutiliza el cliente de Stripe del usuario para no duplicarlo en cada alta. */
+async function obtenerCliente(stripe: Stripe, email: string | undefined, userId: string) {
+  if (email) {
+    const existentes = await stripe.customers.list({ email, limit: 1 })
+    if (existentes.data.length > 0) return existentes.data[0]
+  }
+  return await stripe.customers.create({
+    email,
+    metadata: { user_id: userId },
+  })
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,55 +98,64 @@ export async function POST(req: NextRequest) {
     if (!plan) return NextResponse.json({ error: "Plan no encontrado" }, { status: 400 })
 
     const planName = plan.name
-    const { baseCents, vatCents } = breakdownFromTotal(plan.priceInCents)
+    const { baseCents, vatCents, totalCents } = breakdownFromTotal(plan.priceInCents)
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://camareroporfavor.com"
     const stripe = getStripe()
 
-    const session = await stripe.checkout.sessions.create({
-      ...MANAGED_PAYMENTS_OFF,
-      payment_method_types: ["card"],
-      // Dos líneas: servicio e IVA por separado, para que el desglose también
-      // se vea en la pantalla de Stripe y no solo en el resumen previo.
-      line_items: [
-        {
-          price_data: {
-            currency: "eur",
-            product_data: { name: `CamareroPorFavor - ${planName}` },
-            unit_amount: baseCents,
-            recurring: { interval: "month" },
-          },
-          quantity: 1,
-        },
-        {
-          price_data: {
-            currency: "eur",
-            product_data: { name: VAT_LABEL },
-            unit_amount: vatCents,
-            recurring: { interval: "month" },
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      // Los mismos metadatos, también en la suscripción creada: los eventos de
-      // renovación y de baja llegan meses después y solo traen la suscripción,
-      // sin la sesión de checkout. Sin esto no habría forma de saber a qué
-      // usuario y plan corresponden.
-      subscription_data: {
-        metadata: { user_id: user.id, plan_id: planId, plan_name: planName },
+    const producto = await obtenerProducto(stripe, planId, planName)
+    const precio = await obtenerPrecio(stripe, producto.id, planId, totalCents)
+    const cliente = await obtenerCliente(stripe, user.email, user.id)
+
+    const metadata = {
+      user_id: user.id,
+      plan_id: planId,
+      plan_name: planName,
+      base_cents: String(baseCents),
+      vat_cents: String(vatCents),
+      vat_label: VAT_LABEL,
+    }
+
+    const subscription = await stripe.subscriptions.create({
+      customer: cliente.id,
+      items: [{ price: precio.id }],
+      // `default_incomplete` deja la suscripción esperando a que se pague su
+      // primera factura, que es justo lo que va a hacer el Payment Element.
+      // Sin esto Stripe intentaría cobrar de inmediato y fallaría: todavía no
+      // hay ningún método de pago asociado al cliente.
+      payment_behavior: "default_incomplete",
+      payment_settings: {
+        // La tarjeta queda guardada como método por defecto para que las
+        // renovaciones mensuales se cobren solas.
+        save_default_payment_method: "on_subscription",
+        payment_method_types: ["card"],
       },
-      success_url: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/subscribe?new=1`,
-      customer_email: user.email,
-      metadata: {
-        user_id: user.id,
-        plan_id: planId,
-        plan_name: planName,
-      },
+      expand: ["latest_invoice.payment_intent"],
+      // Los metadatos van en la suscripción, no en una sesión: los eventos de
+      // renovación y de baja llegan meses después y sólo traen la suscripción.
+      // Sin esto el webhook no sabría a qué usuario y plan corresponden.
+      metadata,
     })
 
-    return NextResponse.json({ checkoutUrl: session.url })
+    const factura = subscription.latest_invoice as Stripe.Invoice | null
+    const intent = (factura as any)?.payment_intent as Stripe.PaymentIntent | null
+    const clientSecret = intent?.client_secret
+
+    if (!clientSecret) {
+      console.error("Stripe: la suscripción se creó sin PaymentIntent", subscription.id)
+      return NextResponse.json({ error: "Error al iniciar el pago" }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      clientSecret,
+      subscriptionId: subscription.id,
+      resumen: {
+        nombre: planName,
+        baseCents,
+        vatCents,
+        totalCents,
+        vatLabel: VAT_LABEL,
+      },
+    })
   } catch (error) {
     console.error("Error initiating Stripe payment:", error)
     return NextResponse.json({ error: "Error al iniciar el pago" }, { status: 500 })

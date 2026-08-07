@@ -284,6 +284,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true })
   }
 
+  // --- Micropagos con formulario incrustado -------------------------------
+  // El pago ocurre dentro de la aplicación contra un PaymentIntent, así que
+  // Stripe ya no manda `checkout.session.completed` por estas compras.
+  if (event.type === "payment_intent.succeeded") {
+    const intent = event.data.object as Stripe.PaymentIntent
+    const intentMetadata = (intent.metadata || {}) as Record<string, string>
+    if (!intentMetadata.micropayment_id) {
+      // Los PaymentIntent que crea una Checkout Session no heredan sus
+      // metadatos: esos se activan por `checkout.session.completed`.
+      return NextResponse.json({ received: true })
+    }
+    return completarMicropago(supabase, intentMetadata.micropayment_id, intentMetadata)
+  }
+
+  if (event.type === "payment_intent.payment_failed") {
+    const intent = event.data.object as Stripe.PaymentIntent
+    const micropaymentId = (intent.metadata || {}).micropayment_id
+    if (micropaymentId) {
+      // Sin esto la fila se quedaba "pending" para siempre y ensuciaba el
+      // panel de administración. No se activa nada, sólo se cierra el intento.
+      await supabase
+        .from("micropayments")
+        .update({ status: "failed" })
+        .eq("id", micropaymentId)
+        .eq("status", "pending")
+    }
+    return NextResponse.json({ received: true })
+  }
+
   if (event.type !== "checkout.session.completed") {
     return NextResponse.json({ received: true })
   }
@@ -316,6 +345,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true })
   }
 
+  return completarMicropago(supabase, micropaymentId, metadata)
+}
+
+/**
+ * Marca el micropago como cobrado y activa lo comprado.
+ *
+ * Vive aparte porque ahora hay dos caminos que llegan aquí: las suscripciones
+ * y los cobros antiguos siguen pasando por `checkout.session.completed`, y los
+ * micropagos nuevos llegan como `payment_intent.succeeded` -el formulario de
+ * pago está incrustado en la aplicación y ya no crea Checkout Sessions-.
+ */
+async function completarMicropago(
+  supabase: ServiceClient,
+  micropaymentId: string,
+  metadata: Record<string, string>
+) {
   const { data: micropayment } = await supabase
     .from("micropayments")
     .select("id, user_id, feature_type, job_id, status")

@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AddressAutofill } from "@/components/address-autofill"
 import { createJobAction, activateFlashWithCreditAction } from "@/lib/actions"
 import { LANGUAGE_LIST, sameLanguage } from "@/lib/profile-constants"
+import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 
 interface Category {
   id: string
@@ -54,6 +55,13 @@ export function CreateJobContent({ userId }: { userId: string }) {
   const [uniformRequired, setUniformRequired] = useState(false)
   const [tpvRequired, setTpvRequired] = useState(false)
   const [languagesRequired, setLanguagesRequired] = useState<string[]>([])
+  // Cobro de la oferta flash, en curso. La oferta ya está creada en este punto;
+  // lo que falta es pagarla, y hasta que el pago no se confirma no se activa.
+  const [pago, setPago] = useState<{
+    clientSecret: string
+    resumen: ResumenPago
+    micropaymentId: string
+  } | null>(null)
 
   const toggleLanguage = (lang: string) => {
     // Quitar compara sin acentos, para poder desmarcar un idioma que se
@@ -192,11 +200,17 @@ export function CreateJobContent({ userId }: { userId: string }) {
           }),
         })
         const data = await res.json()
-        if (!res.ok || !data.checkoutUrl) {
+        if (!res.ok || !data.clientSecret) {
           setFormError(data.error || "Error al iniciar el pago de la oferta flash")
           return
         }
-        window.location.href = data.checkoutUrl
+        // El cobro se cobra en un diálogo sobre esta misma pantalla, sin salir
+        // de la aplicación. Ver components/stripe-payment-dialog.tsx.
+        setPago({
+          clientSecret: data.clientSecret,
+          resumen: data.resumen,
+          micropaymentId: data.micropaymentId,
+        })
         return
       }
 
@@ -613,6 +627,26 @@ export function CreateJobContent({ userId }: { userId: string }) {
           </div>
         </form>
       </div>
+
+      <StripePaymentDialog
+        clientSecret={pago?.clientSecret ?? null}
+        resumen={pago?.resumen ?? null}
+        returnUrl={
+          typeof window !== "undefined" && pago
+            ? `${window.location.origin}/micropayment/success?mp_id=${pago.micropaymentId}`
+            : ""
+        }
+        onClose={() => {
+          setPago(null)
+          // La oferta quedó creada pero sin pagar: se avisa, porque de otro
+          // modo el usuario cree que se ha publicado y no la ve en activo.
+          setFormError("Pago cancelado. Tu oferta flash no se ha activado.")
+        }}
+        onSuccess={() => {
+          if (!pago) return
+          router.push(`/micropayment/success?mp_id=${pago.micropaymentId}`)
+        }}
+      />
     </div>
   )
 }

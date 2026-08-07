@@ -21,10 +21,13 @@ const config: CapacitorConfig = {
     cleartext: false,
     // El WebView sólo navega dentro del dominio de arriba: cualquier otro se
     // abría en el navegador del sistema, y el usuario salía de la aplicación
-    // justo al ir a pagar. El pago redirige a checkout.stripe.com, así que sus
-    // dominios se declaran aquí para que el proceso ocurra dentro de la app.
-    // Las URL de retorno ya apuntan a cpf.fullstark.es, de modo que al terminar
-    // vuelve solo.
+    // justo al ir a pagar.
+    //
+    // El pago ya no sale de la app: se cobra con el Payment Element incrustado
+    // (components/stripe-payment-dialog.tsx) contra un PaymentIntent, en lugar
+    // de redirigir a checkout.stripe.com. Los dominios de Stripe se mantienen
+    // aquí como red de seguridad para el desafío 3-D Secure, que el banco
+    // puede resolver con una navegación en vez de en el iframe de Stripe.
     //
     // Se listan sólo los de Stripe a propósito: abrir la navegación a todo
     // convertiría cualquier enlace externo en una pantalla más de la
