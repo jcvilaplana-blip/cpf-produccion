@@ -24,7 +24,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import ImageComponent from "next/image"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import type { Profile, BusinessProfile } from "@/lib/types"
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -551,7 +550,6 @@ export function ProfileContent({
       </div>
 
       {/* Bottom Navigation Component */}
-      <BottomNavigation profile={profile} />
     </div>
   )
 }

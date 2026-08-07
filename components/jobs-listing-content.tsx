@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, MapPin, Briefcase, SlidersHorizontal, Search, Euro, Zap } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { CityAutocomplete } from "@/components/city-autocomplete"
@@ -458,7 +457,6 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
         )}
       </div>
 
-      <BottomNavigation profile={null} />
     </div>
   )
 }

@@ -22,7 +22,6 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 import type { Job, Profile } from "@/lib/types"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { updateApplicationStatusAction } from "@/lib/actions"
 import { toast } from "sonner"
 
@@ -303,7 +302,6 @@ export function JobApplicationsContent({
         )}
       </div>
 
-      <BottomNavigation profile={profile} />
     </div>
   )
 }

@@ -25,7 +25,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { applyToJobAction, withdrawApplicationAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
@@ -531,7 +530,6 @@ export function JobDetailContent({
         </div>
       )}
 
-      <BottomNavigation profile={userProfile ?? null} />
     </div>
   )
 }

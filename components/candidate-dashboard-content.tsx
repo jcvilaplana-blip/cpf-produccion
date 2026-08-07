@@ -20,7 +20,6 @@ import {
   Gift,
   CalendarCheck,
 } from "lucide-react"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { SmartSearch } from "@/components/smart-search"
 import { createClient } from "@/lib/supabase/client"
 import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
@@ -405,7 +404,6 @@ export function CandidateDashboardContent({
         </section>
       </div>
 
-      <BottomNavigation profile={{ user_type: "worker" } as any} />
     </div>
   )
 }

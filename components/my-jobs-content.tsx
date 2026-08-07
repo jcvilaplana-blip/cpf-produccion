@@ -23,7 +23,6 @@ import {
   Zap,
 } from "lucide-react"
 import type { Job } from "@/lib/types"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { toggleJobActiveAction, deleteJobAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -282,7 +281,6 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
         )}
       </div>
 
-      <BottomNavigation profile={profile} />
     </div>
   )
 }

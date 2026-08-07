@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Search, MessageCircle, Check, CheckCheck, CalendarCheck, CalendarClock, Star, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import type { Profile } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -872,7 +871,6 @@ export function MessagesContent({
         )}
       </div>
 
-      <BottomNavigation profile={profile} />
     </div>
   )
 }

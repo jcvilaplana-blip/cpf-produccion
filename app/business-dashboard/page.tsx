@@ -18,7 +18,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AccountFooterLinks } from "@/components/account-footer-links"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { createClient } from "@/lib/supabase/client"
 import { checkInterviewRemindersAction } from "@/lib/actions"
 import { computeBestMatchScore, type MatchJobInput } from "@/lib/matching"
@@ -465,7 +464,6 @@ export default function BusinessDashboardPage() {
         <AccountFooterLinks />
       </div>
 
-      <BottomNavigation profile={{ user_type: "business" } as any} />
     </div>
   )
 }
