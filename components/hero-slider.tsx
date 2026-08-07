@@ -12,10 +12,7 @@ export function HeroSlider() {
     description: t("hero.slide2Description"),
     image: "/busy-restaurant-kitchen-team-working.jpg",
     cta: t("hero.slide2CTA"),
-    // "Ver Ofertas" lleva directo al listado. Antes apuntaba al asistente
-    // de búsqueda, que era coherente con el texto anterior ("Ver Trabajos")
-    // pero no con éste.
-    ctaLink: "/jobs",
+    ctaLink: "/search",
   }
 
   return (

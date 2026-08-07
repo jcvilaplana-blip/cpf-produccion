@@ -3,11 +3,7 @@
 import type React from "react"
 import { HeroSlider } from "@/components/hero-slider"
 import { CategoriesScroll } from "@/components/categories-scroll"
-import { VenueTypesScroll } from "@/components/venue-types-scroll"
 import { WorkerVideoCard } from "@/components/worker-video-card"
-import { HomeModeDialog } from "@/components/home-mode-dialog"
-import { useHomeMode } from "@/lib/use-home-mode"
-import { useAuth } from "@/hooks/use-auth"
 import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { CompaniesCarousel } from "@/components/companies-carousel"
 import { Button } from "@/components/ui/button"
@@ -38,16 +34,9 @@ const LOAD_MORE_COUNT = 12
 export function LandingContent({ featuredJobs, stats, businesses, workers: workersData = [], flashOffers = [], isLoggedIn = false }: LandingContentProps) {
   const { t } = useLanguage()
   const router = useRouter()
-  const { user } = useAuth()
-
-  // Qué portada toca: la de quien busca empleo o la de quien busca personal.
-  // A quien tiene sesión no se le pregunta —su rol ya lo dice—; a quien no la
-  // tiene se le pregunta una vez y se recuerda.
-  const { modo, elegir, debePreguntar } = useHomeMode(user?.userType ?? null)
-  const esPortadaEmpresa = modo === "empresa"
-
   const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
 
+  // Map workers from database format
   const workers = workersData.map((profile: any) => ({
     id: profile.id,
     name: profile.display_name,
@@ -76,13 +65,6 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
   // outright the way a full-screen overlay div would.
   const handleGateClick = (e: React.MouseEvent) => {
     if (isLoggedIn) return
-
-    // La ventana de elección de modo queda fuera de la barrera. Se dibuja en
-    // un portal, fuera de este div en el DOM, pero React propaga los eventos
-    // por el árbol de componentes y no por el del DOM: sin esta excepción, sus
-    // dos botones acababan mandando al login en lugar de elegir el modo.
-    if ((e.target as HTMLElement | null)?.closest?.('[role="dialog"]')) return
-
     e.preventDefault()
     e.stopPropagation()
     router.push("/auth/login")
@@ -183,9 +165,6 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
         </div>
       </section>
 
-      {/* Cada portada enseña el otro lado del mercado: al candidato, dónde
-          podría trabajar; a la empresa, a quién podría contratar. */}
-      {esPortadaEmpresa ? (
       <section className="py-6 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
@@ -230,9 +209,6 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           )}
         </div>
       </section>
-      ) : (
-        <VenueTypesScroll />
-      )}
 
       <section className="py-8 bg-background">
         <div className="container mx-auto px-4">
@@ -273,8 +249,6 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           </div>
         </div>
       </section>
-
-      <HomeModeDialog abierto={debePreguntar} onElegir={elegir} />
     </div>
   )
 }
