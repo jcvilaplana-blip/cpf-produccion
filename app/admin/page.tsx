@@ -968,6 +968,29 @@ export default function AdminPage() {
                 ))}
               </div>
 
+              {/* Cuánto ha dejado cada producto. El panel decía cuánto se
+                  ingresa, pero no de qué. */}
+              {(revenueData?.porProducto || []).length > 0 && (
+                <Card className="bg-white">
+                  <CardContent className="p-3">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Ingresos por producto
+                    </p>
+                    <div className="space-y-1.5">
+                      {(revenueData?.porProducto || []).map((p: any) => (
+                        <div key={p.producto} className="flex items-center gap-2 text-xs">
+                          <span className="flex-1 min-w-0 truncate text-slate-700">{p.concepto}</span>
+                          <span className="text-slate-400 shrink-0">×{p.unidades}</span>
+                          <span className="font-semibold text-slate-900 shrink-0 tabular-nums">
+                            {formatEuros(p.totalCents)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {(revenueData?.data || []).length === 0 && (
                 <Card className="bg-white"><CardContent className="p-8 text-center text-sm text-slate-500">
                   Todavía no hay ingresos registrados.
@@ -987,7 +1010,9 @@ export default function AdminPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-medium truncate">{r.buyer?.display_name || "Usuario"}</p>
+                          <p className="text-sm font-medium truncate">
+                            {r.buyer?.company_name || r.buyer?.display_name || "Usuario"}
+                          </p>
                           <Badge className="text-[9px] px-1.5 py-0 border-0 bg-slate-100 text-slate-600 capitalize">
                             {r.source}
                           </Badge>
@@ -995,12 +1020,24 @@ export default function AdminPage() {
                             {r.status}
                           </Badge>
                         </div>
-                        <p className="text-xs text-slate-600 mt-0.5">{r.concept}</p>
+                        {r.buyer?.email && (
+                          <p className="text-[11px] text-slate-400 truncate">{r.buyer.email}</p>
+                        )}
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          {r.concept}
+                          {r.job?.title && <span className="text-slate-400"> · {r.job.title}</span>}
+                        </p>
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {new Date(r.date).toLocaleString("es-ES", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                           {r.validUntil && (
                             <> · válido hasta {new Date(r.validUntil).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</>
                           )}
+                        </p>
+                        {/* Con esto se casa cada línea del panel con su cargo en
+                            Stripe. Los micropagos anteriores a 2026-08-07 no lo
+                            tienen: el guardado lo descartaba RLS en silencio. */}
+                        <p className="text-[10px] text-slate-300 font-mono truncate mt-0.5">
+                          {r.stripeRef || "sin referencia de Stripe"}
                         </p>
                       </div>
                       <div className="text-right shrink-0">

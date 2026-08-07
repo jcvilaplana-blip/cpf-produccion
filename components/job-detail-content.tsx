@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button" 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft,
   MapPin,
@@ -59,6 +58,7 @@ interface JobData {
   flash_expires_at?: string
   is_highlighted?: boolean
   highlight_expires_at?: string
+  image_url?: string | null
   business: {
     display_name: string
     avatar_url: string | null
@@ -68,7 +68,12 @@ interface JobData {
 
 interface JobDetailContentProps {
   job: JobData
-  initialHasApplied?: boolean
+  /**
+   * Estado de la candidatura del usuario en esta oferta, o null si no se ha
+   * inscrito. No es un booleano a propósito: "enviada" y "ya respondida" son
+   * situaciones distintas y el botón no puede decir lo mismo en las dos.
+   */
+  initialApplicationStatus?: string | null
   initialIsSaved?: boolean
   userId?: string | null
   userProfile?: Profile | null
@@ -98,16 +103,15 @@ const categoryLabels: Record<string, string> = {
 
 export function JobDetailContent({
   job,
-  initialHasApplied = false,
+  initialApplicationStatus = null,
   initialIsSaved = false,
   userId,
   userProfile,
 }: JobDetailContentProps) {
   const { t } = useLanguage()
   const router = useRouter()
-  const [coverLetter, setCoverLetter] = useState("")
   const [isSaved, setIsSaved] = useState(initialIsSaved)
-  const [hasApplied, setHasApplied] = useState(initialHasApplied)
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(initialApplicationStatus)
   const [isApplying, setIsApplying] = useState(false)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -125,13 +129,13 @@ export function JobDetailContent({
       return
     }
     setIsApplying(true)
-    const result = await applyToJobAction(job.id, coverLetter || undefined)
+    const result = await applyToJobAction(job.id)
     setIsApplying(false)
 
     if (result.error) {
       toast.error(result.error)
     } else {
-      setHasApplied(true)
+      setApplicationStatus("pending")
       toast.success("Candidatura enviada correctamente")
     }
   }
@@ -146,7 +150,7 @@ export function JobDetailContent({
       return
     }
     // Vuelve al estado inicial: puede volver a interesarle más adelante.
-    setHasApplied(false)
+    setApplicationStatus("withdrawn")
     toast.success("Has cancelado tu candidatura")
   }
 
@@ -184,6 +188,24 @@ export function JobDetailContent({
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
     return { hours, minutes, isExpired: diff <= 0 }
   }
+
+  // Qué se le puede ofrecer al candidato depende del estado de su candidatura.
+  //
+  // Antes bastaba con que existiera la fila para dejar el botón clavado en
+  // "Candidatura Enviada" para siempre, incluso después de que el
+  // establecimiento hubiera respondido y cerrado el proceso. Y "Ya no me
+  // interesa" se mostraba también sobre candidaturas ya aceptadas, que la
+  // acción rechaza expresamente: el botón parecía no hacer nada.
+  const esperandoRespuesta = applicationStatus === "pending"
+  const conEntrevista = applicationStatus === "interview"
+  const seleccionado = applicationStatus === "accepted"
+  const descartado = applicationStatus === "rejected"
+  const finalizado = applicationStatus === "completed"
+  // Una candidatura retirada se puede reactivar; una rechazada, no (la acción
+  // de inscribirse sólo readmite las retiradas).
+  const puedeInscribirse = !applicationStatus || applicationStatus === "withdrawn"
+  // Cancelar sólo tiene sentido mientras el proceso siga vivo y sin resolver.
+  const puedeRetirarse = esperandoRespuesta || conEntrevista
 
   const timeRemaining = job.is_flash ? getTimeRemaining() : null
   const isBusinessOwner = userId === job.business_id
@@ -273,6 +295,22 @@ export function JobDetailContent({
           </div>
         </div>
       </header>
+
+      {/* Imagen de la oferta. Va a ancho completo bajo la cabecera fija, antes
+          que cualquier otra cosa: es lo que identifica la oferta de un vistazo.
+          Sólo aparece si la empresa subió una. */}
+      {job.image_url && (
+        <div className="relative w-full aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-muted">
+          <Image
+            src={job.image_url}
+            alt={job.title}
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-6 max-w-3xl space-y-4">
         {/* Flash Offer Banner */}
@@ -449,34 +487,6 @@ export function JobDetailContent({
           </Card>
         )}
 
-        {/* Contact / Apply Section */}
-        {!isBusinessOwner && (
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <h3 className="text-base font-bold">Contactar empresa</h3>
-              {!hasApplied && (
-                <div className="space-y-3">
-                  <Textarea
-                    placeholder="Escribe un mensaje o carta de presentacion (opcional)..."
-                    value={coverLetter}
-                    onChange={(e) => setCoverLetter(e.target.value)}
-                    rows={3}
-                    className="resize-none text-sm"
-                  />
-                </div>
-              )}
-              <Button
-                onClick={handleContactBusiness}
-                variant="outline"
-                className="w-full bg-transparent"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Mensaje Directo
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Owner Actions */}
         {isBusinessOwner && (
           <Card>
@@ -514,23 +524,7 @@ export function JobDetailContent({
       {!isBusinessOwner && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t">
           <div className="container mx-auto max-w-3xl">
-            {hasApplied ? (
-              <div className="space-y-2">
-                <Button disabled className="w-full bg-green-600 hover:bg-green-600">
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  Candidatura Enviada
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleWithdraw}
-                  disabled={isWithdrawing}
-                  className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  {isWithdrawing ? "Cancelando..." : "Ya no me interesa"}
-                </Button>
-              </div>
-            ) : (
+            {puedeInscribirse ? (
               <Button
                 onClick={handleApply}
                 className="w-full bg-primary hover:bg-primary/90"
@@ -539,6 +533,47 @@ export function JobDetailContent({
               >
                 {isApplying ? "Enviando..." : "Me interesa la Oferta"}
               </Button>
+            ) : seleccionado ? (
+              // El establecimiento ya respondió: se acabó la espera, y lo útil
+              // aquí es hablar con él, no cancelar.
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 rounded-md bg-green-50 py-2.5 text-green-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-semibold">Te han seleccionado</span>
+                </div>
+                <Button onClick={handleContactBusiness} variant="outline" className="w-full">
+                  <Send className="h-4 w-4 mr-2" />
+                  Hablar con la empresa
+                </Button>
+              </div>
+            ) : descartado ? (
+              <div className="flex items-center justify-center gap-2 rounded-md bg-muted py-3 text-muted-foreground">
+                <X className="h-4 w-4" />
+                <span className="text-sm font-medium">No te han seleccionado en esta oferta</span>
+              </div>
+            ) : finalizado ? (
+              <div className="flex items-center justify-center gap-2 rounded-md bg-muted py-3 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm font-medium">Trabajo finalizado</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Button disabled className="w-full bg-green-600 hover:bg-green-600">
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  {conEntrevista ? "Entrevista propuesta" : "Candidatura Enviada"}
+                </Button>
+                {puedeRetirarse && (
+                  <Button
+                    variant="outline"
+                    onClick={handleWithdraw}
+                    disabled={isWithdrawing}
+                    className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {isWithdrawing ? "Cancelando..." : "Ya no me interesa"}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>

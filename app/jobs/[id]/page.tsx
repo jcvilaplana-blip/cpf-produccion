@@ -51,7 +51,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   // Get current user and check if they already applied
   const { data: { user } } = await supabase.auth.getUser()
-  let hasApplied = false
+  // El estado, no sólo si existe la fila: una candidatura ya respondida por el
+  // establecimiento no es lo mismo que una a la espera, y el botón tiene que
+  // decir cosas distintas en cada caso.
+  let applicationStatus: string | null = null
   let isSaved = false
   let userProfile = null
 
@@ -59,7 +62,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     const [applicationRes, savedRes, profileRes] = await Promise.all([
       supabase
         .from("applications")
-        .select("id")
+        .select("id, status")
         .eq("job_id", id)
         .eq("worker_id", user.id)
         .maybeSingle(),
@@ -76,7 +79,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         .single(),
     ])
 
-    hasApplied = !!applicationRes.data
+    applicationStatus = applicationRes.data?.status ?? null
     isSaved = !!savedRes.data
     userProfile = profileRes.data
   }
@@ -99,7 +102,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   return (
     <JobDetailContent
       job={jobData}
-      initialHasApplied={hasApplied}
+      initialApplicationStatus={applicationStatus}
       initialIsSaved={isSaved}
       userId={user?.id || null}
       userProfile={userProfile}

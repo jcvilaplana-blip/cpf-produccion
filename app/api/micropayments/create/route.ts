@@ -1,8 +1,17 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { breakdownFromTotal, VAT_LABEL } from "@/lib/tax"
 import Stripe from "stripe"
+
+/** Para escrituras que el usuario no tiene permiso de hacer sobre su propia fila. */
+function getServiceRoleClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createServiceClient(url, key)
+}
 
 // Initialize Stripe lazily to avoid build-time errors
 function getStripe() {
@@ -164,10 +173,25 @@ export async function POST(request: Request) {
     // Guarda el id del PaymentIntent. Antes esta columna guardaba el id de la
     // Session pese a llamarse `stripe_payment_intent_id`; ahora el nombre y el
     // contenido por fin coinciden.
-    await supabase
+    //
+    // Va con permisos de servicio a propósito: `micropayments` tiene políticas
+    // de select e insert para el dueño de la fila, pero NINGUNA de update, así
+    // que este guardado con el cliente del usuario afectaba a cero filas sin
+    // devolver error. Resultado: los siete micropagos que hay en la base de
+    // datos tienen `stripe_payment_intent_id` a null y no hay forma de casar un
+    // cobro del panel con su cargo en Stripe. Además es lo correcto: la
+    // referencia la pone el sistema, no el usuario.
+    const admin = getServiceRoleClient()
+    const { error: refError } = await (admin ?? supabase)
       .from("micropayments")
       .update({ stripe_payment_intent_id: paymentIntent.id })
       .eq("id", micropayment.id)
+
+    if (refError) {
+      // No se aborta el cobro por esto -el PaymentIntent ya existe y el webhook
+      // lo activará por su metadato `micropayment_id`-, pero sí se deja rastro.
+      console.error("micropayments/create: no se pudo guardar la referencia de Stripe", refError)
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

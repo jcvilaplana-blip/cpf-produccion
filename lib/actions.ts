@@ -244,12 +244,19 @@ export async function withdrawApplicationAction(jobId: string) {
     return { error: "Esta candidatura ya está aceptada: háblalo con el establecimiento por mensaje" }
   }
 
-  const { error } = await supabase
+  // `.select()` para saber si la fila cambió de verdad. Un update que RLS
+  // filtra no devuelve error: devuelve cero filas, y sin esta comprobación la
+  // acción respondía "success" mientras la candidatura seguía intacta.
+  const { data: updated, error } = await supabase
     .from("applications")
     .update({ status: "withdrawn", updated_at: new Date().toISOString() })
     .eq("id", application.id)
+    .select("id")
 
   if (error) return { error: error.message }
+  if (!updated || updated.length === 0) {
+    return { error: "No se ha podido cancelar la candidatura. Vuelve a intentarlo." }
+  }
 
   // Avisar al establecimiento: tenía una candidatura viva y ha dejado de serlo.
   try {
