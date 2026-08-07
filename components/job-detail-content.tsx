@@ -29,6 +29,7 @@ import { useLanguage } from "@/lib/i18n/language-context"
 import { applyToJobAction, withdrawApplicationAction, saveJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
 import { toast } from "sonner"
 import type { Profile } from "@/lib/types"
+import { contractTypeLabel } from "@/lib/profile-constants"
 import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 
 interface JobData {
@@ -77,14 +78,6 @@ interface JobDetailContentProps {
   initialIsSaved?: boolean
   userId?: string | null
   userProfile?: Profile | null
-}
-
-const contractTypeLabels: Record<string, string> = {
-  full_time: "Jornada Completa",
-  part_time: "Media Jornada",
-  flash_offer: "Oferta Flash",
-  one_time_event: "Evento Puntual",
-  temporary: "Temporal",
 }
 
 const categoryLabels: Record<string, string> = {
@@ -370,7 +363,7 @@ export function JobDetailContent({
                   )}
                   {job.contract_type && (
                     <Badge variant="outline" className="text-[13px]">
-                      {contractTypeLabels[job.contract_type] || job.contract_type}
+                      {contractTypeLabel(job.contract_type)}
                     </Badge>
                   )}
                 </div>
@@ -405,7 +398,7 @@ export function JobDetailContent({
                 <span>Tipo</span>
               </div>
               <p className="font-semibold text-sm">
-                {contractTypeLabels[job.contract_type || ""] || "Jornada completa"}
+                {contractTypeLabel(job.contract_type) || "Jornada Completa"}
               </p>
             </CardContent>
           </Card>

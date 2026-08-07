@@ -20,6 +20,7 @@ import { saveProfileAction } from "@/lib/actions"
 import { isProfileSaved } from "@/lib/supabase/queries"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { CONTRACT_TYPE_LABELS, contractTypeLabel } from "@/lib/profile-constants"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -30,18 +31,16 @@ interface ProfileDetailContentProps {
   initialProfile?: any
 }
 
-const CONTRACT_TYPE_LABELS: Record<string, string> = {
+// Los chips de esta ficha son estrechos, así que unos pocos tipos se abrevian.
+// El resto -incluidos `weekend`, `seasonal` y `freelance`, que antes se
+// mostraban en inglés- sale del mapa común.
+const CONTRACT_CHIP_LABELS: Record<string, string> = {
+  ...CONTRACT_TYPE_LABELS,
   full_time: "Completo",
   part_time: "Parcial",
   flash_offer: "Extra",
-  one_time_event: "Prácticas",
-  indefinite: "Indefinido",
-  temporal: "Temporal",
-  extra: "Extra",
   parcial: "Parcial",
   completo: "Completo",
-  practicas: "Prácticas",
-  "prácticas": "Prácticas",
 }
 
 
@@ -117,7 +116,9 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   const [savedProfile, setSavedProfile] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
   const [showInterviewDialog, setShowInterviewDialog] = useState(false)
-  const [isVideoOpen, setIsVideoOpen] = useState(false)
+  // Qué vídeo hay abierto en el reel, no si hay uno abierto: el mismo
+  // reproductor sirve ahora al de presentación y a los adicionales.
+  const [videoAbierto, setVideoAbierto] = useState<string | null>(null)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [showVideoOverlay, setShowVideoOverlay] = useState(true)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -143,27 +144,27 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   }, [isBusinessViewer, viewerId, id])
 
   useEffect(() => {
-    if (!isVideoOpen || !videoRef.current) return
+    if (!videoAbierto || !videoRef.current) return
     const el = videoRef.current
     el.currentTime = 0
     el.play().catch(() => {})
     setShowVideoOverlay(false)
-  }, [isVideoOpen])
+  }, [videoAbierto])
 
   // Body scroll lock while the reel is open, so the page behind doesn't move.
   useEffect(() => {
-    if (!isVideoOpen) return
+    if (!videoAbierto) return
     const previous = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = previous
     }
-  }, [isVideoOpen])
+  }, [videoAbierto])
 
   const handleCloseVideo = useCallback(() => {
     videoRef.current?.pause()
     setIsVideoPlaying(false)
-    setIsVideoOpen(false)
+    setVideoAbierto(null)
   }, [])
 
   const toggleVideoPlayback = useCallback(() => {
@@ -278,7 +279,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
     : null
 
   const roles = specialties.length > 0 ? specialties : worker.job_category ? [worker.job_category] : []
-  const contractTypeNames = contractTypes.map((ct) => CONTRACT_TYPE_LABELS[ct] || ct).filter(Boolean)
+  const contractTypeNames = contractTypes.map((ct) => CONTRACT_CHIP_LABELS[ct] || contractTypeLabel(ct)).filter(Boolean)
 
   const avail = computeDisplayStatus({
     selfReported: worker.availability_status,
@@ -623,40 +624,43 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             <PortfolioImageViewer images={galleryImages} />
           </Section>
         )}
-      </main>
+        {/* 14 — Vídeo de presentación, apaisado y al ancho de la galería.
+            Va dentro del mismo `main` que el resto: cuando estaba en un bloque
+            aparte, entre dos `<main>`, quedaba fuera del `space-y-3` que marca
+            el ritmo vertical de la página y se abría un hueco desproporcionado
+            justo encima. `-mx-4` lo saca a sangre completa en móvil sin romper
+            ese ritmo. Mismo tratamiento que el vídeo del establecimiento. */}
+        {presentationVideo && (
+          <div className="-mx-4 sm:mx-0">
+            <button
+              type="button"
+              onClick={() => setVideoAbierto(presentationVideo)}
+              className="relative block w-full overflow-hidden bg-black sm:rounded-3xl"
+              aria-label="Reproducir vídeo de presentación"
+            >
+              {/* `#t=0.1` fuerza a los navegadores móviles a pintar el primer
+                  fotograma como portada. */}
+              <video
+                src={`${presentationVideo}#t=0.1`}
+                muted
+                playsInline
+                preload="metadata"
+                className="aspect-video w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
+              <span className="absolute left-1/2 top-1/2 flex h-[70px] w-[70px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-2xl">
+                <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
+              </span>
+              <div className="absolute inset-x-0 bottom-0 p-5 text-left">
+                <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
+                  Vídeo de presentación
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white">{worker.display_name}</p>
+              </div>
+            </button>
+          </div>
+        )}
 
-      {/* 14 — Vídeo de presentación a ancho completo */}
-      {presentationVideo && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setIsVideoOpen(true)}
-            className="relative block w-full overflow-hidden bg-black sm:mx-auto sm:max-w-2xl sm:rounded-3xl"
-            aria-label="Reproducir vídeo de presentación"
-          >
-            {/* `#t=0.1` forces mobile browsers to paint the first frame as poster */}
-            <video
-              src={`${presentationVideo}#t=0.1`}
-              muted
-              playsInline
-              preload="metadata"
-              className="aspect-[9/16] max-h-[80vh] w-full object-cover sm:aspect-video"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
-            <span className="absolute left-1/2 top-1/2 flex h-[70px] w-[70px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-2xl">
-              <Play className="ml-1 h-7 w-7 fill-slate-900 text-slate-900" />
-            </span>
-            <div className="absolute inset-x-0 bottom-0 p-5 text-left">
-              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-white/70">
-                Vídeo de presentación
-              </p>
-              <p className="mt-1 text-lg font-semibold text-white">{worker.display_name}</p>
-            </div>
-          </button>
-        </div>
-      )}
-
-      <main className="mx-auto max-w-2xl space-y-3 px-4 pt-3">
         {/* 15 — Sobre mí */}
         {worker.bio && (
           <Section icon={MessageCircle} title="Sobre mí">
@@ -778,16 +782,32 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
         {/* Vídeos adicionales */}
         {extraVideos.length > 0 && (
           <Section icon={Video} title="Más vídeos">
+            {/* Abren el mismo reel a pantalla completa que el vídeo de
+                presentación. Antes eran `<video controls>` incrustados en una
+                celda de media pantalla: el fotograma de portada se veía, pero
+                los controles nativos quedaban tan pequeños que reproducirlos
+                era cuestión de suerte. */}
             <div className="grid grid-cols-2 gap-2">
               {extraVideos.map((videoUrl) => (
-                <video
+                <button
                   key={videoUrl}
-                  src={`${videoUrl}#t=0.1`}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="aspect-[9/16] w-full rounded-2xl bg-black object-cover"
-                />
+                  type="button"
+                  onClick={() => setVideoAbierto(videoUrl)}
+                  aria-label="Reproducir vídeo"
+                  className="relative block overflow-hidden rounded-2xl bg-black"
+                >
+                  <video
+                    src={`${videoUrl}#t=0.1`}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="aspect-[9/16] w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl">
+                    <Play className="ml-0.5 h-5 w-5 fill-slate-900 text-slate-900" />
+                  </span>
+                </button>
               ))}
             </div>
           </Section>
@@ -798,12 +818,10 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           {contractChips}
         </Section>
 
-        {/* 18 — Indicador de búsqueda activa (detalle final) */}
-        <Section>{activeSearchBlock}</Section>
       </main>
 
-      {/* Reel del vídeo de presentación */}
-      {isVideoOpen && presentationVideo && (
+      {/* Reel a pantalla completa, compartido por todos los vídeos del perfil */}
+      {videoAbierto && (
         <div className="fixed inset-0 z-[60] bg-black">
           <button
             type="button"
@@ -817,7 +835,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           <div className="relative h-full w-full" onClick={toggleVideoPlayback}>
             <video
               ref={videoRef}
-              src={presentationVideo}
+              src={videoAbierto}
               playsInline
               autoPlay
               className="h-full w-full object-contain"

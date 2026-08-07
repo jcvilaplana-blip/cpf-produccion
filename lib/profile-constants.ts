@@ -102,3 +102,40 @@ export function parseJsonField(val: any, fallback: any[] = []) {
   }
   return fallback
 }
+
+/**
+ * Nombre en español de un tipo de contrato, venga de donde venga.
+ *
+ * Existía el mismo mapa copiado en tres pantallas, y ninguna de las tres cubría
+ * las opciones completas del formulario de ofertas: `seasonal`, `weekend` y
+ * `freelance` se publicaban desde el desplegable pero al mostrarlas caían al
+ * valor crudo, así que la ficha de la oferta decía "weekend" en inglés.
+ *
+ * Incluye también las grafías antiguas en español que siguen guardadas en la
+ * base de datos de cuando cada pantalla escribía la suya.
+ */
+export const CONTRACT_TYPE_LABELS: Record<string, string> = {
+  full_time: "Jornada Completa",
+  part_time: "Media Jornada",
+  temporary: "Temporal",
+  seasonal: "Estacional",
+  weekend: "Fines de Semana",
+  freelance: "Autónomo / Freelance",
+  flash_offer: "Oferta Flash",
+  one_time_event: "Evento Puntual",
+  internship: "Prácticas",
+  indefinite: "Indefinido",
+  // Valores heredados, ya en español.
+  temporal: "Temporal",
+  extra: "Extra",
+  parcial: "Media Jornada",
+  completo: "Jornada Completa",
+  practicas: "Prácticas",
+  "prácticas": "Prácticas",
+}
+
+export function contractTypeLabel(value?: string | null): string {
+  if (!value) return ""
+  const key = String(value).trim()
+  return CONTRACT_TYPE_LABELS[key] || CONTRACT_TYPE_LABELS[key.toLowerCase()] || key
+}

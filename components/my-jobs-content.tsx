@@ -26,6 +26,7 @@ import type { Job } from "@/lib/types"
 import { toggleJobActiveAction, deleteJobAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { contractTypeLabel } from "@/lib/profile-constants"
 
 interface ApplicationData {
   id: string
@@ -45,14 +46,6 @@ interface MyJobsContentProps {
     applications?: ApplicationData[]
   })[]
   profile?: any
-}
-
-const contractTypeLabels: Record<string, string> = {
-  full_time: "Jornada Completa",
-  part_time: "Media Jornada",
-  flash_offer: "Oferta Flash",
-  one_time_event: "Evento Puntual",
-  temporary: "Temporal",
 }
 
 export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps) {
@@ -209,7 +202,7 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                   <div className="space-y-1.5 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-4 w-4 flex-shrink-0" />
-                      <span>{contractTypeLabels[job.contract_type] || job.work_schedule || "No especificado"}</span>
+                      <span>{contractTypeLabel(job.contract_type) || job.work_schedule || "No especificado"}</span>
                     </div>
                     {(job.salary_min || job.salary_max) && (
                       <div className="flex items-center gap-2 text-muted-foreground">

@@ -89,11 +89,13 @@ export function HeroSlider() {
                   i === indice ? "opacity-100" : "pointer-events-none opacity-0"
                 }`}
               >
-                <h1 className="text-2xl md:text-6xl font-bold text-white text-balance leading-tight">
+                <h1 className="pt-6 md:pt-8 text-3xl md:text-7xl font-bold text-white text-balance leading-tight">
                   {slide.titulo}
                 </h1>
-                <p className="text-sm md:text-xl text-white/90 text-pretty">{slide.subtitulo}</p>
-                <div className="flex justify-center md:justify-start">
+                <p className="text-base md:text-2xl text-white/90 text-pretty">{slide.subtitulo}</p>
+                {/* El botón cae dos líneas por debajo del subtítulo: pegado a
+                    él competía con el texto en lugar de rematarlo. */}
+                <div className="flex justify-center md:justify-start pt-8 md:pt-10">
                   <Button asChild size="lg" className="text-lg bg-[#F48221] hover:bg-[#D9721D] text-white">
                     <Link href={slide.ctaLink} tabIndex={i === indice ? undefined : -1}>
                       {slide.cta}

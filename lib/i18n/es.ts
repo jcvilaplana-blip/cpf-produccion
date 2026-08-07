@@ -435,7 +435,7 @@ export const es = {
     loginToViewContact: "Inicia sesión para ver contacto",
     contact: "Contactar",
     starting: "Iniciando...",
-    requestInterview: "Solicitar Entrevista",
+    requestInterview: "Pedir Entrevista",
     rate: "Valorar",
     workExperience: "Experiencia Laboral",
     current: "Actual",
