@@ -1,19 +1,25 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext } from "react"
 import { es } from "./es"
-import { en } from "./en"
 
-type Language = "es" | "en"
-
-const translationsMap = {
-  es,
-  en,
-}
+/**
+ * La aplicación es sólo en español.
+ *
+ * Se conserva `t()` porque lo usan 87 ficheros: quitarlo obligaría a tocar
+ * cada texto de la interfaz sin que el usuario notara diferencia alguna. Lo
+ * que desaparece es la posibilidad de cambiar de idioma — ya no hay selectores
+ * ni traducciones alternativas, y `t()` resuelve siempre contra `es`.
+ *
+ * Si algún día se retoma el multiidioma, aquí es donde vuelve: añadir el mapa
+ * de traducciones y un estado. El resto de la aplicación no se entera.
+ */
+type Language = "es"
 
 interface LanguageContextType {
   language: Language
+  /** Se mantiene en la interfaz para no romper a quien la llame; no hace nada. */
   setLanguage: (lang: Language) => void
   t: (key: string) => string
 }
@@ -21,43 +27,26 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("es")
-  const [translations, setTranslations] = useState<any>(translationsMap.es)
-
-  useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem("language") as Language
-    if (savedLanguage && (savedLanguage === "es" || savedLanguage === "en")) {
-      setLanguageState(savedLanguage)
-      setTranslations(translationsMap[savedLanguage])
-    }
-  }, [])
-
-  useEffect(() => {
-    setTranslations(translationsMap[language])
-  }, [language])
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
-    localStorage.setItem("language", lang)
-  }
-
   const t = (key: string): string => {
     const keys = key.split(".")
-    let value: any = translations
+    let value: any = es
 
     for (const k of keys) {
       if (value && typeof value === "object" && k in value) {
         value = value[k]
       } else {
-        return key // Return key if translation not found
+        return key // Sin traducción, se devuelve la clave.
       }
     }
 
     return typeof value === "string" ? value : key
   }
 
-  return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>
+  return (
+    <LanguageContext.Provider value={{ language: "es", setLanguage: () => {}, t }}>
+      {children}
+    </LanguageContext.Provider>
+  )
 }
 
 export function useLanguage() {

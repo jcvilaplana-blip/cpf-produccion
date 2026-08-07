@@ -21,7 +21,6 @@ import {
   Upload,
   Video,
   FileText,
-  Languages,
 } from "lucide-react"
 import Link from "next/link"
 import ImageComponent from "next/image"
@@ -63,7 +62,7 @@ export function ProfileContent({
   ratings,
 }: ProfileContentProps) {
   const router = useRouter()
-  const { language, setLanguage, t } = useLanguage()
+  const { t } = useLanguage()
 
   const [formData, setFormData] = useState({
     displayName: profile?.display_name || "Santiago García",
@@ -108,16 +107,6 @@ export function ProfileContent({
               <h1 className="text-lg font-bold">{t("profile.title")}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={language} onValueChange={(value: "es" | "en") => setLanguage(value)}>
-                <SelectTrigger className="w-[140px]">
-                  <Languages className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="es">{t("common.spanish")}</SelectItem>
-                  <SelectItem value="en">{t("common.english")}</SelectItem>
-                </SelectContent>
-              </Select>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/help">
                   <HelpCircle className="h-4 w-4 mr-2" />

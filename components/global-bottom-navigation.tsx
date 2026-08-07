@@ -15,7 +15,6 @@ import {
   HelpCircle,
   Moon,
   Sun,
-  Globe,
   Share2,
   Star,
   FileText,
@@ -24,7 +23,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { X } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { useAuth } from "@/hooks/use-auth"
@@ -53,7 +51,7 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
-  const { language, setLanguage, t } = useLanguage()
+  const { t } = useLanguage()
 
   // isLoggedIn must reflect "is there a session" (isAuthenticated), NOT "has
   // the full profile row finished loading" (!!user/profile). The session
@@ -296,21 +294,6 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                     <span className="text-[13px] font-medium text-center leading-tight">Privacidad</span>
                   </Link>
                 </div>
-                {/* Language selector */}
-                <div className="px-5 pb-5 pt-1 border-t border-gray-100 dark:border-gray-800">
-                  <Label className="flex items-center gap-2 mb-2.5 text-sm font-semibold text-muted-foreground">
-                    <Globe className="h-4 w-4" />
-                    {t("menu.language")}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Button variant={language === "es" ? "default" : "outline"} size="sm" className="flex-1 h-10 rounded-xl" onClick={() => setLanguage("es")}>
-                      {t("common.spanish")}
-                    </Button>
-                    <Button variant={language === "en" ? "default" : "outline"} size="sm" className="flex-1 h-10 rounded-xl" onClick={() => setLanguage("en")}>
-                      {t("common.english")}
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           </>
@@ -514,21 +497,6 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
                   </div>
                   <span className="text-[13px] font-medium text-center leading-tight">Privacidad</span>
                 </Link>
-              </div>
-              {/* Language selector */}
-              <div className="px-5 pb-5 pt-1 border-t border-gray-100 dark:border-gray-800">
-                <Label className="flex items-center gap-2 mb-2.5 text-sm font-semibold text-muted-foreground">
-                  <Globe className="h-4 w-4" />
-                  {t("menu.language")}
-                </Label>
-                <div className="flex gap-2">
-                  <Button variant={language === "es" ? "default" : "outline"} size="sm" className="flex-1 h-10 rounded-xl" onClick={() => setLanguage("es")}>
-                    {t("common.spanish")}
-                  </Button>
-                  <Button variant={language === "en" ? "default" : "outline"} size="sm" className="flex-1 h-10 rounded-xl" onClick={() => setLanguage("en")}>
-                    {t("common.english")}
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
