@@ -99,6 +99,22 @@ export default function RewardsPage() {
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+        {/* Cómo se consiguen los puntos, antes que en qué gastarlos: al final
+            de la página lo leía quien ya había bajado todo el catálogo. */}
+        <div className="space-y-1.5 text-center">
+          <p className="text-[13px] text-muted-foreground">
+            Gana puntos completando tu perfil, siendo contratado, dejando valoraciones, invitando amigos y más.
+          </p>
+          {/* En su propia línea y sin partirse, para que se lea como la acción
+              que es y no como el final de la frase anterior. */}
+          <Link
+            href="/rewards/how-to-earn"
+            className="block whitespace-nowrap text-[13px] font-semibold text-[#01A89E] underline"
+          >
+            Ver cómo ganar puntos
+          </Link>
+        </div>
+
         <Card className="bg-gradient-to-r from-[#01A89E]/10 to-[#F48221]/10 border-0">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
@@ -155,11 +171,6 @@ export default function RewardsPage() {
             )
           })}
         </div>
-
-        <p className="text-[13px] text-muted-foreground text-center">
-          Gana puntos completando tu perfil, siendo contratado, dejando valoraciones, invitando amigos y más.
-          {" "}<Link href="/rewards/how-to-earn" className="text-[#01A89E] underline font-semibold">Ver cómo ganar puntos</Link>
-        </p>
       </div>
     </div>
   )
