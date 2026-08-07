@@ -13,6 +13,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { useLanguage } from "@/lib/i18n/language-context"
+import { useAuth } from "@/hooks/use-auth"
 import Image from "next/image"
 
 interface LandingContentProps {
@@ -34,6 +35,11 @@ const LOAD_MORE_COUNT = 12
 export function LandingContent({ featuredJobs, stats, businesses, workers: workersData = [], flashOffers = [], isLoggedIn = false }: LandingContentProps) {
   const { t } = useLanguage()
   const router = useRouter()
+  const { user } = useAuth()
+  // Un establecimiento no puede abrir las ofertas -son de la competencia,
+  // y el guardián de rol se lo impide-, así que tampoco se le ofrecen:
+  // enseñar un enlace que rebota al panel sólo desconcierta.
+  const esEstablecimiento = user?.userType === "business"
   const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
 
   // Map workers from database format
@@ -76,6 +82,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
 
       <CategoriesScroll />
 
+      {!esEstablecimiento && (
       <section className="pt-2 pb-6 md:py-6 bg-gradient-to-b from-background to-teal-50/30">
         <div className="container mx-auto px-4">
           {/* La tarjeta entera lleva a las ofertas. Antes sólo respondía el
@@ -124,7 +131,9 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           </Link>
         </div>
       </section>
+      )}
 
+      {!esEstablecimiento && (
       <section className="py-8 bg-gradient-to-b from-teal-50 to-background">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6 gap-2">
@@ -164,6 +173,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           )}
         </div>
       </section>
+      )}
 
       <section className="py-6 bg-muted/30">
         <div className="container mx-auto px-4">
