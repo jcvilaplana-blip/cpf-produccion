@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
 
 /**
  * Cabecera de la portada.
@@ -18,12 +19,16 @@ const SLIDES = [
     subtitulo: "Todo tipo de negocios de Hostelería te están esperando",
     cta: "Ver Ofertas",
     ctaLink: "/jobs",
+    /** Su destino está vedado a los establecimientos. */
+    ocultarPara: "business" as const,
   },
   {
     titulo: "Conecta, Contrata, Confía",
     subtitulo: "Encuentra el empleado ideal para tu Establecimiento de hostelería",
     cta: "Buscar Candidatos",
     ctaLink: "/candidates",
+    /** Su destino está vedado a los candidatos. */
+    ocultarPara: "worker" as const,
   },
 ]
 
@@ -31,12 +36,31 @@ const IMAGEN = "/busy-restaurant-kitchen-team-working.jpg"
 const DURACION_MS = 6000
 
 export function HeroSlider() {
+  const { user } = useAuth()
   const [indice, setIndice] = useState(0)
 
+  // A cada rol se le muestra sólo el mensaje que puede seguir: el botón del
+  // otro lleva a una página que el guardián de rol le cerraría, y ofrecer un
+  // botón que rebota desconcierta más que no ofrecerlo.
+  //
+  // Sin sesión se muestran los dos: todavía no se sabe qué busca quien mira, y
+  // cualquier toque le lleva a identificarse de todas formas.
+  const slides = useMemo(
+    () => SLIDES.filter((s) => !user?.userType || s.ocultarPara !== user.userType),
+    [user?.userType]
+  )
+
+  // Si el rol se resuelve después de la primera pintada, la lista se acorta y
+  // el índice podría apuntar fuera.
   useEffect(() => {
-    const id = setInterval(() => setIndice((i) => (i + 1) % SLIDES.length), DURACION_MS)
+    setIndice((i) => (i < slides.length ? i : 0))
+  }, [slides.length])
+
+  useEffect(() => {
+    if (slides.length < 2) return
+    const id = setInterval(() => setIndice((i) => (i + 1) % slides.length), DURACION_MS)
     return () => clearInterval(id)
-  }, [])
+  }, [slides.length])
 
   return (
     <div className="relative w-full aspect-[8/9] md:aspect-video overflow-hidden bg-background">
@@ -57,7 +81,7 @@ export function HeroSlider() {
               cabecera no dé saltos de altura al cambiar de mensaje: el alto lo
               fija siempre el más largo de los dos. */}
           <div className="grid max-w-2xl">
-            {SLIDES.map((slide, i) => (
+            {slides.map((slide, i) => (
               <div
                 key={slide.titulo}
                 aria-hidden={i !== indice}
@@ -80,9 +104,10 @@ export function HeroSlider() {
             ))}
           </div>
 
-          {/* Indicadores, también para poder saltar de uno a otro sin esperar. */}
+          {/* Indicadores. Con un solo mensaje no hay nada entre lo que saltar. */}
+          {slides.length > 1 && (
           <div className="mt-6 flex gap-2 justify-center md:justify-start">
-            {SLIDES.map((slide, i) => (
+            {slides.map((slide, i) => (
               <button
                 key={slide.titulo}
                 type="button"
@@ -94,6 +119,7 @@ export function HeroSlider() {
               />
             ))}
           </div>
+          )}
         </div>
       </div>
     </div>
