@@ -538,7 +538,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             className="h-[58px] rounded-2xl bg-[#01A89E] text-[15px] font-semibold text-white shadow-lg shadow-[#01A89E]/25 hover:bg-[#018F86] active:scale-[0.98]"
           >
             <CalendarCheck className="mr-1.5 h-[18px] w-[18px]" />
-            Solicitar entrevista
+            Pedir entrevista
           </Button>
           <Button
             variant="outline"

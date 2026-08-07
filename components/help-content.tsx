@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ArrowLeft, HelpCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, Coins, HelpCircle } from "lucide-react"
 import Link from "next/link"
 
 interface HelpContentProps {
@@ -131,6 +131,26 @@ export function HelpContent({ userType }: HelpContentProps) {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Card-botón a "Cómo ganar puntos". Va antes de las preguntas y no
+                al final: quien abre la ayuda suele venir con una duda concreta,
+                y si esto quedara bajo el acordeón sólo lo vería quien ya la
+                hubiera resuelto. */}
+            <Link
+              href="/rewards/how-to-earn"
+              className="mb-6 flex items-center gap-4 rounded-2xl border-2 border-[#F48221]/40 bg-gradient-to-r from-[#F48221]/10 to-[#F5A623]/10 p-4 transition-colors hover:border-[#F48221]/70 active:scale-[0.99]"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F48221]/15">
+                <Coins className="h-7 w-7 text-[#F48221]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[16px] font-bold text-[#D9721D]">Cómo ganar puntos</p>
+                <p className="text-[13px] leading-snug text-muted-foreground">
+                  Todas las formas de acumular puntos y canjearlos por ventajas
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 shrink-0 text-[#F48221]" />
+            </Link>
+
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>

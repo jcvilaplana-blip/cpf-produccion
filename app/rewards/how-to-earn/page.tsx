@@ -147,7 +147,7 @@ export default function HowToEarnPage() {
         <div className="relative mx-auto max-w-2xl">
           <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">Gamificación</p>
           <h2 className="mt-2 text-[30px] font-extrabold leading-[1.1]">
-            Usa la app, acumula puntos, canjéalos
+            Usa CPF, acumula puntos, canjéalos
           </h2>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/85">
             Los puntos se conceden solos cuando haces cosas que mueven la plataforma: completar tu

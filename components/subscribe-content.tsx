@@ -93,11 +93,12 @@ export function SubscribeContent({
     }
   }
 
-  // Only show business plans to business users
+  // Cada rol ve sólo sus planes. La versión anterior descartaba ids concretos
+  // en vez de mirar a quién va dirigido cada plan, así que a un candidato le
+  // aparecía el Plan Standard de empresa —19,90 €/mes de funciones que no
+  // puede usar— y podía contratarlo.
   const visiblePlans = plans.filter((p) =>
-    profile?.user_type === "business"
-      ? p.id !== "free" && p.id !== "premium-worker"
-      : p.id !== "premium-business"
+    profile?.user_type === "business" ? p.role === "business" : p.role === "worker"
   )
 
   return (

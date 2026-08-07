@@ -205,8 +205,11 @@ export function CandidateDashboardContent({
                 su propia tarjeta más abajo y aquí solo competían por el
                 espacio. Mismo criterio que el panel de establecimiento. */}
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
-                <Link href="/notifications"><Bell className="h-6 w-6" /></Link>
+              {/* Campana al doble de tamaño: es el aviso que no conviene que
+                  pase desapercibido, y el botón crece con ella para que siga
+                  cabiendo dentro. */}
+              <Button asChild variant="ghost" size="icon" className="h-14 w-14">
+                <Link href="/notifications"><Bell className="size-12" /></Link>
               </Button>
               {/* El avatar no hacía nada al pulsarlo. Ahora abre el menú de
                   perfil, que es donde vive lo que antes colgaba del item
@@ -254,7 +257,7 @@ export function CandidateDashboardContent({
             <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
               <Link href="/edit-profile">
                 <User className="h-6 w-6 text-[#F48221]" />
-                <span className="text-[13px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
+                <span className="text-[14px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="relative h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
@@ -265,7 +268,7 @@ export function CandidateDashboardContent({
                   </span>
                 )}
                 <CalendarCheck className="h-6 w-6 text-violet-600" />
-                <span className="text-[13px] font-semibold leading-tight text-center">Mis<br />Entrevistas</span>
+                <span className="text-[14px] font-semibold leading-tight text-center">Mis<br />Entrevistas</span>
               </Link>
             </Button>
             <Button
@@ -283,7 +286,7 @@ export function CandidateDashboardContent({
                   </span>
                 )}
                 <MessageCircle className={cn("h-6 w-6", unreadCount > 0 && "text-red-500")} />
-                <span className="text-[13px] font-semibold leading-tight text-center">Mensajes</span>
+                <span className="text-[14px] font-semibold leading-tight text-center">Mensajes</span>
               </Link>
             </Button>
           </div>
@@ -293,13 +296,13 @@ export function CandidateDashboardContent({
             <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F5A623]/30 hover:bg-[#F5A623]/5">
               <Link href="/subscribe">
                 <Crown className="h-6 w-6 text-[#F5A623]" />
-                <span className="text-[13px] font-semibold leading-tight text-center">Suscripción</span>
+                <span className="text-[14px] font-semibold leading-tight text-center">Suscripción</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
               <Link href="/rewards">
                 <Gift className="h-6 w-6 text-violet-600" />
-                <span className="text-[13px] font-semibold leading-tight text-center">Recompensas<br />Gamificación</span>
+                <span className="text-[14px] font-semibold leading-tight text-center">Recompensas<br />Gamificación</span>
               </Link>
             </Button>
           </div>
@@ -314,7 +317,7 @@ export function CandidateDashboardContent({
                   </div>
                   <div>
                     <p className="text-xl font-bold">{applicationsCount}</p>
-                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mis<br />Candidaturas</p>
+                    <p className="text-[14px] font-medium text-muted-foreground leading-snug">Mis<br />Candidaturas</p>
                   </div>
                 </CardContent>
               </Card>
@@ -327,7 +330,7 @@ export function CandidateDashboardContent({
                   </div>
                   <div>
                     <p className="text-xl font-bold">{savedJobsCount}</p>
-                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Guardadas</p>
+                    <p className="text-[14px] font-medium text-muted-foreground leading-snug">Ofertas Guardadas</p>
                   </div>
                 </CardContent>
               </Card>
@@ -345,7 +348,7 @@ export function CandidateDashboardContent({
                   </div>
                   <div className="min-w-0">
                     <p className="text-xl font-bold">{interviewStats.completed}</p>
-                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                    <p className="text-[14px] font-medium text-muted-foreground leading-snug">
                       Entrevistas<br />Realizadas
                       {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratos` : ""}
                     </p>
@@ -364,7 +367,7 @@ export function CandidateDashboardContent({
                     <p className="text-xl font-bold">
                       {ratingStats.total > 0 ? ratingStats.average.toFixed(1) : "—"}
                     </p>
-                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                    <p className="text-[14px] font-medium text-muted-foreground leading-snug">
                       Mis<br />Valoraciones
                       {ratingStats.total > 0 ? ` · ${ratingStats.total}` : ""}
                     </p>
@@ -396,7 +399,7 @@ export function CandidateDashboardContent({
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-[#F48221] text-white text-[12px]">FLASH</Badge>
                         {flash.salary_min && (
-                          <span className="text-[13px] font-medium text-muted-foreground leading-snug">{flash.salary_min}EUR/dia</span>
+                          <span className="text-[14px] font-medium text-muted-foreground leading-snug">{flash.salary_min}EUR/dia</span>
                         )}
                       </div>
                       <h4 className="text-[16px] font-bold leading-snug line-clamp-2">{flash.title}</h4>
@@ -448,7 +451,7 @@ export function CandidateDashboardContent({
             <Card className="bg-[#01A89E]/5 border-[#01A89E]/20 hover:border-[#01A89E]/50 transition-colors">
               <CardContent className="p-3 text-center">
                 <p className="text-xl font-bold text-[#01A89E]">{jobs.length}</p>
-                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Activas</p>
+                <p className="text-[14px] font-medium text-muted-foreground leading-snug">Ofertas Activas</p>
               </CardContent>
             </Card>
           </button>
@@ -457,7 +460,7 @@ export function CandidateDashboardContent({
             <Card className="bg-[#F48221]/5 border-[#F48221]/20 hover:border-[#F48221]/50 transition-colors">
               <CardContent className="p-3 text-center">
                 <p className="text-xl font-bold text-[#F48221]">{activeFlash.length}</p>
-                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Flash</p>
+                <p className="text-[14px] font-medium text-muted-foreground leading-snug">Ofertas Flash</p>
               </CardContent>
             </Card>
           </Link>
@@ -468,7 +471,7 @@ export function CandidateDashboardContent({
                 <p className="text-xl font-bold text-violet-600 flex items-center justify-center gap-1.5">
                   <CalendarCheck className="h-4 w-4" /> {interviewStats.completed}
                 </p>
-                <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                <p className="text-[14px] font-medium text-muted-foreground leading-snug">
                   Entrevistas{interviewStats.upcoming > 0 ? ` · ${interviewStats.upcoming} pend.` : ""}
                 </p>
               </CardContent>
@@ -498,7 +501,7 @@ export function CandidateDashboardContent({
                 >
                   <MessageCircle className="h-4 w-4" /> {unreadCount}
                 </p>
-                <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mensajes</p>
+                <p className="text-[14px] font-medium text-muted-foreground leading-snug">Mensajes</p>
               </CardContent>
             </Card>
           </Link>
