@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { Zap, Star, Sparkles, Heart, TrendingUp } from "lucide-react"
+import { Zap, Star, Sparkles, Heart } from "lucide-react"
 import { formatEuros } from "@/lib/tax"
 
 /**
@@ -55,8 +55,8 @@ const PRODUCTOS_EMPRESA: Producto[] = [
 const PRODUCTOS_CANDIDATO: Producto[] = [
   {
     clave: "highlight_profile",
-    titulo: "Destacar Perfil",
-    descripcion: "Apareces primero en las búsquedas 7 días",
+    titulo: "Destacar Perfil (7 días)",
+    descripcion: "Apareces primero en las búsquedas",
     precioCents: 99,
     href: "/edit-profile",
     icono: Sparkles,
@@ -71,15 +71,10 @@ const PRODUCTOS_CANDIDATO: Producto[] = [
     icono: Heart,
     color: "#EC4899",
   },
-  {
-    clave: "boost_visibility",
-    titulo: "Impulsar Visibilidad",
-    descripcion: "Más alcance durante 3 días",
-    precioCents: 199,
-    href: "/edit-profile",
-    icono: TrendingUp,
-    color: "#8B5CF6",
-  },
+  // "Impulsar Visibilidad" existe en la lista de precios pero no se ofrece
+  // aquí: su activación (lib/payments/activate-feature.ts) no cambia ningún
+  // estado, así que cobrarlo no le daría al candidato nada a cambio. Vuelve a
+  // esta lista el día que haga algo.
 ]
 
 interface MicropaymentCardsProps {

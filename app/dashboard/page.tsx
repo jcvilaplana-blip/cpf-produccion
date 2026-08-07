@@ -23,7 +23,14 @@ export default async function DashboardPage() {
   if (isAdmin) redirect("/admin")
   if (isBusiness) redirect("/business-dashboard")
 
-  const [{ data: jobsData }, { data: catsData }, { count: unread }] = await Promise.all([
+  const [
+    { data: jobsData },
+    { data: catsData },
+    { count: unread },
+    { count: savedJobs },
+    { count: applications },
+    { data: ratingRow },
+  ] = await Promise.all([
     supabase
       .from("jobs")
       .select(`
@@ -36,6 +43,13 @@ export default async function DashboardPage() {
       .limit(50),
     supabase.from("categories").select("id, name").order("name"),
     supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", user.id).eq("read", false),
+    // Cifras de las tarjetas del panel. Se piden aquí, con el resto, para que
+    // el panel llegue pintado y no aparezcan los números un instante después.
+    supabase.from("saved_jobs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("applications").select("id", { count: "exact", head: true }).eq("worker_id", user.id),
+    // La media ya está agregada en la fila del perfil: no hace falta recorrer
+    // la tabla de valoraciones entera.
+    supabase.from("profiles").select("rating, total_ratings").eq("id", user.id).maybeSingle(),
   ])
 
   const candidateMatchInput = {
@@ -76,6 +90,9 @@ export default async function DashboardPage() {
       initialJobs={jobsWithMatch}
       initialCategories={catsData || []}
       initialUnreadCount={unread || 0}
+      savedJobsCount={savedJobs || 0}
+      applicationsCount={applications || 0}
+      ratingStats={{ average: ratingRow?.rating || 0, total: ratingRow?.total_ratings || 0 }}
     />
   )
 }

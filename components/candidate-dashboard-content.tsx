@@ -19,6 +19,12 @@ import {
   Bell,
   Gift,
   CalendarCheck,
+  Eye,
+  Pencil,
+  User,
+  Heart,
+  Star,
+  FileText,
 } from "lucide-react"
 import { SmartSearch } from "@/components/smart-search"
 import { createClient } from "@/lib/supabase/client"
@@ -26,6 +32,14 @@ import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
+import { MicropaymentCards } from "@/components/micropayment-cards"
+import { AccountFooterLinks } from "@/components/account-footer-links"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type Job = {
   id: string
@@ -62,6 +76,9 @@ interface CandidateDashboardContentProps {
   initialJobs: Job[]
   initialCategories: Category[]
   initialUnreadCount: number
+  savedJobsCount: number
+  applicationsCount: number
+  ratingStats: { average: number; total: number }
 }
 
 export function CandidateDashboardContent({
@@ -73,6 +90,9 @@ export function CandidateDashboardContent({
   initialJobs,
   initialCategories,
   initialUnreadCount,
+  savedJobsCount,
+  applicationsCount,
+  ratingStats,
 }: CandidateDashboardContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -177,31 +197,39 @@ export function CandidateDashboardContent({
                 <Image src="/logo-cpf.png" alt="CamareroPorFavor" width={36} height={36} className="object-contain rounded-full" />
               </Link>
               <div>
-                <h2 className="text-[16px] font-bold">Hola, {userName}</h2>
-                <p className="text-[13px] text-muted-foreground">Encuentra tu proximo trabajo</p>
+                <h2 className="text-[16px] font-bold">Panel de Candidato</h2>
+                <p className="text-[13px] text-muted-foreground">{userName}</p>
               </div>
             </div>
+            {/* Solo notificaciones y perfil: recompensas y suscripción tienen
+                su propia tarjeta más abajo y aquí solo competían por el
+                espacio. Mismo criterio que el panel de establecimiento. */}
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[12px] bg-[#F48221]/10 text-[#F48221] border-[#F48221]/30">Beta</Badge>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/notifications">
-                  <Bell className="h-5 w-5" />
-                </Link>
+              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
+                <Link href="/notifications"><Bell className="h-6 w-6" /></Link>
               </Button>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/rewards">
-                  <Gift className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" size="icon" className="relative">
-                <Link href="/subscribe">
-                  <Crown className="h-5 w-5 text-[#F48221]" />
-                </Link>
-              </Button>
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={userAvatar || undefined} alt={userName} />
-                <AvatarFallback className="bg-[#01A89E] text-white text-sm">{userInitial}</AvatarFallback>
-              </Avatar>
+              {/* El avatar no hacía nada al pulsarlo. Ahora abre el menú de
+                  perfil, que es donde vive lo que antes colgaba del item
+                  "Perfil" de la barra inferior. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#01A89E]" aria-label="Menú de perfil">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={userAvatar || undefined} alt={userName} />
+                      <AvatarFallback className="bg-[#01A89E] text-white text-sm">{userInitial}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
+                    {/* El perfil público real, el mismo que ven las empresas. */}
+                    <Link href={`/profile/${userId}`}><Eye className="mr-2 h-4 w-4" /><span>Ver Perfil</span></Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer text-[14px] py-2.5">
+                    <Link href="/edit-profile"><Pencil className="mr-2 h-4 w-4" /><span>Editar Perfil</span></Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           {/* Smart Search with Mapbox cities + DB data */}
@@ -215,6 +243,140 @@ export function CandidateDashboardContent({
       </header>
 
       <div className="px-4 py-4 space-y-6">
+        {/* Rejilla de accesos, con el mismo lenguaje que el panel de
+            establecimiento: iconos grandes, dos o tres por línea y las cifras
+            que importan a la vista. No lleva nada de crear ni gestionar ofertas
+            flash — eso es del rol de establecimiento; aquí el equivalente útil
+            es el estado de las candidaturas propias. */}
+        <div className="space-y-3">
+          {/* Línea 1: perfil · entrevistas · mensajes */}
+          <div className="grid grid-cols-3 gap-3">
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
+              <Link href="/edit-profile">
+                <User className="h-6 w-6 text-[#F48221]" />
+                <span className="text-[13px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="relative h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
+              <Link href="/interviews">
+                {interviewStats.upcoming > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[12px] font-bold text-white shadow-md">
+                    {interviewStats.upcoming}
+                  </span>
+                )}
+                <CalendarCheck className="h-6 w-6 text-violet-600" />
+                <span className="text-[13px] font-semibold leading-tight text-center">Mis<br />Entrevistas</span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className={cn(
+                "relative h-auto py-4 flex-col gap-2 rounded-xl",
+                unreadCount > 0 && "border-red-500/40 bg-red-500/5"
+              )}
+            >
+              <Link href="/messages">
+                {unreadCount > 0 && (
+                  <span className="animate-slow-blink absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[12px] font-bold text-white shadow-md">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+                <MessageCircle className={cn("h-6 w-6", unreadCount > 0 && "text-red-500")} />
+                <span className="text-[13px] font-semibold leading-tight text-center">Mensajes</span>
+              </Link>
+            </Button>
+          </div>
+
+          {/* Línea 2: suscripción y gamificación */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F5A623]/30 hover:bg-[#F5A623]/5">
+              <Link href="/subscribe">
+                <Crown className="h-6 w-6 text-[#F5A623]" />
+                <span className="text-[13px] font-semibold leading-tight text-center">Suscripción</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-violet-500/30 hover:bg-violet-500/5">
+              <Link href="/rewards">
+                <Gift className="h-6 w-6 text-violet-600" />
+                <span className="text-[13px] font-semibold leading-tight text-center">Recompensas<br />Gamificación</span>
+              </Link>
+            </Button>
+          </div>
+
+          {/* Línea 3: candidaturas y ofertas guardadas */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/profile">
+              <Card className="bg-[#01A89E]/5 border-[#01A89E]/20 hover:border-[#01A89E]/50 transition-colors h-full">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="bg-[#01A89E]/10 p-2.5 rounded-xl">
+                    <FileText className="h-6 w-6 text-[#01A89E]" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold">{applicationsCount}</p>
+                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">Mis<br />Candidaturas</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/saved">
+              <Card className="bg-rose-500/5 border-rose-500/20 hover:border-rose-500/50 transition-colors h-full">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="bg-rose-500/10 p-2.5 rounded-xl">
+                    <Heart className="h-6 w-6 text-rose-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold">{savedJobsCount}</p>
+                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">Ofertas Guardadas</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Línea 4: histórico. Solo las entrevistas ya cerradas, no las que
+              siguen en curso. */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/interviews?filter=realizadas" className="block">
+              <Card className="bg-violet-500/5 border-violet-500/20 hover:border-violet-500/50 transition-colors h-full">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="bg-violet-500/10 p-2.5 rounded-xl">
+                    <CalendarCheck className="h-6 w-6 text-violet-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold">{interviewStats.completed}</p>
+                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                      Entrevistas<br />Realizadas
+                      {interviewStats.hired > 0 ? ` · ${interviewStats.hired} contratos` : ""}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href={`/profile/${userId}/ratings`} className="block">
+              <Card className="bg-amber-500/5 border-amber-500/20 hover:border-amber-500/50 transition-colors h-full">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="bg-amber-500/10 p-2.5 rounded-xl">
+                    <Star className="h-6 w-6 text-amber-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold">
+                      {ratingStats.total > 0 ? ratingStats.average.toFixed(1) : "—"}
+                    </p>
+                    <p className="text-[13px] font-medium text-muted-foreground leading-snug">
+                      Mis<br />Valoraciones
+                      {ratingStats.total > 0 ? ` · ${ratingStats.total}` : ""}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          <MicropaymentCards rol="worker" />
+        </div>
+
         {/* Flash Offers Section */}
         {activeFlash.length > 0 && (
           <section>
@@ -402,6 +564,12 @@ export function CandidateDashboardContent({
             </div>
           )}
         </section>
+
+        {/* Enlaces legales, cerrar sesión y eliminar cuenta. Imprescindible
+            aquí: al convertir el item "Perfil" de la barra inferior en un
+            acceso directo al panel, este footer pasó a ser el único sitio
+            desde el que un candidato puede cerrar sesión. */}
+        <AccountFooterLinks />
       </div>
 
     </div>

@@ -356,62 +356,24 @@ export function GlobalBottomNavigation(): React.JSX.Element | null {
           </Link>
 
           {isLoggedIn ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "flex flex-col items-center justify-center py-2 rounded-md transition-colors w-full",
-                    isActive("/dashboard") || isActive("/profile") || isActive("/admin")
-                      ? "text-[#01A89E] bg-teal-50 dark:bg-teal-950"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
-                  )}
-                >
-                  {avatarUrl ? (
-                    <Avatar className={`h-6 w-6 ring-1 ${ringColor}`}>
-                      <AvatarImage src={avatarUrl} alt={displayName} />
-                      <AvatarFallback className="bg-[#01A89E] text-white text-[12px]">{initials}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <User className="h-5 w-5" />
-                  )}
-                  <span className="text-[13px] mt-1">{t("navigation.profile")}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="w-56 mb-2">
-                <div className="flex items-center gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="bg-[#01A89E] text-white text-[13px]">{initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium">{displayName}</p>
-                    <p className="text-[13px] text-muted-foreground">{t("topNav.worker")}</p>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                {isAdmin && (
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/admin"><Shield className="mr-2 h-4 w-4" /><span>Panel Admin</span></Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href={getProfilePath()}><LayoutDashboard className="mr-2 h-4 w-4" /><span>{t("topNav.myDashboard")}</span></Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/edit-profile"><Pencil className="mr-2 h-4 w-4" /><span>{t("topNav.viewProfile")}</span></Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/search"><MapPin className="mr-2 h-4 w-4" /><span>Buscador</span></Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/settings"><Settings className="mr-2 h-4 w-4" /><span>{t("topNav.settings")}</span></Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" /><span>{t("topNav.logout")}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            /* Acceso directo al panel. Antes esto abría un desplegable con
+               Mi panel / Editar perfil / Buscador / Configuración / Salir:
+               todo eso vive ahora en el menú del avatar de la cabecera del
+               panel, así que aquí basta con un enlace de un solo toque.
+               Mismo criterio que la barra del establecimiento. */
+            <Link
+              href={getProfilePath()}
+              onClick={handleNavClick}
+              className={cn(
+                "flex flex-col items-center justify-center py-2 rounded-md transition-colors",
+                isActive("/dashboard") || isActive("/profile") || isActive("/admin")
+                  ? "text-[#01A89E] bg-teal-50 dark:bg-teal-950"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
+              )}
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span className="text-[13px] mt-1">Panel</span>
+            </Link>
           ) : (
             <Link
               href="/auth/login"
