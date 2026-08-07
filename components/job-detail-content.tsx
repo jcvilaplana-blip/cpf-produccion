@@ -30,6 +30,7 @@ import { applyToJobAction, withdrawApplicationAction, saveJobAction, activateHig
 import { toast } from "sonner"
 import type { Profile } from "@/lib/types"
 import { contractTypeLabel } from "@/lib/profile-constants"
+import { MicropaymentCards } from "@/components/micropayment-cards"
 import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
 
 interface JobData {
@@ -479,6 +480,9 @@ export function JobDetailContent({
             </CardContent>
           </Card>
         )}
+
+        {/* Compras aplicables a ESTA oferta, para el dueño. */}
+        {isBusinessOwner && <MicropaymentCards rol="business" jobId={job.id} />}
 
         {/* Owner Actions */}
         {isBusinessOwner && (

@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { useAuth } from "@/hooks/use-auth"
 import Image from "next/image"
+import { VenueTypesScroll } from "@/components/venue-types-scroll"
 
 interface LandingContentProps {
   featuredJobs: any[]
@@ -40,6 +41,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
   // y el guardián de rol se lo impide-, así que tampoco se le ofrecen:
   // enseñar un enlace que rebota al panel sólo desconcierta.
   const esEstablecimiento = user?.userType === "business"
+  const esCandidato = user?.userType === "worker"
   const [displayedWorkers, setDisplayedWorkers] = useState(INITIAL_WORKERS_COUNT)
 
   // Map workers from database format
@@ -175,6 +177,17 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
       </section>
       )}
 
+      {/* A un candidato no se le enseñan otros candidatos: explorarlos le está
+          vedado por rol, así que esta sección era una fila de tarjetas que no
+          podía abrir. En su lugar ve por qué tipo de local puede trabajar. */}
+      {esCandidato ? (
+      <section className="py-6 bg-muted/30">
+        <div className="container mx-auto px-4 mb-4">
+          <h2 className="text-lg md:text-2xl font-bold">Tipos de Establecimiento</h2>
+        </div>
+        <VenueTypesScroll />
+      </section>
+      ) : (
       <section className="py-6 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
@@ -219,6 +232,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           )}
         </div>
       </section>
+      )}
 
       <section className="py-8 bg-background">
         <div className="container mx-auto px-4">

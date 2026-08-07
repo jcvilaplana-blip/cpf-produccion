@@ -66,6 +66,18 @@ export default function BusinessesPage() {
   const [loading, setLoading] = useState(true)
   const [imgErrors, setImgErrors] = useState<Set<string>>(new Set())
 
+  // El carrusel de tipos de establecimiento enlaza aquí con `?type=`. Sin esto
+  // el filtro se quedaba en "all" y el usuario aterrizaba en el listado
+  // completo, sin ninguna señal de que su elección se hubiera perdido.
+  //
+  // Se lee de `window.location` y no con `useSearchParams` a propósito: ese
+  // hook obliga a envolver la página en un Suspense para poder prerenderizarla,
+  // y aquí sólo hace falta el valor inicial de un filtro.
+  useEffect(() => {
+    const tipo = new URLSearchParams(window.location.search).get("type")
+    if (tipo) setFilterType(tipo)
+  }, [])
+
   useEffect(() => {
     async function fetchBusinesses() {
       setLoading(true)

@@ -27,6 +27,7 @@ import { toggleJobActiveAction, deleteJobAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { contractTypeLabel } from "@/lib/profile-constants"
+import { MicropaymentCards } from "@/components/micropayment-cards"
 
 interface ApplicationData {
   id: string
@@ -110,6 +111,9 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-3xl">
+        {/* Lo que se puede comprar para estas ofertas, antes del listado. */}
+        <MicropaymentCards rol="business" className="mb-4" />
+
         {jobs.length > 0 && (
           <div className="flex gap-2 mb-4">
             <button

@@ -25,6 +25,7 @@ import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { getHighlightedProfileIds, sortHighlightedFirst } from "@/lib/highlighted-profiles"
 import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
+import { MicropaymentCards } from "@/components/micropayment-cards"
 
 interface Candidate {
   id: string
@@ -382,6 +383,10 @@ export default function BusinessDashboardPage() {
             </Card>
           </Link>
         </div>
+
+        {/* Compras sueltas, justo encima del buscador: es donde el
+            establecimiento está decidiendo cómo llenar sus ofertas. */}
+        <MicropaymentCards rol="business" />
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
