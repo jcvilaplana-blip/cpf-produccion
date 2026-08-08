@@ -16,6 +16,7 @@ import { FlashOffersCarousel } from "@/components/flash-offers-carousel"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { CityAutocomplete } from "@/components/city-autocomplete"
 import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
+import { isHighlightActive } from "@/lib/highlighted-jobs"
 
 interface Job {
   id: string
@@ -35,6 +36,7 @@ interface Job {
   }
   isFlash?: boolean
   isHighlighted?: boolean
+  highlightExpiresAt?: string | null
   matchPercent?: number
   expiresAt?: string
 }
@@ -101,7 +103,11 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
   const allJobs = useMemo(() => {
     return [...jobs].sort((a, b) => {
       if (!!a.isFlash !== !!b.isFlash) return a.isFlash ? -1 : 1
-      if (!!a.isHighlighted !== !!b.isHighlighted) return a.isHighlighted ? -1 : 1
+      // Vigencia incluida: una oferta destacada hace una semana ya no ocupa
+      // los primeros puestos por los que se pagaron 24 horas.
+      const da = isHighlightActive(a)
+      const db = isHighlightActive(b)
+      if (da !== db) return da ? -1 : 1
       const matchDiff = (b.matchPercent || 0) - (a.matchPercent || 0)
       if (matchDiff !== 0) return matchDiff
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -393,7 +399,7 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
                         <Zap className="h-2 w-2" /> Flash
                       </Badge>
                     )}
-                    {!job.isFlash && job.isHighlighted && (
+                    {!job.isFlash && isHighlightActive(job) && (
                       <Badge className="absolute top-1 left-1 bg-[#F48221] text-white text-[12px] px-1 py-0 h-4">
                         Destacada
                       </Badge>

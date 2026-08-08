@@ -261,7 +261,6 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   const languages: string[] = parseList(worker.languages).map((l: any) =>
     typeof l === "string" ? l : [l?.name || l?.language, l?.level].filter(Boolean).join(" · ")
   ).filter(Boolean)
-  const ratingCriteriaSummary: Record<string, number> = worker.rating_criteria_summary || {}
 
   const age: number | null = (() => {
     if (!worker.date_of_birth) return null
@@ -288,11 +287,6 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   })
   const activelySearching =
     worker.availability_status === "available" || worker.has_open_application || worker.has_active_interview
-
-  const criteriaFields = RATING_CRITERIA.map((criteria) => ({
-    label: criteria.label,
-    value: readCriterion(ratingCriteriaSummary, criteria),
-  }))
 
   const rating: number = typeof worker.rating === "number" ? worker.rating : 0
   const totalRatings: number = worker.total_ratings || 0
@@ -473,63 +467,6 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
 
         {/* 7 — Indicador de búsqueda activa */}
         <Section>{activeSearchBlock}</Section>
-
-        {/* Criterios de valoración (1 a 5 estrellas) */}
-        <Section
-          icon={Sparkles}
-          title="Criterios de valoración"
-          action={
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
-              1–5 ★
-            </span>
-          }
-        >
-          <div className="divide-y divide-slate-100">
-            {criteriaFields.map((criteria) => (
-              <div key={criteria.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                <p className="min-w-0 flex-1 text-[14px] leading-snug text-slate-700">{criteria.label}</p>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Stars value={criteria.value || 0} />
-                  <span className="w-7 text-right text-[13px] font-semibold tabular-nums text-slate-900">
-                    {criteria.value ? criteria.value.toFixed(1) : "—"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        {/* 8 — Valoración media real de empresas */}
-        <Section>
-          <div className="flex items-center gap-4">
-            <div className="flex h-[74px] w-[74px] shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100/60">
-              <span className="text-[28px] font-bold leading-none text-slate-900">
-                {totalRatings > 0 ? rating.toFixed(1) : "—"}
-              </span>
-              <span className="mt-0.5 text-[12px] font-medium uppercase tracking-wider text-amber-700">
-                media
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold text-slate-900">Valoración media de empresas</p>
-              <div className="mt-1.5">
-                <Stars value={rating} size="md" />
-              </div>
-              <p className="mt-1.5 text-[12px] leading-snug text-slate-500">
-                {totalRatings > 0
-                  ? `Basada en ${totalRatings} ${totalRatings === 1 ? "valoración real" : "valoraciones reales"} de establecimientos que le han contratado.`
-                  : "Aún no tiene valoraciones. Solo los establecimientos que le hayan contratado pueden valorarle."}
-              </p>
-            </div>
-          </div>
-          <Link
-            href={`/profile/${id}/ratings`}
-            className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-[14px] font-semibold text-slate-900 active:bg-slate-100"
-          >
-            Ver valoraciones y reseñas
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          </Link>
-        </Section>
 
         {/* 9 — CTAs */}
         <div className="grid grid-cols-2 gap-3">

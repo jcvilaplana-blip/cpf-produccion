@@ -32,6 +32,7 @@ import { computeMatchScore, type MatchCandidateInput } from "@/lib/matching"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
+import { isHighlightActive } from "@/lib/highlighted-jobs"
 import { MicropaymentCards } from "@/components/micropayment-cards"
 import { AccountFooterLinks } from "@/components/account-footer-links"
 import {
@@ -53,6 +54,7 @@ type Job = {
   salary_max: number | null
   is_flash: boolean
   is_highlighted?: boolean | null
+  highlight_expires_at?: string | null
   flash_expires_at: string | null
   created_at: string
   matchPercent?: number
@@ -123,7 +125,7 @@ export function CandidateDashboardContent({
             .from("jobs")
             .select(`
               id, title, location, city, category, position, contract_type,
-              salary_min, salary_max, is_flash, is_highlighted, flash_expires_at, created_at,
+              salary_min, salary_max, is_flash, is_highlighted, highlight_expires_at, flash_expires_at, created_at,
               business:profiles!jobs_business_id_fkey(display_name, avatar_url)
             `)
             .eq("is_active", true)
@@ -174,7 +176,9 @@ export function CandidateDashboardContent({
     // Flash first, then highlighted, then best profile match, then most recent.
     .sort((a, b) => {
       if (a.is_flash !== b.is_flash) return a.is_flash ? -1 : 1
-      if (!!a.is_highlighted !== !!b.is_highlighted) return a.is_highlighted ? -1 : 1
+      const da = isHighlightActive(a)
+      const db = isHighlightActive(b)
+      if (da !== db) return da ? -1 : 1
       const matchDiff = (b.matchPercent || 0) - (a.matchPercent || 0)
       if (matchDiff !== 0) return matchDiff
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -205,11 +209,8 @@ export function CandidateDashboardContent({
                 su propia tarjeta más abajo y aquí solo competían por el
                 espacio. Mismo criterio que el panel de establecimiento. */}
             <div className="flex items-center gap-2">
-              {/* Campana al doble de tamaño: es el aviso que no conviene que
-                  pase desapercibido, y el botón crece con ella para que siga
-                  cabiendo dentro. */}
-              <Button asChild variant="ghost" size="icon" className="h-14 w-14">
-                <Link href="/notifications"><Bell className="size-12" /></Link>
+              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
+                <Link href="/notifications"><Bell className="size-6" /></Link>
               </Button>
               {/* El avatar no hacía nada al pulsarlo. Ahora abre el menú de
                   perfil, que es donde vive lo que antes colgaba del item
@@ -322,7 +323,10 @@ export function CandidateDashboardContent({
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/saved">
+            {/* /saved es la página de CANDIDATOS guardados, del lado empresa.
+                Las ofertas que guarda un candidato viven en /favorites, que ya
+                distingue el rol de quien la abre. */}
+            <Link href="/favorites">
               <Card className="bg-rose-500/5 border-rose-500/20 hover:border-rose-500/50 transition-colors h-full">
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="bg-rose-500/10 p-2.5 rounded-xl">
@@ -548,7 +552,7 @@ export function CandidateDashboardContent({
                             {job.category && <Badge variant="secondary" className="text-[12px]">{job.category}</Badge>}
                             {job.contract_type && <Badge variant="outline" className="text-[12px]">{job.contract_type}</Badge>}
                             {job.is_flash && <Badge className="bg-[#F97316] text-white text-[12px]">FLASH</Badge>}
-                            {job.is_highlighted && <Badge className="bg-[#F48221] text-white text-[12px]">Destacada</Badge>}
+                            {isHighlightActive(job) && <Badge className="bg-[#F48221] text-white text-[12px]">Destacada</Badge>}
                             {typeof job.matchPercent === "number" && job.matchPercent > 0 && (
                               <Badge className="bg-[#01A89E]/10 text-[#01A89E] border-[#01A89E]/30 text-[12px]">
                                 {job.matchPercent}% coincidencia

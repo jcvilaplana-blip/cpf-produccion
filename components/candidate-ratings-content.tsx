@@ -64,10 +64,15 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
     [reviews, filter]
   )
 
+  // Se listan TODOS los criterios, también los que aún no tienen media, con un
+  // guion en su sitio. Antes se descartaban los vacíos, así que un candidato
+  // recién valorado veía media tabla o ninguna, sin saber por qué se le
+  // valoraba. La tabla completa es además la que se enseñaba en el perfil
+  // público, de donde este bloque viene.
   const criteriaFields = RATING_CRITERIA.map((criteria) => ({
     label: criteria.label,
     value: readCriterion(criteriaSummary, criteria),
-  })).filter((c) => typeof c.value === "number")
+  }))
 
   const roles: string[] = (() => {
     const raw = profile?.specialties
@@ -184,7 +189,7 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
           )}
         </section>
 
-        {/* Medias por criterio, solo si existen */}
+        {/* Medias por criterio */}
         {criteriaFields.length > 0 && (
           <section className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center gap-2">
@@ -196,9 +201,9 @@ export function CandidateRatingsContent({ candidateId }: CandidateRatingsContent
                 <div key={criteria.label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                   <p className="min-w-0 flex-1 text-[14px] leading-snug text-slate-700">{criteria.label}</p>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Stars value={criteria.value!} />
+                    <Stars value={criteria.value || 0} />
                     <span className="w-7 text-right text-[13px] font-semibold tabular-nums text-slate-900">
-                      {criteria.value!.toFixed(1)}
+                      {criteria.value ? criteria.value.toFixed(1) : "—"}
                     </span>
                   </div>
                 </div>

@@ -80,6 +80,9 @@ export default async function JobsPage() {
       jobType: j.category,
       isFlash: j.is_flash || false,
       isHighlighted: j.is_highlighted || false,
+      // Sin esto el listado no puede distinguir una oferta destacada vigente de
+      // una cuyas 24 horas ya pasaron.
+      highlightExpiresAt: j.highlight_expires_at || null,
       matchPercent: candidateMatchInput
         ? computeMatchScore(candidateMatchInput, {
             city: j.city,

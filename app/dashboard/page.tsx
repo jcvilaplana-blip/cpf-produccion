@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       .from("jobs")
       .select(`
         id, title, location, city, category, position, contract_type,
-        salary_min, salary_max, is_flash, is_highlighted, flash_expires_at, created_at,
+        salary_min, salary_max, is_flash, is_highlighted, highlight_expires_at, flash_expires_at, created_at,
         business:profiles!jobs_business_id_fkey(display_name, avatar_url)
       `)
       .eq("is_active", true)

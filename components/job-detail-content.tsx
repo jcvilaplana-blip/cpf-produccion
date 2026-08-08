@@ -481,8 +481,24 @@ export function JobDetailContent({
           </Card>
         )}
 
-        {/* Compras aplicables a ESTA oferta, para el dueño. */}
-        {isBusinessOwner && <MicropaymentCards rol="business" jobId={job.id} />}
+        {/* Compras aplicables a ESTA oferta, para el dueño. "Destacar" cobra
+            aquí mismo con `handleHighlight`, que gasta primero un canje de
+            puntos si lo hay y sólo si no, abre el pago. */}
+        {isBusinessOwner && (
+          <MicropaymentCards
+            rol="business"
+            jobId={job.id}
+            onDestacarOferta={job.is_flash ? undefined : handleHighlight}
+            destacarDeshabilitado={isCurrentlyHighlighted || isHighlighting}
+            destacarEtiqueta={
+              isCurrentlyHighlighted
+                ? "Ya destacada"
+                : isHighlighting
+                  ? "Preparando el pago…"
+                  : undefined
+            }
+          />
+        )}
 
         {/* Owner Actions */}
         {isBusinessOwner && (

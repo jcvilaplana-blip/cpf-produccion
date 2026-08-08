@@ -82,7 +82,20 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
     <div className="min-h-screen bg-background" onClickCapture={handleGateClick}>
       <HeroSlider />
 
-      <CategoriesScroll />
+      {/* Primera sección bajo la cabecera. Al candidato no se le enseñan las
+          categorías de empleo -las tiene enteras en su panel y en el buscador-
+          sino por qué clase de local puede trabajar, que es la decisión que sí
+          toma desde la portada. */}
+      {esCandidato ? (
+        <section className="py-6">
+          <div className="container mx-auto px-4 mb-4">
+            <h2 className="text-lg md:text-2xl font-bold">Tipo de Establecimiento</h2>
+          </div>
+          <VenueTypesScroll />
+        </section>
+      ) : (
+        <CategoriesScroll />
+      )}
 
       {!esEstablecimiento && (
       <section className="pt-2 pb-6 md:py-6 bg-gradient-to-b from-background to-teal-50/30">
@@ -179,15 +192,9 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
 
       {/* A un candidato no se le enseñan otros candidatos: explorarlos le está
           vedado por rol, así que esta sección era una fila de tarjetas que no
-          podía abrir. En su lugar ve por qué tipo de local puede trabajar. */}
-      {esCandidato ? (
-      <section className="py-6 bg-muted/30">
-        <div className="container mx-auto px-4 mb-4">
-          <h2 className="text-lg md:text-2xl font-bold">Tipos de Establecimiento</h2>
-        </div>
-        <VenueTypesScroll />
-      </section>
-      ) : (
+          podía abrir. Su reemplazo -los tipos de establecimiento- vive ahora
+          arriba del todo, así que aquí simplemente no hay sección. */}
+      {!esCandidato && (
       <section className="py-6 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">

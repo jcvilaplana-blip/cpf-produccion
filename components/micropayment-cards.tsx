@@ -84,6 +84,16 @@ interface MicropaymentCardsProps {
    * al listado: el usuario ya está donde quiere aplicarlo.
    */
   jobId?: string
+  /**
+   * Arranca el cobro de "Destacar Oferta" aquí mismo. Cuando se pasa, esa
+   * tarjeta deja de ser un enlace y se comporta como el botón de compra: era
+   * una tarjeta con precio que no cobraba nada, sólo navegaba.
+   */
+  onDestacarOferta?: () => void
+  /** Deshabilita la tarjeta de destacar (cobro en curso o ya destacada). */
+  destacarDeshabilitado?: boolean
+  /** Texto alternativo para la tarjeta de destacar, p. ej. "Ya destacada". */
+  destacarEtiqueta?: string
   titulo?: string
   className?: string
 }
@@ -91,6 +101,9 @@ interface MicropaymentCardsProps {
 export function MicropaymentCards({
   rol,
   jobId,
+  onDestacarOferta,
+  destacarDeshabilitado = false,
+  destacarEtiqueta,
   titulo = "Impulsa tu visibilidad",
   className,
 }: MicropaymentCardsProps) {
@@ -98,34 +111,56 @@ export function MicropaymentCards({
 
   return (
     <div className={className}>
-      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{titulo}</p>
+      <h2 className="mb-3 text-lg md:text-2xl font-bold">{titulo}</h2>
       <div className="grid grid-cols-2 gap-3">
         {productos.map((p) => {
           const Icono = p.icono
+          const esCompraDirecta = p.clave === "highlight_job" && Boolean(onDestacarOferta)
           const href = jobId && p.clave === "highlight_job" ? `/jobs/${jobId}` : p.href
+
+          const contenido = (
+            <Card
+              className="h-full text-left transition-colors"
+              style={{ backgroundColor: `${p.color}0D`, borderColor: `${p.color}33` }}
+            >
+              <CardContent className="flex h-full flex-col gap-2 p-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="rounded-xl p-2.5" style={{ backgroundColor: `${p.color}1A` }}>
+                    <Icono className="h-6 w-6" style={{ color: p.color }} />
+                  </div>
+                  <p className="text-[15px] font-bold leading-tight" style={{ color: p.color }}>
+                    {formatEuros(p.precioCents)}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold leading-snug">
+                    {esCompraDirecta && destacarEtiqueta ? destacarEtiqueta : p.titulo}
+                  </p>
+                  <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
+                    {p.descripcion}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+
+          if (esCompraDirecta) {
+            return (
+              <button
+                key={p.clave}
+                type="button"
+                onClick={onDestacarOferta}
+                disabled={destacarDeshabilitado}
+                className="block w-full disabled:opacity-60"
+              >
+                {contenido}
+              </button>
+            )
+          }
+
           return (
             <Link key={p.clave} href={href} className="block">
-              <Card
-                className="h-full transition-colors"
-                style={{ backgroundColor: `${p.color}0D`, borderColor: `${p.color}33` }}
-              >
-                <CardContent className="flex h-full flex-col gap-2 p-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="rounded-xl p-2.5" style={{ backgroundColor: `${p.color}1A` }}>
-                      <Icono className="h-6 w-6" style={{ color: p.color }} />
-                    </div>
-                    <p className="text-[15px] font-bold leading-tight" style={{ color: p.color }}>
-                      {formatEuros(p.precioCents)}
-                    </p>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold leading-snug">{p.titulo}</p>
-                    <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-                      {p.descripcion}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              {contenido}
             </Link>
           )
         })}
