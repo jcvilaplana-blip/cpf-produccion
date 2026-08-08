@@ -21,13 +21,16 @@ import {
   ToggleRight,
   Trash2,
   Zap,
+  Star,
 } from "lucide-react"
 import type { Job } from "@/lib/types"
-import { toggleJobActiveAction, deleteJobAction } from "@/lib/actions"
+import { toggleJobActiveAction, deleteJobAction, activateHighlightWithCreditAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { contractTypeLabel } from "@/lib/profile-constants"
 import { MicropaymentCards } from "@/components/micropayment-cards"
+import { StripePaymentDialog, type ResumenPago } from "@/components/stripe-payment-dialog"
+import { isHighlightActive } from "@/lib/highlighted-jobs"
 
 interface ApplicationData {
   id: string
@@ -53,6 +56,62 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
   const router = useRouter()
   const [jobs, setJobs] = useState(initialJobs)
   const [showFlashOnly, setShowFlashOnly] = useState(false)
+  /** Id de la oferta cuyo destacado se está tramitando. */
+  const [destacando, setDestacando] = useState<string | null>(null)
+  const [pago, setPago] = useState<{
+    clientSecret: string
+    resumen: ResumenPago
+    micropaymentId: string
+  } | null>(null)
+
+  /**
+   * Destaca una oferta desde el listado.
+   *
+   * Mismo camino que el botón del detalle de la oferta: primero se intenta
+   * gastar un canje de puntos y sólo si no hay ninguno se cobra. Antes esto
+   * únicamente existía dentro de cada oferta, así que para destacar había que
+   * entrar en ella; desde aquí se ve toda la lista y se decide de un vistazo.
+   */
+  const handleDestacar = async (jobId: string) => {
+    const userId = profile?.id
+    if (!userId || destacando) return
+    setDestacando(jobId)
+    try {
+      const creditResult = await activateHighlightWithCreditAction(jobId)
+      if (creditResult.success) {
+        toast.success("Oferta destacada durante 24h")
+        router.refresh()
+        setDestacando(null)
+        return
+      }
+      if (creditResult.error && creditResult.error !== "no_credit") {
+        toast.error(creditResult.error)
+        setDestacando(null)
+        return
+      }
+
+      const res = await fetch("/api/micropayments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featureType: "highlight_job", userId, jobId }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.clientSecret) {
+        toast.error(data.error || "Error al iniciar el pago")
+        setDestacando(null)
+        return
+      }
+      setPago({
+        clientSecret: data.clientSecret,
+        resumen: data.resumen,
+        micropaymentId: data.micropaymentId,
+      })
+      setDestacando(null)
+    } catch {
+      toast.error("Error al iniciar el pago")
+      setDestacando(null)
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -86,6 +145,7 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background pb-20 md:pt-14">
       <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur border-b pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center gap-3 px-4 py-3">
@@ -242,6 +302,26 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
                     </div>
                   )}
 
+                  {/* Destacar. No se ofrece en las flash: ya tienen prioridad
+                      pagada, y sumarle un destacado sería cobrar dos veces por
+                      lo mismo. */}
+                  {!job.is_flash && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDestacar(job.id)}
+                      disabled={isHighlightActive(job) || destacando === job.id}
+                      className="w-full border-[#F48221]/40 text-[#F48221] hover:bg-[#F48221]/5 text-[13px] disabled:opacity-60"
+                    >
+                      <Star className="h-3.5 w-3.5 mr-1.5" />
+                      {isHighlightActive(job)
+                        ? "Ya destacada"
+                        : destacando === job.id
+                          ? "Preparando el pago…"
+                          : "Destacar 24h · 2,50 €"}
+                    </Button>
+                  )}
+
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
                     <Button asChild variant="outline" size="sm" className="flex-1 bg-transparent text-[13px]">
@@ -279,5 +359,21 @@ export function MyJobsContent({ jobs: initialJobs, profile }: MyJobsContentProps
       </div>
 
     </div>
+
+      <StripePaymentDialog
+        clientSecret={pago?.clientSecret ?? null}
+        resumen={pago?.resumen ?? null}
+        returnUrl={
+          typeof window !== "undefined" && pago
+            ? `${window.location.origin}/micropayment/success?mp_id=${pago.micropaymentId}`
+            : ""
+        }
+        onClose={() => setPago(null)}
+        onSuccess={() => {
+          if (!pago) return
+          router.push(`/micropayment/success?mp_id=${pago.micropaymentId}`)
+        }}
+      />
+    </>
   )
 }
