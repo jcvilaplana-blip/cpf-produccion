@@ -29,6 +29,7 @@ import { PortfolioVideosSection } from "@/components/edit-profile/portfolio-vide
 import { PremiumFeaturesCard } from "@/components/premium-features-card"
 import { ProfileHighlightedModal } from "@/components/profile-highlighted-modal"
 import { ReferralCard } from "@/components/edit-profile/referral-card"
+import { toast } from "sonner"
 
 interface EditProfileContentProps {
   profile: Profile | null
@@ -81,6 +82,13 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState("")
+
+  // Los errores de guardado se enseñan igual que el éxito: delante del usuario,
+  // no en una banda superior que puede quedar fuera de pantalla.
+  const fallarConAviso = (mensaje: string) => {
+    fallarConAviso(mensaje)
+    toast.error(mensaje)
+  }
 
   // --- init from profile ---
   useEffect(() => {
@@ -252,7 +260,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
             .upload(fileName, avatarFile, { upsert: true })
           
           if (uploadError) {
-            setSaveError("Error al subir la imagen de perfil")
+            fallarConAviso("Error al subir la imagen de perfil")
             setSaving(false)
             return
           }
@@ -303,7 +311,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
       // session, proxy error) can resolve to null/undefined - reading .error
       // off it used to throw and surface as the opaque "Error inesperado".
       if (!result) {
-        setSaveError(
+        fallarConAviso(
           "No se pudo contactar con el servidor. Recarga la página e inténtalo de nuevo."
         )
       } else if (result.error) {
@@ -312,9 +320,12 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
           .replace("Could not find", "No se encontro")
           .replace("column", "columna")
           .replace("in the schema cache", "en la base de datos")
-        setSaveError(errorMsg)
+        fallarConAviso(errorMsg)
       } else {
         setSaveSuccess(true)
+        // El aviso iba en una banda pegada a la cabecera: quien guardaba desde
+        // el final de un formulario largo -que en móvil es siempre- no lo veía.
+        toast.success("Perfil guardado correctamente")
         setAvatarFile(null) // Clear file after successful save
         setTimeout(() => setSaveSuccess(false), 3000)
       }
@@ -322,7 +333,7 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
       // Never swallow the cause: without it this screen is undebuggable.
       console.error("handleSave failed:", err)
       const detail = err instanceof Error ? err.message : String(err)
-      setSaveError(`Error al guardar el perfil: ${detail}`)
+      fallarConAviso(`Error al guardar el perfil: ${detail}`)
     }
     setSaving(false)
   }
@@ -343,18 +354,6 @@ export function EditProfileContent({ profile, userEmail }: EditProfileContentPro
         </div>
       </div>
 
-      {saveSuccess && (
-        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2.5 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm text-emerald-700 font-medium">Perfil guardado correctamente</span>
-        </div>
-      )}
-      {saveError && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2.5 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600" />
-          <span className="text-sm text-red-700 font-medium">{saveError}</span>
-        </div>
-      )}
 
       <div className="container mx-auto px-4 py-5 max-w-2xl space-y-5">
         {/* Profile Visibility Toggle */}

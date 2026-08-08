@@ -9,6 +9,7 @@ import { ScrollToTop } from "@/components/scroll-to-top"
 import { LanguageProvider } from "@/lib/i18n/language-context"
 import { AuthProvider } from "@/components/providers/auth-provider"
 import { NotificationProvider } from "@/lib/notifications/notification-context"
+import { Toaster } from "@/components/ui/sonner"
 import { NotificationTrigger } from "@/components/notification-trigger"
 import { MessageAlerts } from "@/components/message-alerts"
 import { PushRegistrar } from "@/components/push-registrar"
@@ -82,6 +83,16 @@ export default function RootLayout({
               <NotificationTrigger />
               <MessageAlerts />
               <PushRegistrar />
+              {/* Sin esto, las 106 llamadas a toast.success / toast.error
+                  repartidas por la aplicación no pintaban absolutamente nada:
+                  el componente existía pero nadie lo montaba. Varios botones
+                  que "no hacían nada" sí avisaban, sólo que el aviso no se
+                  renderizaba.
+
+                  Abajo y centrado a propósito: en móvil el usuario suele estar
+                  al final de un formulario largo y un mensaje en la cabecera
+                  queda fuera de la pantalla. */}
+              <Toaster position="bottom-center" richColors closeButton />
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>

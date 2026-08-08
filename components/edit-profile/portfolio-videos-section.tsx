@@ -109,7 +109,16 @@ export function PortfolioVideosSection({ videos = [], onVideosChange, maxVideos 
         <div className="grid grid-cols-2 gap-3">
           {currentVideos.map((url, index) => (
             <div key={index} className="relative aspect-video rounded-xl overflow-hidden bg-black group">
-              <video src={url} muted preload="metadata" className="w-full h-full object-cover" />
+              {/* `#t=0.1` fuerza a los navegadores móviles a pintar el primer
+                  fotograma. Sin él, el recuadro se quedaba en negro y no había
+                  forma de distinguir un vídeo de otro. */}
+              <video
+                src={`${url}#t=0.1`}
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
               {/* Cuál es cuál. Aquí se veían todos como una lista plana, así
                   que quien subía dos no entendía por qué su perfil público
                   enseñaba uno como presentación y sólo el otro en "Más

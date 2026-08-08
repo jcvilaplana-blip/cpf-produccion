@@ -624,7 +624,9 @@ export function BusinessDetailContent({ id }: { id: string }) {
           </Section>
         )}
 
-        {/* 12 — Acciones rápidas */}
+        {/* 12 — Acciones rápidas. No se muestran sobre el propio perfil:
+            "Contactar" abriría un formulario para escribirte a ti mismo. */}
+        {!isOwnProfile && (
         <Section icon={Sparkles} title="Acciones rápidas">
           <div className="flex gap-3">
             <Button
@@ -696,6 +698,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
             </div>
           )}
         </Section>
+        )}
       </main>
 
       {/* Reel del vídeo, igual que en el perfil del candidato */}

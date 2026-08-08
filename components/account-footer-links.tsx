@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { LogOut, Trash2 } from "lucide-react"
+import { LogIn, LogOut, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -24,6 +24,18 @@ export function AccountFooterLinks() {
   const { logout } = useAuth()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  /**
+   * Cierra la sesión y deja al usuario en la portada como anónimo.
+   *
+   * No cierra la aplicación: es la salida para quien quiere dejar de estar
+   * identificado -o cambiar de cuenta- sin abandonar CPF.
+   */
+  const handleSignOut = async () => {
+    await logout()
+    toast.success("Sesión cerrada")
+    router.push("/")
+  }
 
   const handleExit = async () => {
     await logout()
@@ -86,9 +98,20 @@ export function AccountFooterLinks() {
             Política de Cookies
           </Link>
 
+          {/* Dos salidas distintas, y la diferencia importa: cerrar sesión te
+              devuelve a la portada como visitante anónimo, con la aplicación
+              abierta; "Salir de CPF" además cierra la app en el móvil. */}
+          <button
+            onClick={handleSignOut}
+            className="mt-1 inline-flex items-center gap-2 text-[14px] font-medium text-foreground hover:text-[#01A89E] transition-colors"
+          >
+            <LogIn className="h-4 w-4" />
+            Cerrar Sesión
+          </button>
+
           <button
             onClick={handleExit}
-            className="mt-1 inline-flex items-center gap-2 text-[14px] font-medium text-foreground hover:text-[#01A89E] transition-colors"
+            className="inline-flex items-center gap-2 text-[14px] font-medium text-foreground hover:text-[#01A89E] transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Salir de CPF

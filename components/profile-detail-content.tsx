@@ -125,6 +125,8 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   const isBusinessViewer = viewerType === "business" && viewerId !== id
+  /** El candidato mirando su propia ficha: no puede escribirse ni citarse. */
+  const esPropioPerfil = Boolean(viewerId) && viewerId === id
 
   const { data: profileData, isLoading } = useSWR(`/api/profile/${id}`, fetcher, {
     fallbackData: initialProfile ? { data: initialProfile } : undefined,
@@ -461,7 +463,10 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           </Link>
         </div>
 
-        {/* 9 — CTAs */}
+        {/* 9 — CTAs. Sobre el propio perfil no se ofrecen: pedirse una
+            entrevista o mandarse un mensaje a uno mismo no lleva a ninguna
+            parte. Quien mira su ficha lo hace para ver cómo la ven los demás. */}
+        {!esPropioPerfil && (
         <div className="grid grid-cols-2 gap-3">
           <Button
             onClick={handleRequestInterview}
@@ -479,7 +484,8 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             Enviar mensaje
           </Button>
         </div>
-        {!isBusinessViewer && (
+        )}
+        {!esPropioPerfil && !isBusinessViewer && (
           <p className="px-1 text-[12px] leading-snug text-slate-500">
             Solo las cuentas de empresa pueden solicitar entrevistas y guardar candidatos. Inicia sesión con una
             cuenta de establecimiento.
