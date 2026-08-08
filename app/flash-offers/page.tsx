@@ -6,8 +6,10 @@ import { useAuth } from "@/hooks/use-auth"
 import { useState, useEffect } from "react"
 import { FlashOfferCard } from "@/components/flash-offer-card"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Zap, SlidersHorizontal, Loader2 } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { CityAutocomplete } from "@/components/city-autocomplete"
+import { ArrowLeft, Zap, SlidersHorizontal, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { createClient } from "@/lib/supabase/client"
@@ -25,7 +27,7 @@ export default function FlashOffersPage() {
 
   const { t } = useLanguage()
   const [sortBy, setSortBy] = useState("fecha")
-  const [filterCity, setFilterCity] = useState("todas")
+  const [filterCity, setFilterCity] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [offers, setOffers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,7 +95,7 @@ export default function FlashOffersPage() {
   })
 
   const filteredOffers = sortedOffers.filter((offer) => {
-    if (filterCity !== "todas" && !offer.location.includes(filterCity)) return false
+    if (filterCity && !(offer.location || "").toLowerCase().includes(filterCity.toLowerCase())) return false
     return true
   })
 
@@ -124,36 +126,83 @@ export default function FlashOffersPage() {
           </div>
         </div>
 
-        <div className="mb-6 space-y-4">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="w-full md:w-auto">
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            {showFilters ? t("common.hideFilters") : t("common.showFilters")}
-          </Button>
+        {/* Filtros con el mismo lenguaje que los de Empresas: panel propio,
+            campos altos y opciones binarias como chips. El desplegable de
+            ciudades se sustituye por el autocompletado de direcciones que usa
+            el resto de la aplicación: la lista sólo ofrecía las ciudades donde
+            ya había alguna oferta flash publicada. */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm text-sm active:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+              <span className="font-semibold text-gray-700 dark:text-gray-200">Filtrar</span>
+              {filterCity && (
+                <Badge className="bg-[#01A89E] text-white text-[12px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">
+                  1
+                </Badge>
+              )}
+            </div>
+            {showFilters ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-card rounded-lg border">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t("common.sortBy")}</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fecha">{t("flashOffers.sortByDate")}</SelectItem>
-                    <SelectItem value="salario">{t("flashOffers.sortBySalary")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t("common.city")}</label>
-                <Select value={filterCity} onValueChange={setFilterCity}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city === "todas" ? t("common.allCities") : city}
-                      </SelectItem>
+            <div className="mt-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+              <div className="px-4 py-5 space-y-5">
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Ordenar por
+                  </Label>
+                  <div className="flex flex-wrap gap-2.5">
+                    {[
+                      { id: "fecha", label: t("flashOffers.sortByDate") },
+                      { id: "salario", label: t("flashOffers.sortBySalary") },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setSortBy(opt.id)}
+                        className={`px-4 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95 ${
+                          sortBy === opt.id
+                            ? "bg-[#01A89E] text-white shadow-md shadow-[#01A89E]/25"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                    Ciudad
+                  </Label>
+                  <CityAutocomplete
+                    placeholder="Todas las ciudades"
+                    value={filterCity}
+                    onChange={setFilterCity}
+                    className="h-12 rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 px-4 py-3">
+                <Button
+                  onClick={() => {
+                    setSortBy("fecha")
+                    setFilterCity("")
+                  }}
+                  variant="outline"
+                  className="w-full h-11 rounded-2xl text-sm font-semibold"
+                >
+                  Limpiar filtros
+                </Button>
               </div>
             </div>
           )}

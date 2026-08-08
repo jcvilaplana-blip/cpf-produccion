@@ -7,7 +7,7 @@ import { PaymentSummaryDialog } from "@/components/payment-summary-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Check, Crown, Sparkles, CreditCard, Loader2, PartyPopper } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Crown, Sparkles, CreditCard, HelpCircle, Loader2, PartyPopper } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { SubscriptionPlan } from "@/lib/subscription-plans"
@@ -351,6 +351,26 @@ export function SubscribeContent({
           onConfirm={startCheckout}
         />
       )}
+
+      {/* Centro de ayuda al cierre: es donde más dudas surgen -qué incluye
+          cada plan, cómo se cancela- y hasta ahora había que salir a buscarlo. */}
+      <div className="container mx-auto px-4 pb-8 max-w-4xl">
+        <Link
+          href="/help"
+          className="flex items-center gap-4 rounded-2xl border-2 border-[#01A89E]/30 bg-[#01A89E]/5 p-4 transition-colors hover:border-[#01A89E]/60 active:scale-[0.99]"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#01A89E]/15">
+            <HelpCircle className="h-7 w-7 text-[#01A89E]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[16px] font-bold text-[#018F86]">¿Tienes dudas?</p>
+            <p className="text-[13px] leading-snug text-muted-foreground">
+              Consulta el Centro de Ayuda de CPF
+            </p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-[#01A89E]" />
+        </Link>
+      </div>
 
       <StripePaymentDialog
         clientSecret={pago?.clientSecret ?? null}

@@ -39,7 +39,18 @@ const TYPE_ICONS: Record<string, typeof Video> = {
   call: PhoneCall, in_person: MapPin, video_call: Video, other: CalendarIcon,
 }
 
-export function InterviewsContent({ interviews: initialInterviews }: { interviews: BusinessInterview[] }) {
+export function InterviewsContent({
+  interviews: initialInterviews,
+  viewerRole = "business",
+}: {
+  interviews: BusinessInterview[]
+  /**
+   * Quién mira. La pantalla es la misma para los dos lados, pero resolver la
+   * entrevista -contratado / no contratado- sólo lo decide el establecimiento.
+   */
+  viewerRole?: "business" | "worker"
+}) {
+  const esEmpresa = viewerRole === "business"
   const router = useRouter()
   const [interviews, setInterviews] = useState(initialInterviews)
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -335,15 +346,15 @@ export function InterviewsContent({ interviews: initialInterviews }: { interview
 
                         <div className="space-y-2 pt-4">
                           <Button asChild className="w-full bg-transparent" variant="outline">
-                            <Link href={`/profile/${interview.workerId}`}>Ver Perfil Completo</Link>
+                            <Link href={esEmpresa ? `/profile/${interview.workerId}` : `/business/${interview.workerId}`}>Ver Perfil Completo</Link>
                           </Button>
                           <Button asChild className="w-full bg-transparent" variant="outline">
-                            <Link href={`/messages?candidateId=${interview.workerId}`}>
+                            <Link href={esEmpresa ? `/messages?candidateId=${interview.workerId}` : `/messages?businessId=${interview.workerId}`}>
                               <MessageSquare className="h-4 w-4 mr-2" />
                               Enviar Mensaje
                             </Link>
                           </Button>
-                          {interview.status === "confirmed" && (
+                          {esEmpresa && interview.status === "confirmed" && (
                             <>
                               <Button
                                 className="w-full bg-green-600 hover:bg-green-700"

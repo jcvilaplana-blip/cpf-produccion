@@ -97,7 +97,7 @@ function PaymentSuccessContent() {
               </Link>
             </Button>
             <Button variant="outline" asChild className="w-full">
-              <Link href="/subscription">
+              <Link href="/subscribe">
                 Ver mi Suscripcion
               </Link>
             </Button>

@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
+  ArrowLeft,
   MapPin,
   Star,
   SlidersHorizontal,
@@ -56,6 +58,7 @@ const PAGE_SIZE = 8 // 4 rows x 2 columns
 
 export default function BusinessesPage() {
   const { t } = useLanguage()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [filterType, setFilterType] = useState("all")
@@ -148,7 +151,14 @@ export default function BusinessesPage() {
       {/* Header sticky */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="px-4 pt-3 pb-2">
-          <h1 className="text-lg font-bold text-center text-gray-900 dark:text-gray-100">Empresas</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Volver">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="flex-1 text-lg font-bold text-center text-gray-900 dark:text-gray-100">Empresas</h1>
+            {/* Hueco simétrico para que el título quede centrado de verdad. */}
+            <div className="w-10" />
+          </div>
 
           {/* Search */}
           <div className="relative mt-3">

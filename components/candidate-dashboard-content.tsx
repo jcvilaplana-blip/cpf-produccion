@@ -19,6 +19,7 @@ import {
   Bell,
   Gift,
   CalendarCheck,
+  HelpCircle,
   Eye,
   Pencil,
   User,
@@ -226,6 +227,11 @@ export function CandidateDashboardContent({
                 su propia tarjeta más abajo y aquí solo competían por el
                 espacio. Mismo criterio que el panel de establecimiento. */}
             <div className="flex items-center gap-2">
+              {/* Centro de ayuda, a la izquierda de las notificaciones. El
+                  contenido ya distingue el rol de quien lo abre. */}
+              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
+                <Link href="/help" aria-label="Centro de ayuda"><HelpCircle className="h-6 w-6" /></Link>
+              </Button>
               <Button asChild variant="ghost" size="icon" className="h-11 w-11">
                 <Link href="/notifications"><Bell className="size-6" /></Link>
               </Button>
@@ -273,7 +279,9 @@ export function CandidateDashboardContent({
           {/* Línea 1: perfil · entrevistas · mensajes */}
           <div className="grid grid-cols-3 gap-3">
             <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
-              <Link href="/edit-profile">
+              {/* Al perfil público, el que ven las empresas. Editar cuelga del
+                  menú del avatar, arriba. */}
+              <Link href={`/profile/${userId}`}>
                 <User className="h-6 w-6 text-[#F48221]" />
                 <span className="text-[14px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
               </Link>

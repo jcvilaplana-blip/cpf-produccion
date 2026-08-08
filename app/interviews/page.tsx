@@ -15,16 +15,21 @@ export default async function InterviewsPage() {
     .eq("id", user.id)
     .single()
 
-  if (profile?.user_type !== "business") redirect("/dashboard")
+  // Los dos roles tienen entrevistas. Antes esta página era sólo de empresas y
+  // devolvía al candidato a su panel, así que su tarjeta "Mis Entrevistas"
+  // parecía no hacer nada: iba y volvía.
+  const esEmpresa = profile?.user_type === "business"
 
   const { data: rawInterviews } = await supabase
     .from("interview_requests")
-    .select("id, application_id, worker_id, interview_type, other_type_detail, scheduled_at, status, notes")
-    .eq("business_id", user.id)
+    .select("id, application_id, business_id, worker_id, interview_type, other_type_detail, scheduled_at, status, notes")
+    .eq(esEmpresa ? "business_id" : "worker_id", user.id)
     .order("scheduled_at", { ascending: false })
 
   const interviews = rawInterviews || []
-  const workerIds = [...new Set(interviews.map((i) => i.worker_id))]
+  // La otra parte de la cita: para la empresa es el candidato; para el
+  // candidato, el establecimiento.
+  const workerIds = [...new Set(interviews.map((i) => (esEmpresa ? i.worker_id : i.business_id)))]
   const applicationIds = [...new Set(interviews.map((i) => i.application_id))]
 
   const [{ data: workers }, { data: applications }] = await Promise.all([
@@ -47,10 +52,11 @@ export default async function InterviewsPage() {
   )
 
   const enriched: BusinessInterview[] = interviews.map((i) => {
-    const worker = workerMap.get(i.worker_id)
+    const otroId = esEmpresa ? i.worker_id : i.business_id
+    const worker = workerMap.get(otroId)
     return {
       id: i.id,
-      workerId: i.worker_id,
+      workerId: otroId,
       workerName: worker?.display_name || "Candidato",
       workerAvatar: worker?.avatar_url || null,
       workerPhone: worker?.phone || null,
@@ -63,5 +69,5 @@ export default async function InterviewsPage() {
     }
   })
 
-  return <InterviewsContent interviews={enriched} />
+  return <InterviewsContent interviews={enriched} viewerRole={esEmpresa ? "business" : "worker"} />
 }

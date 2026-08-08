@@ -265,6 +265,21 @@ export async function withdrawApplicationAction(jobId: string) {
       supabase.from("profiles").select("display_name").eq("id", user.id).single(),
     ])
     if (job?.business_id && job.business_id !== user.id) {
+      // El aviso de cancelación va también al chat, no sólo al buzón de
+      // notificaciones. Inscribirse deja un mensaje en la conversación, así
+      // que retirarse sin dejar rastro allí hacía que el establecimiento
+      // siguiera viendo un "me interesa" que ya no era cierto.
+      const conversationId = await getOrCreateConversation(supabase, user.id, job.business_id)
+      if (conversationId) {
+        await sendMessage(
+          supabase,
+          conversationId,
+          user.id,
+          job.business_id,
+          `He cancelado mi interés en la oferta "${job.title}".`
+        )
+      }
+
       await notifyUser(job.business_id, {
         title: "Candidatura cancelada",
         body: `${candidate?.display_name || "Un candidato"} ya no está interesado en "${job.title}".`,
@@ -280,6 +295,7 @@ export async function withdrawApplicationAction(jobId: string) {
   revalidatePath(`/jobs/${jobId}`)
   revalidatePath(`/jobs/${jobId}/applications`)
   revalidatePath("/profile")
+  revalidatePath("/messages")
   return { success: true }
 }
 

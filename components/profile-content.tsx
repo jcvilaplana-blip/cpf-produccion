@@ -114,12 +114,8 @@ export function ProfileContent({
                   {t("common.help")}
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={profile?.user_type === "business" ? "/business-profile/edit" : "/edit-profile"}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  {t("common.edit")}
-                </Link>
-              </Button>
+              {/* Sin botón de editar: esta pantalla es "Mis Candidaturas", no
+                  el perfil. Además se solapaba con el título en móvil. */}
             </div>
           </div>
         </div>

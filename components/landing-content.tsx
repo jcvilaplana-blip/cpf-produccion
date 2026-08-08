@@ -150,9 +150,9 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
       )}
 
       {!esEstablecimiento && (
-      <section className="py-8 bg-gradient-to-b from-teal-50 to-background">
+      <section className="pt-4 pb-4 md:py-8 bg-gradient-to-b from-teal-50 to-background">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6 gap-2">
+          <div className="flex items-center justify-between mb-3 md:mb-6 gap-2">
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
               <div className="bg-[#01A89E] p-1.5 md:p-2 rounded-lg flex-shrink-0">
                 <Zap className="w-5 h-5 md:w-6 md:h-6 text-white" />
@@ -196,9 +196,9 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
           podía abrir. Su reemplazo -los tipos de establecimiento- vive ahora
           arriba del todo, así que aquí simplemente no hay sección. */}
       {!esCandidato && (
-      <section className="py-6 bg-muted/30">
+      <section className="pt-4 pb-4 md:py-6 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-3 md:mb-6">
             <div>
               <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestCandidates")}</h2>
             </div>
@@ -242,9 +242,22 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
       </section>
       )}
 
-      <section className="py-8 bg-background">
+      {/* Tipos de establecimiento, también sin sesión: quien todavía no se ha
+          identificado está explorando, y esto le sitúa por dónde puede buscar.
+          Al candidato ya se le muestra arriba del todo, así que aquí no se
+          repite. */}
+      {!esCandidato && !isLoggedIn && (
+        <section className="pt-4 pb-2 md:py-6 bg-background">
+          <div className="container mx-auto px-4 mb-3">
+            <h2 className="text-lg md:text-2xl font-bold">Tipo de Establecimiento</h2>
+          </div>
+          <VenueTypesScroll />
+        </section>
+      )}
+
+      <section className="pt-4 pb-6 md:py-8 bg-background">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-3 md:mb-6">
             <div>
               <h2 className="text-lg md:text-2xl font-bold whitespace-nowrap">{t("landing.latestBusinesses")}</h2>
             </div>
@@ -260,7 +273,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
         </div>
       </section>
 
-      <section className="py-6 pb-12 bg-muted/30">
+      <section className="pt-6 pb-12 bg-muted/30">
         <div className="container mx-auto px-4 text-center max-w-4xl">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-balance">{t("landing.readyForNextStep")}</h2>

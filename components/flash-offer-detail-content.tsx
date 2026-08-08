@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button" 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { applyToJobAction, withdrawApplicationAction } from "@/lib/actions"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   ArrowLeft,
@@ -16,6 +18,7 @@ import {
   Zap,
   MessageSquare,
   Loader2,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -49,6 +52,10 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
   const [timeRemaining, setTimeRemaining] = useState("")
   const [offer, setOffer] = useState<FlashOffer | null>(null)
   const [loading, setLoading] = useState(true)
+  /** Estado de la candidatura del usuario en esta oferta flash. */
+  const [estadoCandidatura, setEstadoCandidatura] = useState<string | null>(null)
+  const [aplicando, setAplicando] = useState(false)
+  const [retirando, setRetirando] = useState(false)
 
   useEffect(() => {
     const loadOffer = async () => {
@@ -96,6 +103,20 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
           } : undefined,
         })
       }
+
+      // Estado de la candidatura del usuario en esta oferta, para que el botón
+      // recuerde que ya se inscribió al volver a abrirla.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: solicitud } = await supabase
+          .from("applications")
+          .select("status")
+          .eq("job_id", id)
+          .eq("worker_id", user.id)
+          .maybeSingle()
+        setEstadoCandidatura(solicitud?.status ?? null)
+      }
+
       setLoading(false)
     }
     loadOffer()
@@ -147,10 +168,49 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
     )
   }
 
-  const handleAcceptOffer = () => {
+  /**
+   * Inscribirse en la oferta flash.
+   *
+   * Antes esto sólo abría el chat: no se creaba ninguna candidatura, así que
+   * no quedaba registro, el botón no cambiaba y no había forma de cancelar.
+   * Ahora sigue el mismo camino que una oferta normal —`applyToJobAction` crea
+   * la candidatura y deja el primer mensaje en la conversación— y además abre
+   * el chat, que es lo que el usuario ya esperaba.
+   */
+  // Mismas reglas que una oferta normal: una candidatura retirada se puede
+  // reactivar; una ya respondida no se puede cancelar.
+  const puedeInscribirse = !estadoCandidatura || estadoCandidatura === "withdrawn"
+  const puedeRetirarse = estadoCandidatura === "pending" || estadoCandidatura === "interview"
+
+  const handleAcceptOffer = async () => {
+    if (aplicando) return
+    setAplicando(true)
+    const result = await applyToJobAction(offer.id)
+    setAplicando(false)
+
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    setEstadoCandidatura("pending")
+    toast.success("Candidatura enviada correctamente")
     router.push(
       `/messages?businessId=${offer.business_profile_id}&businessName=${encodeURIComponent(offer.business?.company_name || "Empresa")}&offerId=${offer.id}`,
     )
+  }
+
+  const handleWithdraw = async () => {
+    if (retirando) return
+    setRetirando(true)
+    const result = await withdrawApplicationAction(offer.id)
+    setRetirando(false)
+
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    setEstadoCandidatura("withdrawn")
+    toast.success("Has cancelado tu candidatura")
   }
 
   return (
@@ -296,14 +356,40 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
                   <p className="text-sm text-muted-foreground">Esta oferta expira pronto</p>
                 </div>
 
-                <Button onClick={handleAcceptOffer} size="lg" className="w-full bg-[#01A89E] hover:bg-[#018F86]">
-                  <MessageSquare className="w-5 h-5 mr-2" />
-                  Me interesa la Oferta
-                </Button>
-
-                <p className="text-[13px] text-center text-muted-foreground">
-                  Al aceptar, se abrira un chat con la empresa para coordinar los detalles
-                </p>
+                {puedeInscribirse ? (
+                  <>
+                    <Button
+                      onClick={handleAcceptOffer}
+                      size="lg"
+                      disabled={aplicando}
+                      className="w-full bg-[#01A89E] hover:bg-[#018F86]"
+                    >
+                      <MessageSquare className="w-5 h-5 mr-2" />
+                      {aplicando ? "Enviando..." : "Me interesa la Oferta"}
+                    </Button>
+                    <p className="text-[13px] text-center text-muted-foreground">
+                      Al aceptar, se abrira un chat con la empresa para coordinar los detalles
+                    </p>
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <Button disabled size="lg" className="w-full bg-green-600 hover:bg-green-600">
+                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                      Mensaje Enviado
+                    </Button>
+                    {puedeRetirarse && (
+                      <Button
+                        variant="outline"
+                        onClick={handleWithdraw}
+                        disabled={retirando}
+                        className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        {retirando ? "Cancelando..." : "Ya no me interesa"}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { HelpCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import {
   Search, MapPin, Star, Users, Briefcase, Heart, Bell, MessageCircle, Loader2, Building2, Zap, ListChecks, Gift, CalendarCheck, Crown,
@@ -205,6 +206,11 @@ export default function BusinessDashboardPage() {
             {/* Solo notificaciones y perfil: recompensas y mensajes tienen su
                 propia tarjeta más abajo y aquí solo competían por el espacio. */}
             <div className="flex items-center gap-2">
+              {/* Centro de ayuda, a la izquierda de las notificaciones. El
+                  contenido ya distingue el rol de quien lo abre. */}
+              <Button asChild variant="ghost" size="icon" className="h-11 w-11">
+                <Link href="/help" aria-label="Centro de ayuda"><HelpCircle className="h-6 w-6" /></Link>
+              </Button>
               <Button asChild variant="ghost" size="icon" className="h-11 w-11">
                 <Link href="/notifications"><Bell className="h-6 w-6" /></Link>
               </Button>
