@@ -12,6 +12,7 @@ import { MapPin, SlidersHorizontal, ArrowLeft, Loader2, ChevronDown, ChevronUp }
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { CityAutocomplete } from "@/components/city-autocomplete"
+import { formatLocation } from "@/lib/format-location"
 
 /**
  * Jornadas que puede buscar un candidato.
@@ -114,7 +115,7 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
           category: profile.job_category || "General",
           categoryId: profile.category_id || null,
           specialties: Array.isArray(profile.specialties) ? profile.specialties : [],
-          location: profile.location ? profile.location.split(",")[0].trim() : "España",
+          location: formatLocation(profile.location),
           rating: profile.rating || 0,
           avatarUrl: profile.avatar_url || "/placeholder.svg",
           experience: `${profile.experience_years || 0} años de experiencia`,

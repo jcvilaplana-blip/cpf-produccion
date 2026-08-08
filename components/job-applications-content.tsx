@@ -24,6 +24,7 @@ import Image from "next/image"
 import type { Job, Profile } from "@/lib/types"
 import { updateApplicationStatusAction } from "@/lib/actions"
 import { toast } from "sonner"
+import { formatLocation } from "@/lib/format-location"
 
 interface ApplicationWithWorker {
   id: string
@@ -189,7 +190,7 @@ export function JobApplicationsContent({
                         {app.worker?.location && (
                           <div className="flex items-center gap-0.5">
                             <MapPin className="h-3 w-3" />
-                            <span>{app.worker.location}</span>
+                            <span>{formatLocation(app.worker.location)}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-0.5">

@@ -21,6 +21,7 @@ import { isProfileSaved } from "@/lib/supabase/queries"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { CONTRACT_TYPE_LABELS, contractTypeLabel } from "@/lib/profile-constants"
+import { formatLocation } from "@/lib/format-location"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -409,7 +410,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             <div className="min-w-0">
               <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">Ubicación</p>
               <p className="truncate text-[15px] font-semibold text-slate-900">
-                {worker.location || "No especificada"}
+                {formatLocation(worker.location) || "No especificada"}
               </p>
             </div>
           </div>

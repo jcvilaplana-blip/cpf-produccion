@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
+import { enviarEmailRecibo } from "@/lib/email/send"
+import { breakdownFromTotal, VAT_LABEL } from "@/lib/tax"
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js"
 import { activateFeature, type MicropaymentRow } from "@/lib/payments/activate-feature"
 import { notifyFlashOfferCandidates } from "@/lib/payments/flash-fanout"
@@ -35,6 +37,22 @@ type ServiceClient = SupabaseClient<any, any, any>
  * sabiendo a quién pertenecen sin necesidad de guardar identificadores de
  * Stripe en el perfil.
  */
+/** Nombre legible de cada plan, para el recibo. */
+const PLAN_LABELS: Record<string, string> = {
+  "standard-business": "Plan Standard (empresa)",
+  "premium-business": "Plan Premium (empresa)",
+  "premium-worker": "Premium (candidato)",
+}
+
+/** Nombre legible de cada compra, para el recibo. */
+const FEATURE_LABELS: Record<string, string> = {
+  highlight_profile: "Destacar perfil (7 dias)",
+  view_matches: "Ver empresas interesadas",
+  boost_visibility: "Impulsar visibilidad",
+  flash_job: "Oferta Flash",
+  highlight_job: "Destacar oferta (24h)",
+}
+
 async function applySubscription(
   supabase: ServiceClient,
   subscription: Stripe.Subscription,
@@ -134,6 +152,18 @@ async function recordSubscriptionPayment(
         processed_at: new Date().toISOString(),
         metadata: { subscription_id: subscription.id },
       })
+
+      // Recibo sólo cuando el cobro es nuevo. La comprobación de más arriba
+      // evita duplicar el ingreso si Stripe reintenta el webhook; sin
+      // colgarlo de ella, el usuario recibiría un recibo por reintento.
+      await enviarRecibo(
+        supabase,
+        userId,
+        PLAN_LABELS[planId] || "Suscripción",
+        amountCents,
+        (subscription.metadata || {}) as Record<string, string>,
+        invoiceId
+      )
     }
 
     const periodStart = (subscription as any).current_period_start as number | undefined
@@ -349,6 +379,63 @@ export async function POST(request: Request) {
 }
 
 /**
+ * Manda el recibo de la compra.
+ *
+ * Stripe sólo envía recibos automáticos en modo real -en pruebas el
+ * `receipt_email` viaja pero no se manda nada-, así que la pantalla de éxito
+ * prometía un correo que no llegaba. Éste además desglosa base e IVA, que el
+ * recibo de Stripe no hace.
+ *
+ * Es best-effort: el cobro ya está hecho y la compra activada, así que un
+ * fallo del correo nunca puede devolver error al webhook (Stripe reintentaría
+ * la activación entera).
+ */
+async function enviarRecibo(
+  supabase: ServiceClient,
+  userId: string,
+  concepto: string,
+  totalCents: number,
+  metadata: Record<string, string>,
+  referencia: string
+) {
+  try {
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("email, display_name")
+      .eq("id", userId)
+      .maybeSingle()
+
+    if (!perfil?.email) {
+      console.error("Stripe webhook: sin email al que mandar el recibo", userId)
+      return
+    }
+
+    // El desglose se guardó en los metadatos al crear el cobro; si faltara
+    // -cobros antiguos- se recalcula con la misma función que se usó entonces.
+    const base = Number(metadata.base_cents)
+    const iva = Number(metadata.vat_cents)
+    const desglose =
+      Number.isFinite(base) && Number.isFinite(iva)
+        ? { baseCents: base, vatCents: iva }
+        : breakdownFromTotal(totalCents)
+
+    await enviarEmailRecibo(
+      perfil.email,
+      perfil.display_name || "",
+      concepto,
+      desglose.baseCents,
+      desglose.vatCents,
+      totalCents,
+      metadata.vat_label || VAT_LABEL,
+      referencia,
+      new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
+    )
+  } catch (err) {
+    console.error("Stripe webhook: no se pudo enviar el recibo", err)
+  }
+}
+
+/**
  * Marca el micropago como cobrado y activa lo comprado.
  *
  * Vive aparte porque ahora hay dos caminos que llegan aquí: las suscripciones
@@ -363,7 +450,7 @@ async function completarMicropago(
 ) {
   const { data: micropayment } = await supabase
     .from("micropayments")
-    .select("id, user_id, feature_type, job_id, status")
+    .select("id, user_id, feature_type, job_id, status, amount_cents")
     .eq("id", micropaymentId)
     .single()
 
@@ -391,6 +478,15 @@ async function completarMicropago(
   await activateFeature(supabase, row, {
     flashDurationHours: metadata.flash_duration_hours ? Number(metadata.flash_duration_hours) : undefined,
   })
+
+  await enviarRecibo(
+    supabase,
+    micropayment.user_id,
+    FEATURE_LABELS[micropayment.feature_type] || micropayment.feature_type,
+    micropayment.amount_cents || 0,
+    metadata,
+    metadata.micropayment_id || micropaymentId
+  )
 
   // Best-effort: the charge and job activation above are authoritative and
   // already succeeded, so a notification failure must never turn into a

@@ -1,4 +1,4 @@
-import { emailVerificacion, emailRecuperacionPassword, emailNotificacion } from "./templates"
+import { emailVerificacion, emailRecuperacionPassword, emailNotificacion, emailRecibo } from "./templates"
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.EMAIL_FROM || "CamareroPorFavor <noreply@camareroporfavor.com>"
@@ -76,5 +76,23 @@ export async function enviarEmailNotificacion(
     to: email,
     subject: `${titulo} - CamareroPorFavor`,
     html: emailNotificacion(nombre, titulo, mensaje, urlBoton, textoBoton),
+  })
+}
+
+export async function enviarEmailRecibo(
+  email: string,
+  nombre: string,
+  concepto: string,
+  baseCents: number,
+  vatCents: number,
+  totalCents: number,
+  vatLabel: string,
+  referencia: string,
+  fecha: string
+) {
+  return enviarEmail({
+    to: email,
+    subject: `Recibo de tu compra: ${concepto} - CamareroPorFavor`,
+    html: emailRecibo(nombre, concepto, baseCents, vatCents, totalCents, vatLabel, referencia, fecha),
   })
 }

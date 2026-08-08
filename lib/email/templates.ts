@@ -156,3 +156,57 @@ export const emailNotificacion = (
       Puedes gestionar tus notificaciones desde tu perfil en <a href="${APP_URL}" style="color:${COLOR_PRIMARY};">camareroporfavor.com</a>
     </p>
   `)
+
+/**
+ * Recibo de compra.
+ *
+ * Stripe sólo manda recibos automáticos en modo real, así que en pruebas la
+ * pantalla de éxito prometía un correo que no llegaba nunca. Además éste
+ * desglosa base e IVA, que es lo que hace falta para justificar el gasto: el
+ * recibo de Stripe da un importe único.
+ */
+export const emailRecibo = (
+  nombre: string,
+  concepto: string,
+  baseCents: number,
+  vatCents: number,
+  totalCents: number,
+  vatLabel: string,
+  referencia: string,
+  fecha: string
+) => {
+  const eur = (c: number) =>
+    (c / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })
+  const fila = (etiqueta: string, valor: string, fuerte = false) => `
+    <tr>
+      <td style="padding:8px 0;font-size:14px;color:${fuerte ? "#111827" : "#6b7280"};${fuerte ? "font-weight:700;" : ""}">${etiqueta}</td>
+      <td style="padding:8px 0;font-size:14px;text-align:right;color:${fuerte ? "#111827" : "#374151"};${fuerte ? "font-weight:700;" : ""}">${valor}</td>
+    </tr>`
+
+  return baseTemplate(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#111827;">
+      Recibo de tu compra
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.6;">
+      Hola <strong>${nombre}</strong>, gracias por tu compra. Aquí tienes el detalle.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 24px;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
+      ${fila("Concepto", concepto)}
+      ${fila("Fecha", fecha)}
+      ${fila("Base imponible", eur(baseCents))}
+      ${fila(vatLabel, eur(vatCents))}
+      <tr><td colspan="2" style="padding:4px 0;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>
+      ${fila("Total", eur(totalCents), true)}
+    </table>
+
+    <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;">
+      Referencia del pago: <span style="font-family:monospace;">${referencia}</span>
+    </p>
+    <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb;" />
+    <p style="margin:0;font-size:13px;color:#9ca3af;">
+      Conserva este correo como justificante. Cualquier duda, respóndenos desde
+      <a href="${APP_URL}" style="color:${COLOR_PRIMARY};">camareroporfavor.com</a>
+    </p>
+  `)
+}

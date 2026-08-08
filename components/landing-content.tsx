@@ -16,6 +16,7 @@ import { useLanguage } from "@/lib/i18n/language-context"
 import { useAuth } from "@/hooks/use-auth"
 import Image from "next/image"
 import { VenueTypesScroll } from "@/components/venue-types-scroll"
+import { formatLocation } from "@/lib/format-location"
 
 interface LandingContentProps {
   featuredJobs: any[]
@@ -49,7 +50,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
     id: profile.id,
     name: profile.display_name,
     category: profile.job_category || "General",
-    location: profile.location ? profile.location.split(",")[0].trim() : "Espana",
+    location: formatLocation(profile.location),
     rating: profile.rating || 0,
     avatarUrl: profile.avatar_url || "/placeholder.svg",
     experience: `${profile.experience_years || 0} ${t("candidates.years")} ${t("candidates.yearsExperience")}`,

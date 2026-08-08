@@ -9,6 +9,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { MapPin, Globe, Mail, Phone, Edit, Star, Briefcase, Users, Crown, ArrowLeft } from "lucide-react"
 import type { Profile, BusinessProfile } from "@/lib/types"
+import { formatLocation } from "@/lib/format-location"
 
 interface BusinessProfileViewContentProps {
   user: any
@@ -208,7 +209,7 @@ export function BusinessProfileViewContent({ user, profile, businessProfile }: B
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Ubicación</p>
-                      <p className="text-sm text-muted-foreground">{profile.location}</p>
+                      <p className="text-sm text-muted-foreground">{formatLocation(profile.location)}</p>
                     </div>
                   </div>
                 )}
