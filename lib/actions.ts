@@ -775,6 +775,19 @@ export async function requestToWorkHereAction(businessId: string) {
     profile.is_premium && (!profile.premium_expires_at || new Date(profile.premium_expires_at) > new Date())
   if (!isPremiumActive) return { error: "Esta función es exclusiva para candidatos premium" }
 
+  // El interés se GUARDA, no sólo se notifica. Antes esta acción mandaba el
+  // aviso y nada más: el botón se quedaba en "Interés enviado" hasta recargar
+  // la página, y no había forma de retirarlo porque no quedaba constancia.
+  //
+  // Se reutiliza `saved_businesses`, que era la tabla del botón "Favorito"
+  // ahora retirado: marcar un establecimiento es exactamente la misma
+  // operación, con un nombre que dice mejor lo que significa.
+  const { error } = await supabase
+    .from("saved_businesses")
+    .upsert({ user_id: user.id, business_id: businessId }, { onConflict: "user_id,business_id" })
+
+  if (error) return { error: "No se ha podido registrar tu interés" }
+
   await notifyUser(businessId, {
     title: "Un candidato quiere trabajar contigo",
     body: `${profile.display_name || "Un candidato"} ha marcado tu negocio como donde le gustaría trabajar`,
@@ -783,6 +796,33 @@ export async function requestToWorkHereAction(businessId: string) {
     createdBy: user.id,
   })
 
+  revalidatePath(`/business/${businessId}`)
+  revalidatePath("/favorites")
+  return { success: true }
+}
+
+/**
+ * "Ya no me interesa": el candidato retira su interés en un establecimiento.
+ *
+ * Aquí sí se borra la fila, al contrario que en las candidaturas a ofertas:
+ * una candidatura es un proceso del que el establecimiento debe conservar
+ * rastro, mientras que esto es sólo una marca de preferencia.
+ */
+export async function withdrawWorkInterestAction(businessId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { error } = await supabase
+    .from("saved_businesses")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("business_id", businessId)
+
+  if (error) return { error: "No se ha podido retirar tu interés" }
+
+  revalidatePath(`/business/${businessId}`)
+  revalidatePath("/favorites")
   return { success: true }
 }
 

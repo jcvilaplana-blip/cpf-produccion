@@ -34,6 +34,8 @@ import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useInterviewStats } from "@/hooks/use-interview-stats"
 import { cn } from "@/lib/utils"
 import { isHighlightActive } from "@/lib/highlighted-jobs"
+import { saveJobAction } from "@/lib/actions"
+import { toast } from "sonner"
 import { MicropaymentCards } from "@/components/micropayment-cards"
 import { AccountFooterLinks } from "@/components/account-footer-links"
 import {
@@ -101,6 +103,41 @@ export function CandidateDashboardContent({
   // guardar una oferta y volver al panel, el enrutador de Next puede servir la
   // respuesta que ya tenía en caché, y el contador se quedaba en el valor de
   // antes -0 guardadas mientras la lista ya mostraba una-.
+  /** Ofertas guardadas por el usuario, para pintar el marcador relleno. */
+  const [guardadas, setGuardadas] = useState<Set<string>>(new Set())
+
+  /**
+   * Guarda o quita una oferta desde el listado.
+   *
+   * El marcador de estas tarjetas no tenía `onClick`: era decorativo. Al
+   * pulsarlo no se guardaba nada y, como vive dentro del enlace de la tarjeta,
+   * lo único que ocurría era navegar a la oferta. De ahí que el contador
+   * dijera 0 por muchas veces que se pulsara.
+   */
+  const alternarGuardada = async (e: React.MouseEvent, jobId: string) => {
+    // Sin esto, el clic burbujea al <Link> que envuelve la tarjeta.
+    e.preventDefault()
+    e.stopPropagation()
+
+    const result = await saveJobAction(jobId)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+
+    setGuardadas((prev) => {
+      const siguiente = new Set(prev)
+      if (result.saved) siguiente.add(jobId)
+      else siguiente.delete(jobId)
+      return siguiente
+    })
+    setContadores((prev) => ({
+      ...prev,
+      guardadas: Math.max(0, prev.guardadas + (result.saved ? 1 : -1)),
+    }))
+    toast.success(result.saved ? "Oferta guardada" : "Oferta quitada de guardadas")
+  }
+
   const [contadores, setContadores] = useState({
     guardadas: savedJobsCount,
     candidaturas: applicationsCount,
@@ -155,12 +192,17 @@ export function CandidateDashboardContent({
         }
         if (catsData) setCategories(catsData)
 
-        const [{ count: guardadas }, { count: candidaturas }] = await Promise.all([
-          supabase.from("saved_jobs").select("id", { count: "exact", head: true }).eq("user_id", userId),
+        // Se piden los ids, no sólo el número: con ellos se pinta además el
+        // marcador relleno en las ofertas ya guardadas.
+        const [{ data: filasGuardadas }, { count: candidaturas }] = await Promise.all([
+          supabase.from("saved_jobs").select("job_id").eq("user_id", userId),
           supabase.from("applications").select("id", { count: "exact", head: true }).eq("worker_id", userId),
         ])
+        if (filasGuardadas) {
+          setGuardadas(new Set(filasGuardadas.map((f: any) => f.job_id)))
+        }
         setContadores({
-          guardadas: guardadas ?? savedJobsCount,
+          guardadas: filasGuardadas?.length ?? savedJobsCount,
           candidaturas: candidaturas ?? applicationsCount,
         })
       } catch {
@@ -585,8 +627,19 @@ export function CandidateDashboardContent({
                             )}
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8">
-                          <Bookmark className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0 h-8 w-8"
+                          onClick={(e) => alternarGuardada(e, job.id)}
+                          aria-label={guardadas.has(job.id) ? "Quitar de guardadas" : "Guardar oferta"}
+                        >
+                          <Bookmark
+                            className={cn(
+                              "h-4 w-4",
+                              guardadas.has(job.id) && "fill-[#01A89E] text-[#01A89E]"
+                            )}
+                          />
                         </Button>
                       </div>
                     </CardContent>

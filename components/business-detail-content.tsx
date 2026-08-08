@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { requestToWorkHereAction } from "@/lib/actions"
+import { requestToWorkHereAction, withdrawWorkInterestAction } from "@/lib/actions"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { PortfolioImageViewer } from "@/components/portfolio-image-viewer"
@@ -100,6 +100,14 @@ export function BusinessDetailContent({ id }: { id: string }) {
   // Medias por criterio de las valoraciones que le han dejado los candidatos.
   const [criteriaSummary, setCriteriaSummary] = useState<Record<string, number>>({})
   const [ratingsTotal, setRatingsTotal] = useState(0)
+  /**
+   * El establecimiento está marcado por este candidato.
+   *
+   * Un único estado para el corazón de la cabecera y para el CTA "Quiero
+   * trabajar aquí": desde que se retiró el botón "Favorito" los dos significan
+   * lo mismo y comparten fila en `saved_businesses`. Con estados separados se
+   * contradecían en pantalla.
+   */
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   // Un establecimiento no puede guardarse a sí mismo en favoritos: cuando el
@@ -107,7 +115,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [isPremiumWorker, setIsPremiumWorker] = useState(false)
   const [requestingToWork, setRequestingToWork] = useState(false)
-  const [requestedToWork, setRequestedToWork] = useState(false)
+
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [showVideoOverlay, setShowVideoOverlay] = useState(true)
@@ -215,8 +223,23 @@ export function BusinessDetailContent({ id }: { id: string }) {
       if (result.error) {
         toast.error(result.error)
       } else {
-        setRequestedToWork(true)
+        setIsFavorite(true)
         toast.success("Le hemos avisado a la empresa de tu interés")
+      }
+    } finally {
+      setRequestingToWork(false)
+    }
+  }
+
+  const handleWithdrawInterest = async () => {
+    setRequestingToWork(true)
+    try {
+      const result = await withdrawWorkInterestAction(id)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        setIsFavorite(false)
+        toast.success("Has retirado tu interés")
       }
     } finally {
       setRequestingToWork(false)
@@ -430,6 +453,45 @@ export function BusinessDetailContent({ id }: { id: string }) {
           </Link>
         </div>
 
+        {/* 4 — Interés del candidato.
+            Sube aquí, justo bajo las tarjetas de ofertas y valoración, porque
+            es la acción que se espera del visitante y al final de la ficha
+            quedaba fuera de la vista. "Contactar" y "Favorito" se retiran:
+            el chat se abre solo al mostrar interés, y marcar favorito era la
+            misma operación con otro nombre. */}
+        {!isOwnProfile && isPremiumWorker && (
+          <Section icon={Sparkles} title="¿Te gustaría trabajar aquí?">
+            {isFavorite ? (
+              <div className="space-y-2">
+                <Button
+                  disabled
+                  className="h-12 w-full rounded-xl bg-green-600 text-[14px] font-bold text-white hover:bg-green-600"
+                >
+                  <CheckCircle className="mr-2 h-5 w-5" /> Interés enviado
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleWithdrawInterest}
+                  disabled={requestingToWork}
+                  className="h-12 w-full rounded-xl border-destructive/40 text-[14px] font-bold text-destructive hover:bg-destructive/5"
+                >
+                  <X className="mr-2 h-5 w-5" />
+                  {requestingToWork ? "Retirando..." : "Ya no me interesa"}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleRequestToWork}
+                disabled={requestingToWork}
+                className="h-12 w-full rounded-xl bg-[#01A89E] text-[14px] font-bold text-white hover:bg-[#018F86]"
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                {requestingToWork ? "Enviando..." : "Quiero trabajar aquí"}
+              </Button>
+            )}
+          </Section>
+        )}
+
         {/* 4 — Tipo de trabajador que busca */}
         <Section icon={Users} title="Tipo de trabajador que busca">
           {workerTypesSought.length > 0 ? (
@@ -624,81 +686,6 @@ export function BusinessDetailContent({ id }: { id: string }) {
           </Section>
         )}
 
-        {/* 12 — Acciones rápidas. No se muestran sobre el propio perfil:
-            "Contactar" abriría un formulario para escribirte a ti mismo. */}
-        {!isOwnProfile && (
-        <Section icon={Sparkles} title="Acciones rápidas">
-          <div className="flex gap-3">
-            <Button
-              className="h-12 flex-1 rounded-xl bg-[#01A89E] text-[14px] font-bold text-white hover:bg-[#018F86]"
-              onClick={() => setShowContactForm(!showContactForm)}
-            >
-              <MessageCircle className="mr-2 h-5 w-5" /> Contactar
-            </Button>
-            {!isOwnProfile && (
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-12 flex-1 rounded-xl text-[14px] font-bold",
-                  isFavorite && "border-[#01A89E] bg-[#01A89E]/5 text-[#01A89E]"
-                )}
-                onClick={handleToggleFavorite}
-                disabled={favoriteLoading}
-              >
-                <Heart className={cn("mr-2 h-5 w-5", isFavorite && "fill-[#01A89E]")} /> Favorito
-              </Button>
-            )}
-          </div>
-
-          {isPremiumWorker && (
-            <Button
-              variant="outline"
-              className="mt-3 h-12 w-full rounded-xl border-[#F48221]/40 text-[14px] font-bold text-[#F48221] hover:bg-[#F48221]/5 disabled:opacity-60"
-              onClick={handleRequestToWork}
-              disabled={requestingToWork || requestedToWork}
-            >
-              <Sparkles className="mr-2 h-5 w-5" />
-              {requestedToWork ? "Interés enviado" : requestingToWork ? "Enviando..." : "Quiero trabajar aquí"}
-            </Button>
-          )}
-
-          {showContactForm && (
-            <div className="mt-3 rounded-2xl border border-[#01A89E]/30 bg-teal-50/50 p-4">
-              {sent ? (
-                <div className="py-4 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <p className="font-semibold text-green-700">Mensaje enviado</p>
-                  <p className="mt-1 text-[14px] text-slate-500">Redirigiendo al chat...</p>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-[14px] font-semibold">Enviar mensaje a {business.display_name}</h3>
-                    <button onClick={() => setShowContactForm(false)} className="rounded-full p-1 hover:bg-slate-200">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <Textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Hola, me interesa trabajar con ustedes..."
-                    className="mb-3 min-h-[100px] resize-none rounded-xl border-slate-200 bg-white text-[14px]"
-                  />
-                  <Button
-                    className="h-11 w-full rounded-xl bg-[#01A89E] font-bold text-white hover:bg-[#018F86]"
-                    onClick={handleSendMessage}
-                    disabled={sending || !message.trim()}
-                  >
-                    {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : <><Send className="mr-2 h-4 w-4" /> Enviar mensaje</>}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-        </Section>
-        )}
       </main>
 
       {/* Reel del vídeo, igual que en el perfil del candidato */}
