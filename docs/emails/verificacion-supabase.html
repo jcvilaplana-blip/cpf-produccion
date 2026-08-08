@@ -1,0 +1,121 @@
+<!--
+  Correo de verificación de cuenta de CamareroPorFavor.
+
+  DÓNDE VA: Supabase → Authentication → Emails → "Confirm signup".
+  NO va en Resend: el registro usa supabase.auth.signUp(), así que es Supabase
+  quien envía este correo, y por eso el enlace usa su variable {{ .ConfirmationURL }}.
+
+  Variables disponibles de Supabase:
+    {{ .ConfirmationURL }}  enlace de confirmación (el que usa el botón)
+    {{ .Email }}            correo del destinatario
+    {{ .SiteURL }}          URL del sitio configurada en Supabase
+    {{ .Token }}            código de 6 dígitos, por si algún día se usa OTP
+
+  NOTAS DE MAQUETACIÓN, que en correo no es como en web:
+  - Todo va en tablas y con estilos en línea: Outlook y Gmail descartan el CSS
+    externo y buena parte del moderno (flex, grid, variables).
+  - Nada de degradados: se usan colores planos, que es lo único que pintan
+    todos los clientes.
+  - Las imágenes van por URL absoluta y pública. Al migrar el dominio hay que
+    cambiar cpf.fullstark.es por camareroporfavor.com en las tres que hay.
+-->
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f3f4f6;margin:0;padding:0;">
+  <tr>
+    <td align="center" style="padding:32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+
+        <!-- Cabecera -->
+        <tr>
+          <td style="padding:20px 24px;border-bottom:1px solid #eef0f2;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td align="left" style="vertical-align:middle;">
+                  <img src="https://cpf.fullstark.es/logo-cpf.png" alt="CamareroPorFavor" width="36" height="36" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;" />
+                </td>
+                <td align="right" style="vertical-align:middle;font-size:13px;color:#7b7d81;">
+                  CamareroPorFavor
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Cuerpo -->
+        <tr>
+          <td style="padding:24px;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f6fbfb;border-radius:10px;">
+              <tr>
+                <td align="center" style="padding:48px 32px;">
+
+                  <img src="https://cpf.fullstark.es/icono512.png" alt="" width="56" height="56" style="display:block;margin:0 auto 20px;border:0;outline:none;text-decoration:none;" />
+
+                  <h1 style="margin:0 0 12px;font-size:26px;line-height:1.3;font-weight:700;color:#14171e;">
+                    ¡Ya casi estamos!
+                  </h1>
+
+                  <p style="margin:0 auto 28px;max-width:400px;font-size:16px;line-height:1.6;color:#43454b;">
+                    Gracias por registrarte en <strong>CamareroPorFavor</strong>.<br />
+                    Solo falta confirmar tu correo para activar tu cuenta.
+                  </p>
+
+                  <!-- Botón. En Outlook los <a> con padding no siempre respetan
+                       la altura, así que el color va en la celda de la tabla. -->
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 24px;">
+                    <tr>
+                      <td align="center" bgcolor="#01A89E" style="background-color:#01A89E;border-radius:8px;">
+                        <a href="{{ .ConfirmationURL }}"
+                           target="_blank"
+                           style="display:inline-block;padding:16px 34px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;line-height:1.2;">
+                          Confirmar mi correo
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin:0 auto 8px;max-width:420px;font-size:13px;line-height:1.6;color:#7b7d81;">
+                    Si el botón no funciona, copia y pega esta dirección en tu navegador:
+                  </p>
+                  <p style="margin:0 auto;max-width:440px;font-size:12px;line-height:1.5;color:#01A89E;word-break:break-all;">
+                    {{ .ConfirmationURL }}
+                  </p>
+
+                  <p style="margin:28px auto 0;max-width:400px;font-size:13px;line-height:1.6;color:#7b7d81;">
+                    Si no has creado ninguna cuenta en CamareroPorFavor,<br />
+                    puedes ignorar este mensaje.
+                  </p>
+
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Pie -->
+        <tr>
+          <td align="center" style="padding:8px 24px 36px;">
+            <p style="margin:0 auto 20px;max-width:320px;font-size:13px;line-height:1.6;color:#7b7d81;">
+              El punto de encuentro entre los profesionales de la hostelería y
+              los establecimientos que los buscan.
+            </p>
+
+            <p style="margin:0 0 16px;font-size:12px;line-height:1.6;color:#7b7d81;">
+              <a href="https://cpf.fullstark.es/terms" target="_blank" style="color:#7b7d81;text-decoration:underline;">Términos y Condiciones</a>
+              &nbsp;·&nbsp;
+              <a href="https://cpf.fullstark.es/privacy" target="_blank" style="color:#7b7d81;text-decoration:underline;">Privacidad</a>
+              &nbsp;·&nbsp;
+              <a href="https://cpf.fullstark.es/help" target="_blank" style="color:#7b7d81;text-decoration:underline;">Ayuda</a>
+            </p>
+
+            <p style="margin:0;font-size:11px;line-height:1.6;color:#a5a7ab;">
+              Este es un correo automático de verificación de cuenta.<br />
+              Por favor, no respondas a este mensaje.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
