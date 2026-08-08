@@ -101,9 +101,10 @@ export default function FlashOffersPage() {
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-background md:pt-14">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <Button variant="ghost" className="mb-4" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
+          {/* Mismo control de volver que el resto de la aplicación: sólo la
+              flecha. El botón con texto rompía la coherencia en móvil. */}
+          <Button variant="ghost" size="icon" className="mb-4" onClick={() => router.back()} aria-label="Volver">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
 
           <div className="flex items-center gap-3 mb-2">

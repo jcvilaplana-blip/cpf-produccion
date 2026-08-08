@@ -158,9 +158,8 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
       <div className="container mx-auto px-4 py-8">
         {/* Header Navigation */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
+          <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Volver">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <Button asChild variant="outline">
             <Link href="/jobs/flash">
@@ -216,7 +215,7 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
                   <div className="flex items-center gap-2">
                     <Euro className="w-6 h-6 text-green-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Salario</p>
+                      <p className="text-sm text-muted-foreground">Sueldo</p>
                       <p className="text-2xl font-bold text-green-600">
                         {offer.salary_min > 0 ? `€${offer.salary_min}` : "A convenir"}
                         {offer.salary_max > 0 && ` - €${offer.salary_max}`}
@@ -299,7 +298,7 @@ export function FlashOfferDetailContent({ id }: { id: string }) {
 
                 <Button onClick={handleAcceptOffer} size="lg" className="w-full bg-[#01A89E] hover:bg-[#018F86]">
                   <MessageSquare className="w-5 h-5 mr-2" />
-                  Aceptar Oferta Flash
+                  Me interesa la Oferta
                 </Button>
 
                 <p className="text-[13px] text-center text-muted-foreground">

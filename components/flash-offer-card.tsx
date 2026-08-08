@@ -131,7 +131,7 @@ export function FlashOfferCard({
 
         <Button onClick={handleAcceptOffer} className="w-full bg-[#01A89E] hover:bg-[#018F86]" size="lg">
           <Zap className="w-4 h-4 mr-2" />
-          Aceptar Oferta Flash
+          Me interesa la Oferta
         </Button>
       </CardContent>
     </Card>

@@ -10,10 +10,13 @@ import { AdminSidebar, type AdminSection } from "@/components/admin/admin-sideba
 import { AdminCategories } from "@/components/admin/admin-categories"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AdminCities } from "@/components/admin/admin-cities"
+import { AdminBusinessPreview } from "@/components/admin/admin-business-preview"
 import { AdminCandidatePreview } from "@/components/admin/admin-candidate-preview"
 import { AdminSettingsSection } from "@/components/admin/admin-settings-section"
 import { AdminCrudTable, type ColumnDef } from "@/components/admin/admin-crud-table"
 import { BUSINESS_VENUE_TYPES } from "@/lib/business-venue-types"
+import { AVAILABILITY_OPTIONS, contractTypeLabel } from "@/lib/profile-constants"
+import { formatLocation } from "@/lib/format-location"
 import { RATING_CRITERIA, readCriterion } from "@/lib/rating-criteria"
 import { formatEuros } from "@/lib/tax"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +39,26 @@ import {
 const supabase = createClient()
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
+/** Jornadas que ofrece el formulario de publicar oferta. */
+const JORNADAS_OFERTA = [
+  { value: "full_time", label: "Jornada Completa" },
+  { value: "part_time", label: "Media Jornada" },
+  { value: "temporary", label: "Temporal" },
+  { value: "seasonal", label: "Estacional" },
+  { value: "weekend", label: "Fines de Semana" },
+  { value: "freelance", label: "Autonomo / Freelance" },
+]
+
+/** Tramos de experiencia del formulario de publicar oferta. */
+const EXPERIENCIA_OFERTA = [
+  { value: "none", label: "Sin experiencia" },
+  { value: "0-1", label: "Menos de 1 ano" },
+  { value: "1-2", label: "1-2 anos" },
+  { value: "3-5", label: "3-5 anos" },
+  { value: "5-10", label: "5-10 anos" },
+  { value: "10+", label: "Mas de 10 anos" },
+]
+
 export default function AdminPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
@@ -44,6 +67,7 @@ export default function AdminPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [mobileOpen, setMobileOpen] = useState(false)
   const [previewCandidate, setPreviewCandidate] = useState<any>(null)
+  const [previewBusiness, setPreviewBusiness] = useState<any | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [editDialog, setEditDialog] = useState<{ open: boolean; type: string; item: any }>({ open: false, type: "", item: null })
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; type: string; item: any; endpoint: string }>({ open: false, type: "", item: null, endpoint: "" })
@@ -232,88 +256,180 @@ export default function AdminPage() {
   }
 
   // ===== CRUD COLUMN DEFS =====
+  //
+  // Estos catálogos son los formularios de edición del panel de administración,
+  // y tienen que reflejar los MISMOS campos que edita cada usuario en su propia
+  // pantalla. Habían divergido: faltaban campos que el usuario sí guarda
+  // (experiencia laboral, titulaciones, CV, vídeos), y varios desplegables
+  // ofrecían valores que la aplicación no usa —contratos, disponibilidad,
+  // planes de suscripción—, de modo que editar desde aquí escribía datos que
+  // luego ninguna pantalla sabía interpretar.
+  // Columnas de la vista de tabla (escritorio). Deliberadamente pocas: lo que
+  // sirve para localizar un registro de un vistazo. El detalle completo vive en
+  // "Ver" y en el formulario de edición.
+  const candidateTableColumns = [
+    { key: "display_name", label: "Nombre", render: (v: any) => <span className="font-medium">{v || "Sin nombre"}</span> },
+    { key: "email", label: "Email" },
+    { key: "job_category", label: "Categoría" },
+    { key: "location", label: "Ubicación", render: (v: any) => formatLocation(v) || "—" },
+    { key: "experience_years", label: "Exp.", render: (v: any) => (v ? `${v} años` : "—") },
+    { key: "rating", label: "Valoración", render: (v: any) => (v ? Number(v).toFixed(1) : "—") },
+    { key: "is_active", label: "Visible", render: (v: any) => (v ? "Sí" : "No") },
+  ]
+
+  const businessTableColumns = [
+    { key: "company_name", label: "Empresa", render: (v: any) => <span className="font-medium">{v || "Sin nombre"}</span> },
+    { key: "email", label: "Email" },
+    { key: "business_type", label: "Tipo de local" },
+    { key: "city", label: "Ciudad" },
+    { key: "subscription_plan", label: "Plan", render: (v: any) => v || "—" },
+    { key: "verified", label: "Verificada", render: (v: any) => (v ? "Sí" : "No") },
+  ]
+
+  const jobTableColumns = [
+    { key: "title", label: "Título", render: (v: any) => <span className="font-medium">{v || "Sin título"}</span> },
+    { key: "category", label: "Categoría" },
+    { key: "city", label: "Ciudad" },
+    { key: "contract_type", label: "Jornada", render: (v: any) => contractTypeLabel(v) || "—" },
+    { key: "vacancies", label: "Vacantes" },
+    { key: "is_active", label: "Activa", render: (v: any) => (v ? "Sí" : "No") },
+  ]
+
   const candidateColumns: ColumnDef[] = [
-    // -- Visual / Media (top of form) --
+    // -- Multimedia --
     { key: "avatar_url", label: "Foto de Perfil", type: "avatar", editable: true },
-    { key: "portfolio_images", label: "Portfolio de Imagenes (max 3)", type: "images", editable: true, maxImages: 3 },
-    // -- Basic info --
+    { key: "portfolio_images", label: "Portfolio de Imágenes (máx. 6)", type: "images", editable: true, maxImages: 6 },
+    { key: "portfolio_videos", label: "Vídeos (el 1º es el de presentación, máx. 3)", type: "json", editable: true },
+    // -- Datos básicos --
     { key: "display_name", label: "Nombre", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin nombre"}</span> },
     { key: "email", label: "Email", editable: false, render: (v) => <span className="text-sm text-muted-foreground">{v || "Sin email"}</span> },
     { key: "password", label: "Nueva Contraseña", editable: true, createOnly: false, type: "password" },
     { key: "phone", label: "Teléfono", editable: true },
     { key: "date_of_birth", label: "Fecha de nacimiento", editable: true },
     { key: "location", label: "Ubicación", editable: true },
-    { key: "bio", label: "Bio", type: "textarea", editable: true },
+    { key: "bio", label: "Sobre mí", type: "textarea", editable: true },
+    // -- Perfil profesional --
     { key: "job_category", label: "Categoría profesional", type: "category", editable: true },
+    { key: "job_subcategory", label: "Subcategoría", editable: true },
+    { key: "custom_subcategory", label: "Subcategoría personalizada", editable: true },
     { key: "specialties", label: "Especialidades", type: "subcategories", editable: true },
     { key: "skills", label: "Destrezas (JSON)", type: "json", editable: true },
-    { key: "experience_years", label: "Años experiencia", type: "number", editable: true },
-    { key: "availability_status", label: "Disponibilidad", editable: true, type: "select", options: [{ value: "available", label: "Disponible" }, { value: "busy", label: "Ocupado" }, { value: "not_looking", label: "No busca" }] },
-    { key: "contract_type_sought", label: "Tipo de contrato", type: "select", editable: true, options: [{ value: "full_time", label: "Tiempo completo" }, { value: "part_time", label: "Tiempo parcial" }, { value: "temporary", label: "Temporal" }, { value: "freelance", label: "Freelance" }, { value: "internship", label: "Prácticas" }] },
-    { key: "languages", label: "Idioma principal", type: "select", editable: true, options: [{ value: "es", label: "Español" }, { value: "en", label: "Inglés" }] },
-    // -- Status --
-    { key: "is_active", label: "Activo", type: "boolean", editable: true },
+    { key: "experience_years", label: "Años de experiencia", type: "number", editable: true },
+    {
+      key: "availability_status",
+      label: "Disponibilidad",
+      editable: true,
+      type: "select",
+      // Los mismos valores que el desplegable del candidato: antes ofrecía
+      // "Disponible / Ocupado / No busca", que no se guardan en ninguna parte.
+      options: AVAILABILITY_OPTIONS,
+    },
+    {
+      key: "contract_type_sought",
+      label: "Jornadas que busca (JSON)",
+      type: "json",
+      editable: true,
+    },
+    { key: "languages", label: "Idiomas (JSON: idioma y nivel)", type: "json", editable: true },
+    { key: "work_experience", label: "Experiencia laboral (JSON)", type: "json", editable: true },
+    { key: "certificates", label: "Titulaciones (JSON)", type: "json", editable: true },
+    { key: "cv_url", label: "CV (URL)", editable: true },
+    { key: "cv_filename", label: "CV (nombre del fichero)", editable: true },
+    { key: "match_alert_threshold", label: "Umbral de avisos de match (%)", type: "number", editable: true },
+    // -- Estado --
+    { key: "is_active", label: "Perfil visible", type: "boolean", editable: true },
     { key: "is_premium", label: "Premium", type: "boolean", editable: true },
     { key: "is_admin", label: "Admin", type: "boolean", editable: true },
     { key: "points", label: "Puntos", type: "number", editable: true },
     { key: "level", label: "Nivel", type: "number", editable: true },
-    { key: "rating", label: "Rating", type: "number", editable: true },
-    { key: "badges", label: "Insignias (JSON) — incl. 'Perfil del Mes'", type: "json", editable: true },
+    { key: "rating", label: "Valoración", type: "number", editable: true },
+    { key: "badges", label: "Insignias (JSON)", type: "json", editable: true },
   ]
 
   const businessColumns: ColumnDef[] = [
-    // -- Visual / Media (solo imagenes, NO video para empresas) --
+    // -- Multimedia --
     { key: "company_logo_url", label: "Logo de Empresa", type: "avatar", editable: true },
-    { key: "photos", label: "Fotos del Negocio (max 5)", type: "images", editable: true, maxImages: 5 },
+    { key: "photos", label: "Fotos del Negocio (máx. 5)", type: "images", editable: true, maxImages: 5 },
     { key: "video_url", label: "Vídeo del Negocio", type: "video", editable: true },
-    // -- Basic info --
+    // -- Datos básicos --
     { key: "company_name", label: "Empresa", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin nombre"}</span> },
     { key: "email", label: "Email", editable: true },
     { key: "company_description", label: "Descripción", type: "textarea", editable: true },
+    { key: "service_description", label: "Descripción del servicio", type: "textarea", editable: true },
     { key: "business_type", label: "Tipo de local", editable: true, type: "select", options: BUSINESS_VENUE_TYPES.map((name) => ({ value: name, label: name })) },
     { key: "category_id", label: "Categoría", type: "category", editable: true },
+    { key: "subcategory_id", label: "Subcategoría", editable: true },
     { key: "phone", label: "Teléfono", editable: true },
     { key: "website", label: "Web", editable: true },
     { key: "address", label: "Dirección", editable: true },
     { key: "city", label: "Ciudad", editable: true },
-    { key: "service_description", label: "Descripción servicio", type: "textarea", editable: true },
-    { key: "avg_salary_range", label: "Rango salarial", editable: true },
-    { key: "hiring_history_count", label: "Contrataciones", type: "number", editable: true },
-    // -- Status --
+    // `avg_salary_range` y `hiring_history_count` estaban aquí y no los lee ni
+    // los escribe ninguna otra pantalla de la aplicación: se retiran.
+    // -- Estado --
     { key: "verified", label: "Verificada", type: "boolean", editable: true },
     { key: "is_premium", label: "Premium", type: "boolean", editable: true },
-    { key: "subscription_plan", label: "Plan suscripción", editable: true, type: "select", options: [{ value: "free", label: "Gratuito" }, { value: "basic", label: "Básico" }, { value: "premium", label: "Premium" }] },
+    {
+      key: "subscription_plan",
+      label: "Plan de suscripción",
+      editable: true,
+      type: "select",
+      // Los identificadores reales de SUBSCRIPTION_PLANS. Antes ofrecía
+      // "free/basic/premium", que no coinciden con lo que escribe el webhook
+      // de Stripe al activar un plan.
+      options: [
+        { value: "", label: "Sin plan" },
+        { value: "standard-business", label: "Plan Standard" },
+        { value: "premium-business", label: "Plan Premium" },
+      ],
+    },
+    { key: "subscription_expires_at", label: "Suscripción hasta (ISO)", editable: true },
     { key: "points", label: "Puntos", type: "number", editable: true },
     { key: "level", label: "Nivel", type: "number", editable: true },
     { key: "flash_credits", label: "Créditos Oferta Flash", type: "number", editable: true },
     { key: "highlight_credits", label: "Créditos Destacar", type: "number", editable: true },
-    { key: "badges", label: "Insignias (JSON) — incl. 'Formador'/'Rotación Baja'", type: "json", editable: true },
+    { key: "badges", label: "Insignias (JSON)", type: "json", editable: true },
   ]
 
   const jobColumns: ColumnDef[] = [
+    { key: "image_url", label: "Imagen de la oferta", type: "avatar", editable: true },
     { key: "title", label: "Título", editable: true, render: (v) => <span className="text-sm font-semibold">{v || "Sin título"}</span> },
     { key: "position", label: "Puesto", editable: true },
     { key: "description", label: "Descripción", type: "textarea", editable: true },
     { key: "requirements", label: "Requisitos", type: "textarea", editable: true },
     { key: "benefits", label: "Beneficios", type: "textarea", editable: true },
     { key: "category", label: "Categoría", type: "category", editable: true },
-    { key: "contract_type", label: "Tipo contrato", editable: true, type: "select", options: [{ value: "full_time", label: "Tiempo completo" }, { value: "part_time", label: "Tiempo parcial" }, { value: "temporary", label: "Temporal" }, { value: "internship", label: "Practicas" }, { value: "freelance", label: "Freelance" }] },
-    { key: "experience_required", label: "Experiencia requerida", editable: true },
+    {
+      key: "contract_type",
+      label: "Jornada",
+      editable: true,
+      type: "select",
+      // Las mismas seis que ofrece el formulario de publicar oferta. Antes
+      // faltaban "Estacional" y "Fines de Semana" -publicables desde la app,
+      // no editables desde aquí- y sobraba "Prácticas", que no existe.
+      options: JORNADAS_OFERTA,
+    },
+    {
+      key: "experience_required",
+      label: "Experiencia requerida",
+      editable: true,
+      type: "select",
+      options: EXPERIENCIA_OFERTA,
+    },
     { key: "work_schedule", label: "Horario", editable: true },
     { key: "city", label: "Ciudad", editable: true },
-    { key: "location", label: "Ubicacion", editable: true },
-    { key: "salary_min", label: "Salario min", type: "number", editable: true },
-    { key: "salary_max", label: "Salario max", type: "number", editable: true },
-    { key: "salary_display", label: "Salario visible", editable: true },
+    { key: "location", label: "Ubicación", editable: true },
+    { key: "salary_min", label: "Sueldo min", type: "number", editable: true },
+    { key: "salary_max", label: "Sueldo max", type: "number", editable: true },
+    { key: "salary_display", label: "Sueldo visible", editable: true },
     { key: "vacancies", label: "Vacantes", type: "number", editable: true },
-    { key: "start_date", label: "Fecha incorporación (ISO)", editable: true },
+    { key: "start_date", label: "Fecha de incorporación (ISO)", editable: true },
     { key: "languages_required", label: "Idiomas requeridos (JSON)", type: "json", editable: true },
     { key: "uniform_required", label: "Uniforme", type: "boolean", editable: true },
     { key: "tpv_required", label: "TPV requerido", type: "boolean", editable: true },
     { key: "is_active", label: "Activa", type: "boolean", editable: true },
     { key: "is_highlighted", label: "Destacada", type: "boolean", editable: true },
-    { key: "latitude", label: "Latitud", type: "number", editable: true },
-    { key: "longitude", label: "Longitud", type: "number", editable: true },
+    // Latitud y longitud las fija el autocompletado de direcciones al publicar.
+    // Editarlas a mano aquí sólo permitía descuadrar la oferta de su ciudad.
   ]
 
   const flashColumns: ColumnDef[] = [
@@ -449,6 +565,7 @@ export default function AdminPage() {
                 icon={<Users className="h-5 w-5 text-[#01A89E]" />}
                 data={candidates}
                 columns={candidateColumns}
+                tableColumns={candidateTableColumns}
                 endpoint="/api/admin/profiles"
                 swrKey={candidatesKey!}
                 search={search}
@@ -468,11 +585,13 @@ export default function AdminPage() {
 
           {/* ========== BUSINESSES ========== */}
           {section === "businesses" && (
+            <>
             <AdminCrudTable
               title="Empresas"
               icon={<Building2 className="h-5 w-5 text-[#01A89E]" />}
               data={businesses}
               columns={businessColumns}
+              tableColumns={businessTableColumns}
               endpoint="/api/admin/businesses"
               swrKey={businessesKey!}
               search={search}
@@ -480,7 +599,14 @@ export default function AdminPage() {
               searchPlaceholder="Buscar empresa..."
               emptyText="No se encontraron empresas"
               createDefaults={{ company_name: "", business_type: "", verified: false, is_premium: false, points: 0, level: 1 }}
+              onPreview={(row) => setPreviewBusiness(row)}
             />
+            <AdminBusinessPreview
+              open={!!previewBusiness}
+              onOpenChange={(open) => { if (!open) setPreviewBusiness(null) }}
+              business={previewBusiness}
+            />
+            </>
           )}
 
           {/* ========== JOBS ========== */}
@@ -490,6 +616,7 @@ export default function AdminPage() {
               icon={<Briefcase className="h-5 w-5 text-emerald-600" />}
               data={regularJobs}
               columns={jobColumns}
+              tableColumns={jobTableColumns}
               endpoint="/api/admin/jobs"
               swrKey={jobsKey!}
               search={search}

@@ -369,7 +369,7 @@ export function JobDetailContent({
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground text-[13px] mb-1">
                 <Euro className="h-4 w-4" />
-                <span>Salario</span>
+                <span>Sueldo</span>
               </div>
               <p className="font-semibold text-sm">
                 {job.salary_display

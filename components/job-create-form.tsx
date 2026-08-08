@@ -327,7 +327,7 @@ Valorable:
 
               {/* Salary */}
               <div className="space-y-2">
-                <Label htmlFor="salary">Salario</Label>
+                <Label htmlFor="salary">Sueldo</Label>
                 <Input
                   id="salary"
                   placeholder="Ej: 1.800€ - 2.200€/mes"

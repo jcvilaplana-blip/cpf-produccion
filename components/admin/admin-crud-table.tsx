@@ -323,6 +323,15 @@ interface Props {
   icon: React.ReactNode
   data: any[]
   columns: ColumnDef[]
+  /**
+   * Columnas de la vista de tabla (escritorio). Sin esto la sección se lista
+   * como tarjetas apiladas, que en un panel de administración cuesta comparar:
+   * la tabla enseña los mismos registros en filas y columnas.
+   *
+   * En móvil se siguen usando las tarjetas: una tabla de ocho columnas en una
+   * pantalla de teléfono no se lee.
+   */
+  tableColumns?: { key: string; label: string; render?: (value: any, row: any) => React.ReactNode }[]
   endpoint: string
   swrKey: string
   searchPlaceholder?: string
@@ -336,6 +345,7 @@ interface Props {
 }
 
 export function AdminCrudTable({
+  tableColumns,
   title, icon, data, columns, endpoint, swrKey,
   searchPlaceholder = "Buscar...", search, onSearchChange,
   emptyIcon, emptyText = "No hay datos", canCreate = true, createDefaults = {},
@@ -524,7 +534,48 @@ export function AdminCrudTable({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <>
+        {/* Tabla, sólo en escritorio. */}
+        {tableColumns && tableColumns.length > 0 && (
+          <div className="hidden md:block overflow-x-auto rounded-lg border bg-white">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-slate-50">
+                  {tableColumns.map((c) => (
+                    <th key={c.key} className="px-3 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                      {c.label}
+                    </th>
+                  ))}
+                  <th className="px-3 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row: any) => (
+                  <tr key={row.id} className="border-b last:border-0 hover:bg-slate-50/60">
+                    {tableColumns.map((c) => (
+                      <td key={c.key} className="px-3 py-2.5 align-middle text-slate-700">
+                        {c.render ? c.render(row[c.key], row) : (row[c.key] ?? "—")}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      {onPreview && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-[#01A89E]" onClick={() => onPreview(row)} title="Ver ficha">
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(row)} title="Editar"><Pencil className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => openDelete(row)} title="Eliminar"><Trash2 className="h-3 w-3" /></Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className={`space-y-2 ${tableColumns && tableColumns.length > 0 ? "md:hidden" : ""}`}>
           {data.map((row: any) => (
             <Card key={row.id} className="bg-white hover:shadow-sm transition-shadow">
               <CardContent className="p-3">
@@ -544,6 +595,7 @@ export function AdminCrudTable({
             </Card>
           ))}
         </div>
+        </>
       )}
 
       {/* Edit / Create Dialog - wider for media */}

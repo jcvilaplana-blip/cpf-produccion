@@ -48,10 +48,14 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
     } catch { return [] }
   })()
   const portfolioImages = Array.isArray(c.portfolio_images) ? c.portfolio_images : []
+  // Los valores que guarda de verdad el perfil del candidato
+  // (lib/profile-constants.ts). Antes esperaba "available/busy/not_looking",
+  // que no escribe ninguna pantalla, así que aquí siempre salía el valor crudo.
   const availabilityMap: Record<string, { label: string; color: string }> = {
-    available: { label: "Disponible", color: "bg-emerald-100 text-emerald-700" },
-    busy: { label: "Ocupado", color: "bg-amber-100 text-amber-700" },
-    not_looking: { label: "No busca empleo", color: "bg-slate-100 text-slate-600" },
+    immediate: { label: "Disponibilidad inmediata", color: "bg-emerald-100 text-emerald-700" },
+    "2_weeks": { label: "En 2 semanas", color: "bg-teal-100 text-teal-700" },
+    "1_month": { label: "En 1 mes", color: "bg-amber-100 text-amber-700" },
+    negotiable: { label: "Negociable", color: "bg-slate-100 text-slate-600" },
   }
   const avail = availabilityMap[c.availability_status] || { label: c.availability_status || "No indicado", color: "bg-slate-100 text-slate-600" }
 
@@ -184,6 +188,20 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
                   <DetailItem label="Valoración" value={c.rating ? `${c.rating}/5` : null} icon={<Star className="h-3 w-3 fill-yellow-400 text-yellow-400 inline ml-0.5" />} />
                   <DetailItem label="Email" value={c.email} />
                   <DetailItem label="Teléfono" value={c.phone} />
+                  <DetailItem label="Subcategoría" value={c.job_subcategory || c.custom_subcategory} />
+                  <DetailItem
+                    label="Fecha de nacimiento"
+                    value={c.date_of_birth ? new Date(c.date_of_birth).toLocaleDateString("es-ES") : null}
+                  />
+                  <DetailItem label="Jornadas que busca" value={listaLegible(c.contract_type_sought)} />
+                  <DetailItem label="Umbral de avisos" value={c.match_alert_threshold ? `${c.match_alert_threshold}%` : null} />
+                  <DetailItem label="Perfil visible" value={c.is_active ? "Sí" : "No"} />
+                  <DetailItem label="Premium" value={c.is_premium ? "Sí" : "No"} />
+                  <DetailItem label="CV" value={c.cv_filename} />
+                  <DetailItem label="Vídeos" value={contar(c.portfolio_videos)} />
+                  <DetailItem label="Imágenes" value={contar(c.portfolio_images)} />
+                  <DetailItem label="Titulaciones" value={contar(c.certificates)} />
+                  <DetailItem label="Experiencia laboral" value={contar(c.work_experience)} />
                 </div>
               </CardContent>
             </Card>
@@ -265,6 +283,26 @@ export function AdminCandidatePreview({ open, onOpenChange, candidate }: Candida
       )}
     </>
   )
+}
+
+/** Une una lista -venga como array o como JSON en texto- en algo legible. */
+function listaLegible(valor: any): string | null {
+  const arr = Array.isArray(valor) ? valor : typeof valor === "string" ? safeParse(valor) : null
+  if (!Array.isArray(arr) || arr.length === 0) return null
+  return arr.map((x) => (typeof x === "string" ? x : x?.name || x?.language || "")).filter(Boolean).join(", ")
+}
+
+function contar(valor: any): string | null {
+  const arr = Array.isArray(valor) ? valor : typeof valor === "string" ? safeParse(valor) : null
+  return Array.isArray(arr) && arr.length > 0 ? String(arr.length) : null
+}
+
+function safeParse(v: string): any {
+  try {
+    return JSON.parse(v)
+  } catch {
+    return null
+  }
 }
 
 function DetailItem({ label, value, icon }: { label: string; value: any; icon?: React.ReactNode }) {

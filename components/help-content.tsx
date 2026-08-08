@@ -24,7 +24,7 @@ export function HelpContent({ userType }: HelpContentProps) {
     {
       question: "¿Cómo busco ofertas de trabajo?",
       answer:
-        "Usa el icono de búsqueda en el menú inferior. Puedes filtrar por ubicación, categoría, tipo de jornada, salario y modalidad (presencial/remoto). También puedes ver ofertas flash para oportunidades urgentes.",
+        "Usa el icono de búsqueda en el menú inferior. Puedes filtrar por ubicación, categoría, tipo de jornada, sueldo y modalidad (presencial/remoto). También puedes ver ofertas flash para oportunidades urgentes.",
     },
     {
       question: "¿Qué son las ofertas flash?",
@@ -57,7 +57,7 @@ export function HelpContent({ userType }: HelpContentProps) {
     {
       question: "¿Cómo publico una oferta de trabajo?",
       answer:
-        "Haz clic en el botón '+' naranja en el centro del menú inferior. Completa todos los detalles de la oferta: título, descripción, requisitos, salario, ubicación y tipo de jornada. Puedes marcarla como 'Oferta Flash' para mayor visibilidad.",
+        "Haz clic en el botón '+' naranja en el centro del menú inferior. Completa todos los detalles de la oferta: título, descripción, requisitos, sueldo, ubicación y tipo de jornada. Puedes marcarla como 'Oferta Flash' para mayor visibilidad.",
     },
     {
       question: "¿Qué son las ofertas flash?",

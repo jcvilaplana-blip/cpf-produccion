@@ -155,7 +155,7 @@ export function JobFiltersComponent({ filters, onFiltersChange, jobCount }: JobF
 
           {/* Rango salarial */}
           <div className="space-y-2">
-            <Label>Salario mensual</Label>
+            <Label>Sueldo mensual</Label>
             <Select
               value={
                 filters.salaryMin !== undefined || filters.salaryMax !== undefined

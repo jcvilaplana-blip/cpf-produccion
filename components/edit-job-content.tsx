@@ -516,7 +516,7 @@ export function EditJobContent({ jobId, userId }: { jobId: string; userId: strin
             </CardContent>
           </Card>
 
-          {/* Salario */}
+          {/* Sueldo */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">

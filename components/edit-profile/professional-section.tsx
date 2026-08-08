@@ -195,11 +195,11 @@ export function ProfessionalSection(p: ProfessionalSectionProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="salMin" className="text-[13px] font-medium text-gray-600">Salario mínimo deseado</Label>
+            <Label htmlFor="salMin" className="text-[13px] font-medium text-gray-600">Sueldo mínimo deseado</Label>
             <Input id="salMin" type="number" value={p.salaryMin} onChange={(e) => p.setSalaryMin(e.target.value)} placeholder="1200" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="salMax" className="text-[13px] font-medium text-gray-600">Salario máximo deseado</Label>
+            <Label htmlFor="salMax" className="text-[13px] font-medium text-gray-600">Sueldo máximo deseado</Label>
             <Input id="salMax" type="number" value={p.salaryMax} onChange={(e) => p.setSalaryMax(e.target.value)} placeholder="2500" className="mt-1" />
           </div>
         </div>

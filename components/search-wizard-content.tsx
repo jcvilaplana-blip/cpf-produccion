@@ -236,7 +236,7 @@ export function SearchWizardContent({ profile }: SearchWizardContentProps) {
                     </div>
                     <p className="text-sm text-muted-foreground">Opcional, para afinar tu búsqueda</p>
                     <div className="space-y-2">
-                      <Label>Salario mínimo deseado (€/mes)</Label>
+                      <Label>Sueldo mínimo deseado (€/mes)</Label>
                       <Input
                         type="number"
                         placeholder="Ej. 1400"
