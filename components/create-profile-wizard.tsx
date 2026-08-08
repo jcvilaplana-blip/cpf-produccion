@@ -328,8 +328,24 @@ export function CreateProfileWizard() {
       // 1. Create auth user if new
       if (!userId) {
         const appUrl = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "https://camareroporfavor.com"
-        // Deep link for mobile: use the app scheme for verified users
-        const emailRedirectTo = `${appUrl}/auth/callback`
+
+        // En el móvil el enlace del correo devuelve al esquema de la app, para
+        // que la verificación termine DENTRO de CamareroPorFavor y no en una
+        // pestaña suelta del navegador. En web se sigue usando la URL de
+        // siempre: un esquema propio no significa nada en un ordenador.
+        //
+        // El esquema tiene que estar en Authentication → URL Configuration →
+        // Redirect URLs de Supabase. Si no está, Supabase lo descarta en
+        // silencio y devuelve a la Site URL, que es el navegador otra vez.
+        let emailRedirectTo = `${appUrl}/auth/callback`
+        try {
+          const { Capacitor } = await import("@capacitor/core")
+          if (Capacitor.isNativePlatform()) {
+            emailRedirectTo = "camareroporfavor://auth/callback"
+          }
+        } catch {
+          // Sin Capacitor, se queda la URL web.
+        }
 
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: form.email,

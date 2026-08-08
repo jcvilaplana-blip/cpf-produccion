@@ -10,6 +10,7 @@ import { LanguageProvider } from "@/lib/i18n/language-context"
 import { AuthProvider } from "@/components/providers/auth-provider"
 import { NotificationProvider } from "@/lib/notifications/notification-context"
 import { Toaster } from "@/components/ui/sonner"
+import { DeepLinkHandler } from "@/components/deep-link-handler"
 import { NotificationTrigger } from "@/components/notification-trigger"
 import { MessageAlerts } from "@/components/message-alerts"
 import { PushRegistrar } from "@/components/push-registrar"
@@ -83,6 +84,7 @@ export default function RootLayout({
               <NotificationTrigger />
               <MessageAlerts />
               <PushRegistrar />
+              <DeepLinkHandler />
               {/* Sin esto, las 106 llamadas a toast.success / toast.error
                   repartidas por la aplicación no pintaban absolutamente nada:
                   el componente existía pero nadie lo montaba. Varios botones
