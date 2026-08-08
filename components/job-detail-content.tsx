@@ -329,20 +329,10 @@ export function JobDetailContent({
         {/* Company Info + Job Title */}
         <Card>
           <CardContent className="p-6">
+            {/* Sin miniatura: la oferta ya se presenta con su imagen a ancho
+                completo en la cabecera, y repetirla aquí en pequeño sólo
+                estrechaba el título. */}
             <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center overflow-hidden border flex-shrink-0">
-                {job.business.avatar_url ? (
-                  <Image
-                    src={job.business.avatar_url}
-                    alt={job.business.display_name}
-                    width={56}
-                    height={56}
-                    className="object-cover"
-                  />
-                ) : (
-                  <Building2 className="h-7 w-7 text-muted-foreground" />
-                )}
-              </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold text-balance">{job.title}</h2>
                 <Link

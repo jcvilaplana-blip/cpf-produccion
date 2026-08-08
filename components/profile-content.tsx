@@ -415,29 +415,34 @@ export function ProfileContent({
                   </CardContent>
                 </Card>
               ) : (
-                applications.map((application) => (
+                applications.map((application) => {
+                  // Defensivo: una oferta borrada deja la candidatura sin `job`,
+                  // y una consulta que no anide la empresa la deja sin
+                  // `business`. Cualquiera de las dos cosas tumbaba la página.
+                  const oferta = application.job || {}
+                  const empresa = oferta.business || {}
+                  const nombreEmpresa = empresa.display_name || "Empresa"
+                  return (
                   <Card key={application.id}>
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12 border">
-                          <AvatarImage src={application.job.business.avatar_url || "/placeholder.svg"} />
+                          <AvatarImage src={empresa.avatar_url || "/placeholder.svg"} />
                           <AvatarFallback className="bg-primary/10 text-primary">
-                            {application.job.business.display_name[0]}
+                            {nombreEmpresa[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <h3 className="font-semibold mb-1">{application.job.title}</h3>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {application.job.business.display_name}
-                              </p>
+                              <h3 className="font-semibold mb-1">{oferta.title || "Oferta no disponible"}</h3>
+                              <p className="text-sm text-muted-foreground mb-2">{nombreEmpresa}</p>
                               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <MapPin className="h-4 w-4" />
-                                  {application.job.location}
+                                  {oferta.location || "—"}
                                 </span>
-                                {application.job.salary_display && <span>{application.job.salary_display}</span>}
+                                {oferta.salary_display && <span>{oferta.salary_display}</span>}
                               </div>
                             </div>
                             <Badge className={statusColors[application.status as keyof typeof statusColors]}>
@@ -451,7 +456,8 @@ export function ProfileContent({
                       </div>
                     </CardContent>
                   </Card>
-                ))
+                  )
+                })
               )}
             </TabsContent>
           )}

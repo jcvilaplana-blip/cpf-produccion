@@ -460,14 +460,6 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
           </Link>
         </div>
 
-        {/* 6 — Tipo de contrato que busca */}
-        <Section icon={FileText} title="Tipo de contrato que busca">
-          {contractChips}
-        </Section>
-
-        {/* 7 — Indicador de búsqueda activa */}
-        <Section>{activeSearchBlock}</Section>
-
         {/* 9 — CTAs */}
         <div className="grid grid-cols-2 gap-3">
           <Button
@@ -492,6 +484,14 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
             cuenta de establecimiento.
           </p>
         )}
+
+        {/* 6 — Tipo de contrato que busca */}
+        <Section icon={FileText} title="Tipo de contrato que busca">
+          {contractChips}
+        </Section>
+
+        {/* 7 — Indicador de búsqueda activa */}
+        <Section>{activeSearchBlock}</Section>
 
         {/* 10 — Certificados verificados */}
         {certifications.length > 0 && (
@@ -596,6 +596,40 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               </div>
             </button>
           </div>
+        )}
+
+        {/* Vídeos adicionales */}
+        {extraVideos.length > 0 && (
+          <Section icon={Video} title="Más vídeos">
+            {/* Abren el mismo reel a pantalla completa que el vídeo de
+                presentación. Antes eran `<video controls>` incrustados en una
+                celda de media pantalla: el fotograma de portada se veía, pero
+                los controles nativos quedaban tan pequeños que reproducirlos
+                era cuestión de suerte. */}
+            <div className="grid grid-cols-2 gap-2">
+              {extraVideos.map((videoUrl) => (
+                <button
+                  key={videoUrl}
+                  type="button"
+                  onClick={() => setVideoAbierto(videoUrl)}
+                  aria-label="Reproducir vídeo"
+                  className="relative block overflow-hidden rounded-2xl bg-black"
+                >
+                  <video
+                    src={`${videoUrl}#t=0.1`}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="aspect-[9/16] w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl">
+                    <Play className="ml-0.5 h-5 w-5 fill-slate-900 text-slate-900" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Section>
         )}
 
         {/* 15 — Sobre mí */}
@@ -713,40 +747,6 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               </span>
               <Download className="h-4 w-4 shrink-0 text-slate-400" />
             </a>
-          </Section>
-        )}
-
-        {/* Vídeos adicionales */}
-        {extraVideos.length > 0 && (
-          <Section icon={Video} title="Más vídeos">
-            {/* Abren el mismo reel a pantalla completa que el vídeo de
-                presentación. Antes eran `<video controls>` incrustados en una
-                celda de media pantalla: el fotograma de portada se veía, pero
-                los controles nativos quedaban tan pequeños que reproducirlos
-                era cuestión de suerte. */}
-            <div className="grid grid-cols-2 gap-2">
-              {extraVideos.map((videoUrl) => (
-                <button
-                  key={videoUrl}
-                  type="button"
-                  onClick={() => setVideoAbierto(videoUrl)}
-                  aria-label="Reproducir vídeo"
-                  className="relative block overflow-hidden rounded-2xl bg-black"
-                >
-                  <video
-                    src={`${videoUrl}#t=0.1`}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="aspect-[9/16] w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/20" />
-                  <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl">
-                    <Play className="ml-0.5 h-5 w-5 fill-slate-900 text-slate-900" />
-                  </span>
-                </button>
-              ))}
-            </div>
           </Section>
         )}
 

@@ -101,7 +101,8 @@ export function PortfolioVideosSection({ videos = [], onVideosChange, maxVideos 
           Portfolio de Videos ({currentVideos.length}/{maxVideos})
         </CardTitle>
         <p className="text-[13px] text-gray-500 mt-1">
-          Solo se muestran a pantalla completa si la empresa pulsa para verlos
+          El primero es tu vídeo de presentación y abre tu perfil; el resto
+          aparecen en "Más vídeos". Solo se reproducen si la empresa pulsa.
         </p>
       </CardHeader>
       <CardContent className="pt-4">
@@ -109,6 +110,13 @@ export function PortfolioVideosSection({ videos = [], onVideosChange, maxVideos 
           {currentVideos.map((url, index) => (
             <div key={index} className="relative aspect-video rounded-xl overflow-hidden bg-black group">
               <video src={url} muted preload="metadata" className="w-full h-full object-cover" />
+              {/* Cuál es cuál. Aquí se veían todos como una lista plana, así
+                  que quien subía dos no entendía por qué su perfil público
+                  enseñaba uno como presentación y sólo el otro en "Más
+                  vídeos". */}
+              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                {index === 0 ? "Presentación" : "Adicional"}
+              </span>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-black/40 rounded-full p-2">
                   <Play className="w-4 h-4 text-white" fill="white" />

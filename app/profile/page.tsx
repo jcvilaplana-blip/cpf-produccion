@@ -58,9 +58,14 @@ export default function ProfilePage() {
       }
 
       if (profileData?.user_type === "worker") {
+        // La empresa va anidada a propósito: la pantalla pinta su nombre y su
+        // avatar en cada candidatura, y con `job:jobs(*)` a secas no venía, de
+        // modo que leer `application.job.business.display_name` reventaba la
+        // página entera. Hay que nombrar la clave foránea porque `jobs` apunta
+        // a `profiles` por `business_id`.
         const { data: appsData } = await supabase
           .from("applications")
-          .select("*, job:jobs(*)")
+          .select("*, job:jobs(*, business:profiles!jobs_business_id_fkey(display_name, avatar_url))")
           .eq("worker_id", userId)
           .order("created_at", { ascending: false })
         if (appsData) setApplications(appsData)

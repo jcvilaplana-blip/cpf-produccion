@@ -244,7 +244,10 @@ export default function BusinessDashboardPage() {
         {/* Línea 1: perfil · entrevistas · mensajes */}
         <div className="grid grid-cols-3 gap-3">
           <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2 rounded-xl border-[#F48221]/30 hover:bg-[#F48221]/5">
-            <Link href="/business-profile/edit">
+            {/* Al perfil público real, el mismo que ven los candidatos.
+                Llevaba a "Editar perfil", que es otra cosa y ya cuelga del
+                menú del avatar de arriba. */}
+            <Link href={`/business/${user.id}`}>
               <Building2 className="h-6 w-6 text-[#F48221]" />
               <span className="text-[13px] font-semibold leading-tight text-center">Mi<br />Perfil</span>
             </Link>

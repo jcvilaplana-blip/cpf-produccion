@@ -6,11 +6,41 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { WorkerVideoCard } from "@/components/worker-video-card"
-import { MapPin, SlidersHorizontal, ArrowLeft, Loader2 } from "lucide-react"
+import { MapPin, SlidersHorizontal, ArrowLeft, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { CityAutocomplete } from "@/components/city-autocomplete"
+
+/**
+ * Jornadas que puede buscar un candidato.
+ *
+ * Los valores tienen que coincidir con lo que guarda
+ * `profiles.contract_type_sought`; las etiquetas salen del mapa común de
+ * lib/profile-constants.ts.
+ */
+const JORNADAS = [
+  { value: "all", label: "Todas las jornadas" },
+  { value: "full_time", label: "Jornada Completa" },
+  { value: "part_time", label: "Media Jornada" },
+  { value: "weekend", label: "Fin de Semana" },
+  { value: "temporary", label: "Contrato Temporal" },
+  { value: "one_time_event", label: "Por Dias" },
+]
+
+const NIVELES_EXPERIENCIA = [
+  { value: "all", label: "Toda la experiencia" },
+  { value: "none", label: "Sin Experiencia" },
+  { value: "low", label: "Poca Experiencia (1-3 anos)" },
+  { value: "medium", label: "Experiencia Media (4-6 anos)" },
+  { value: "high", label: "Mucha Experiencia (7+ anos)" },
+]
+
+const OPCIONES_FLASH = [
+  { value: false, label: "Todas" },
+  { value: true, label: "Solo Ofertas Flash" },
+]
 
 interface CategoryContentProps {
   categoryName: string
@@ -88,8 +118,25 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
           rating: profile.rating || 0,
           avatarUrl: profile.avatar_url || "/placeholder.svg",
           experience: `${profile.experience_years || 0} años de experiencia`,
-          experienceLevel: profile.experience_years >= 7 ? "high" : profile.experience_years >= 4 ? "medium" : "low",
-          jobType: profile.availability_status || "full-time",
+          // Sin esto, un candidato con 0 anos caia en "low" y no habia forma de
+          // buscar a quien empieza.
+          experienceLevel:
+            profile.experience_years >= 7
+              ? "high"
+              : profile.experience_years >= 4
+                ? "medium"
+                : profile.experience_years >= 1
+                  ? "low"
+                  : "none",
+          // Jornada que busca el candidato. Antes aquí se metía
+          // `availability_status` (inmediata / 2 semanas / 1 mes), que no
+          // comparte un solo valor con las opciones del filtro: "Tipo de
+          // trabajo" no ha filtrado nunca nada.
+          jornadas: Array.isArray(profile.contract_type_sought)
+            ? profile.contract_type_sought
+            : profile.contract_type_sought
+              ? [profile.contract_type_sought]
+              : [],
           isFlashOffer: false,
         }))
         // Ver lib/highlighted-profiles.ts: los perfiles destacados de pago
@@ -109,6 +156,25 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [])
 
+  const filtrosActivos =
+    (experienceFilter !== "all" ? 1 : 0) +
+    (jobTypeFilter !== "all" ? 1 : 0) +
+    (categoryFilter !== "all" ? 1 : 0) +
+    (subcategoryFilter !== "all" ? 1 : 0) +
+    (locationFilter ? 1 : 0) +
+    (postalCodeFilter ? 1 : 0) +
+    (flashOffersOnly ? 1 : 0)
+
+  const limpiarFiltros = () => {
+    setExperienceFilter("all")
+    setJobTypeFilter("all")
+    setCategoryFilter("all")
+    setSubcategoryFilter("all")
+    setLocationFilter("")
+    setPostalCodeFilter("")
+    setFlashOffersOnly(false)
+  }
+
   const filteredWorkers = workers.filter((worker) => {
     const matchesSpecialty = (name: string) =>
       worker.specialties.some((s: string) => s === name || s.startsWith(`${name} - `))
@@ -119,7 +185,7 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
         ? worker.categoryId === resolvedCategory.id || worker.category === resolvedCategory.name || matchesSpecialty(resolvedCategory.name)
         : worker.category === categoryName || matchesSpecialty(categoryName))
     const matchesExperience = experienceFilter === "all" || worker.experienceLevel === experienceFilter
-    const matchesJobType = jobTypeFilter === "all" || worker.jobType === jobTypeFilter
+    const matchesJobType = jobTypeFilter === "all" || worker.jornadas.includes(jobTypeFilter)
     const selectedFilterCat = categoryOptions.find((c) => c.slug === categoryFilter)
     const matchesCategoryFilter = (() => {
       if (categoryFilter === "all" || !selectedFilterCat) return true
@@ -173,76 +239,142 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Filters Toggle */}
-        <Button onClick={() => setShowFilters(!showFilters)} variant="outline" className="mb-4 w-full md:w-auto">
-          <SlidersHorizontal className="w-4 h-4 mr-2" />
-          {showFilters ? "Ocultar Filtros" : "Filtros"}
-        </Button>
+        {/* Filtros. Mismo lenguaje que el desplegable de la página Empresas,
+            que es el pensado para móvil: panel con scroll propio, etiquetas en
+            versalitas, campos altos y las opciones binarias como chips grandes
+            en lugar de casillas diminutas. */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="w-full mb-4 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm text-sm active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+            <span className="font-semibold text-gray-700 dark:text-gray-200">Filtrar</span>
+            {filtrosActivos > 0 && (
+              <Badge className="bg-[#01A89E] text-white text-[12px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">
+                {filtrosActivos}
+              </Badge>
+            )}
+          </div>
+          {showFilters ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
+        </button>
 
-        {/* Filters */}
         {showFilters && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border mb-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="w-full">
-                <Label htmlFor="experience">Experiencia</Label>
+          <div className="mb-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+            <div
+              className="max-h-[60vh] overflow-y-auto overscroll-contain px-4 py-5 space-y-5"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {/* Ofertas flash, lo primero: es un sí o no que cambia la lista
+                  entera, y al final del formulario no lo veía nadie. */}
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Ofertas flash
+                </Label>
+                <div className="flex flex-wrap gap-2.5">
+                  {OPCIONES_FLASH.map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      onClick={() => setFlashOffersOnly(opt.value)}
+                      className={`px-4 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95 select-none ${
+                        flashOffersOnly === opt.value
+                          ? "bg-[#01A89E] text-white shadow-md shadow-[#01A89E]/25"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Experiencia
+                </Label>
                 <Select value={experienceFilter} onValueChange={setExperienceFilter}>
-                  <SelectTrigger id="experience" className="w-full">
+                  <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Más actuales</SelectItem>
-                    <SelectItem value="high">Mucha Experiencia (7+ años)</SelectItem>
-                    <SelectItem value="medium">Experiencia Media (4-6 años)</SelectItem>
-                    <SelectItem value="low">Poca Experiencia (1-3 años)</SelectItem>
+                  <SelectContent className="max-h-[40vh]">
+                    {NIVELES_EXPERIENCIA.map((n) => (
+                      <SelectItem key={n.value} value={n.value} className="py-2.5 text-sm">
+                        {n.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="w-full">
-                <Label htmlFor="jobType">Tipo de trabajo</Label>
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Jornada Laboral
+                </Label>
                 <Select value={jobTypeFilter} onValueChange={setJobTypeFilter}>
-                  <SelectTrigger id="jobType" className="w-full">
+                  <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Más actuales</SelectItem>
-                    <SelectItem value="full-time">Tiempo Completo</SelectItem>
-                    <SelectItem value="part-time">Tiempo Parcial</SelectItem>
-                    <SelectItem value="temporary">Temporal</SelectItem>
-                    <SelectItem value="freelance">Freelance</SelectItem>
+                  <SelectContent className="max-h-[40vh]">
+                    {JORNADAS.map((j) => (
+                      <SelectItem key={j.value} value={j.value} className="py-2.5 text-sm">
+                        {j.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="w-full">
-                <Label htmlFor="category">Categoría</Label>
-                <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setSubcategoryFilter("all") }}>
-                  <SelectTrigger id="category" className="w-full">
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Categoría
+                </Label>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={(v) => {
+                    setCategoryFilter(v)
+                    setSubcategoryFilter("all")
+                  }}
+                >
+                  <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectContent className="max-h-[40vh]">
+                    <SelectItem value="all" className="py-2.5 text-sm">
+                      Todas las categorías
+                    </SelectItem>
                     {categoryOptions.map((c) => (
-                      <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.slug} className="py-2.5 text-sm">
+                        {c.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               {(() => {
-                const selectedFilterCat = categoryOptions.find((c) => c.slug === categoryFilter)
-                if (!selectedFilterCat || selectedFilterCat.subcategories.length === 0) return null
+                const catSeleccionada = categoryOptions.find((c) => c.slug === categoryFilter)
+                if (!catSeleccionada || catSeleccionada.subcategories.length === 0) return null
                 return (
-                  <div className="w-full">
-                    <Label htmlFor="subcategory">Especialidad</Label>
+                  <div>
+                    <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                      Especialidad
+                    </Label>
                     <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
-                      <SelectTrigger id="subcategory" className="w-full">
+                      <SelectTrigger className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
-                        {selectedFilterCat.subcategories.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      <SelectContent className="max-h-[40vh]">
+                        <SelectItem value="all" className="py-2.5 text-sm">
+                          Todas
+                        </SelectItem>
+                        {catSeleccionada.subcategories.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id} className="py-2.5 text-sm">
+                            {sub.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -250,57 +382,40 @@ export function CategoryContent({ categoryName, user }: CategoryContentProps) {
                 )
               })()}
 
-              <div className="w-full">
-                <Label htmlFor="location">Ciudad</Label>
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Ciudad
+                </Label>
                 <CityAutocomplete
-                  id="location"
-                  placeholder="Madrid, Barcelona..."
+                  placeholder="Todas las ciudades"
                   value={locationFilter}
                   onChange={setLocationFilter}
-                  className="w-full"
+                  className="h-12 rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 />
               </div>
 
-              <div className="w-full">
-                <Label htmlFor="postal">Código Postal</Label>
+              <div>
+                <Label className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                  Código Postal
+                </Label>
                 <Input
-                  id="postal"
                   placeholder="28001"
                   value={postalCodeFilter}
                   onChange={(e) => setPostalCodeFilter(e.target.value)}
-                  className="w-full"
+                  className="h-12 text-sm rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 px-4"
                 />
-              </div>
-
-              <div className="flex items-center space-x-2 pt-6 w-full">
-                <input
-                  type="checkbox"
-                  id="flashOffers"
-                  checked={flashOffersOnly}
-                  onChange={(e) => setFlashOffersOnly(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="flashOffers" className="cursor-pointer">
-                  Solo Ofertas Flash
-                </Label>
               </div>
             </div>
 
-            <Button
-              onClick={() => {
-                setExperienceFilter("all")
-                setJobTypeFilter("all")
-                setCategoryFilter("all")
-                setSubcategoryFilter("all")
-                setLocationFilter("")
-                setPostalCodeFilter("")
-                setFlashOffersOnly(false)
-              }}
-              variant="ghost"
-              size="sm"
-            >
-              Limpiar filtros
-            </Button>
+            <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 px-4 py-3">
+              <Button
+                onClick={limpiarFiltros}
+                variant="outline"
+                className="w-full h-11 rounded-2xl text-sm font-semibold"
+              >
+                Limpiar filtros
+              </Button>
+            </div>
           </div>
         )}
 

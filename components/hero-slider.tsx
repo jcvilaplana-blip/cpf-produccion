@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/use-auth"
  */
 const SLIDES = [
   {
-    titulo: "Encuentra el trabajo en Hostelería que quieres",
+    titulo: "Encuentra el trabajo que quieres en Hostelería",
     subtitulo: "Todo tipo de negocios de Hostelería te están esperando",
     cta: "Ver Ofertas",
     ctaLink: "/jobs",
@@ -23,7 +23,7 @@ const SLIDES = [
     ocultarPara: "business" as const,
   },
   {
-    titulo: "Conecta, Contrata, Confía",
+    titulo: "Conecta, Confía, Contrata",
     subtitulo: "Encuentra el empleado ideal para tu Establecimiento de hostelería",
     cta: "Buscar Candidatos",
     ctaLink: "/candidates",

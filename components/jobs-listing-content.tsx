@@ -114,13 +114,35 @@ export function JobsListingContent({ jobs, flashOffers }: JobsListingContentProp
     })
   }, [jobs])
 
+  // Todas las categorías de empleo, no sólo aquellas en las que hoy hay alguna
+  // oferta publicada. Derivarlas del listado hacía que el desplegable encogiera
+  // o creciera según lo que hubiera publicado esa mañana, y quien buscaba
+  // "Sommelier" concluía que la categoría no existía.
+  //
+  // Las de las ofertas cargadas se añaden igualmente, por si alguna se publicó
+  // con una categoría que ya no está en el catálogo.
+  const [catalogo, setCatalogo] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((json) => {
+        const nombres = (json.data || [])
+          .filter((c: any) => (c.role_type || "candidate") === "candidate")
+          .map((c: any) => c.name)
+          .filter(Boolean)
+        setCatalogo(nombres)
+      })
+      .catch(() => {})
+  }, [])
+
   const jobTypes = useMemo(() => {
-    const types = new Set<string>()
+    const types = new Set<string>(catalogo)
     allJobs.forEach((job) => {
       if (job.jobType) types.add(job.jobType)
     })
-    return Array.from(types).sort()
-  }, [allJobs])
+    return Array.from(types).sort((a, b) => a.localeCompare(b, "es"))
+  }, [allJobs, catalogo])
 
   const filteredJobs = allJobs.filter((job) => {
     const matchesSearch =

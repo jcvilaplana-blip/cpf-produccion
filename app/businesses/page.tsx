@@ -272,16 +272,6 @@ export default function BusinessesPage() {
                   </div>
                 </div>
 
-                {/* Ver en Mapa */}
-                <div>
-                  <Link
-                    href="/businesses/map"
-                    className="flex items-center justify-center gap-2.5 w-full h-12 rounded-2xl bg-[#F48221] hover:bg-[#D9721D] text-white text-sm font-bold transition-all active:scale-[0.98] shadow-md shadow-[#F48221]/20"
-                  >
-                    <Map className="w-4.5 h-4.5" />
-                    Ver en Mapa
-                  </Link>
-                </div>
               </div>
 
               {/* Bottom actions bar */}

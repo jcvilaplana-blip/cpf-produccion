@@ -96,6 +96,14 @@ export function CandidateDashboardContent({
   applicationsCount,
   ratingStats,
 }: CandidateDashboardContentProps) {
+  // Las cifras llegan resueltas del servidor, pero se refrescan aquí: al
+  // guardar una oferta y volver al panel, el enrutador de Next puede servir la
+  // respuesta que ya tenía en caché, y el contador se quedaba en el valor de
+  // antes -0 guardadas mientras la lista ya mostraba una-.
+  const [contadores, setContadores] = useState({
+    guardadas: savedJobsCount,
+    candidaturas: applicationsCount,
+  })
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
@@ -145,6 +153,15 @@ export function CandidateDashboardContent({
           )
         }
         if (catsData) setCategories(catsData)
+
+        const [{ count: guardadas }, { count: candidaturas }] = await Promise.all([
+          supabase.from("saved_jobs").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("applications").select("id", { count: "exact", head: true }).eq("worker_id", userId),
+        ])
+        setContadores({
+          guardadas: guardadas ?? savedJobsCount,
+          candidaturas: candidaturas ?? applicationsCount,
+        })
       } catch {
         // Best-effort background refresh - keep showing the last good data
       }
@@ -317,7 +334,7 @@ export function CandidateDashboardContent({
                     <FileText className="h-6 w-6 text-[#01A89E]" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold">{applicationsCount}</p>
+                    <p className="text-xl font-bold">{contadores.candidaturas}</p>
                     <p className="text-[14px] font-medium text-muted-foreground leading-snug">Mis<br />Candidaturas</p>
                   </div>
                 </CardContent>
@@ -333,7 +350,7 @@ export function CandidateDashboardContent({
                     <Heart className="h-6 w-6 text-rose-500" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold">{savedJobsCount}</p>
+                    <p className="text-xl font-bold">{contadores.guardadas}</p>
                     <p className="text-[14px] font-medium text-muted-foreground leading-snug">Ofertas Guardadas</p>
                   </div>
                 </CardContent>
