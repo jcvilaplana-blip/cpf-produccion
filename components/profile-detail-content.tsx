@@ -358,7 +358,7 @@ export function ProfileDetailContent({ id, viewerId, viewerType, initialProfile 
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
+            <div className="absolute inset-0 bg-[#01A89E] bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/20" />
 

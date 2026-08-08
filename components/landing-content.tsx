@@ -107,7 +107,7 @@ export function LandingContent({ featuredJobs, stats, businesses, workers: worke
               este tamaño. El botón se mantiene porque señala la acción. */}
           <Link
             href="/jobs"
-            className="block bg-gradient-to-br from-[#01A89E] to-[#018F86] rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.99]"
+            className="block bg-[#01A89E] bg-gradient-to-br from-[#01A89E] to-[#018F86] rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.99]"
           >
             <div className="grid md:grid-cols-2 gap-0">
               {/* Contenido de texto */}

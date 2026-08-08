@@ -314,7 +314,7 @@ export function BusinessDetailContent({ id }: { id: string }) {
               crossOrigin="anonymous"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
+            <div className="absolute inset-0 bg-[#01A89E] bg-gradient-to-br from-[#01A89E] to-[#015F59]" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/20" />
 

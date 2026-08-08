@@ -24,6 +24,8 @@ type Way = {
   cadence: string
   icon: React.ComponentType<{ className?: string }>
   tint: string
+  /** Color plano de respaldo, para navegadores sin `@property`. */
+  fallback: string
   ring: string
   roles: "ambos" | "candidato" | "establecimiento"
 }
@@ -38,6 +40,7 @@ const WAYS: Way[] = [
     cadence: "Por cada invitado",
     icon: Users,
     tint: "from-violet-500 to-fuchsia-500",
+    fallback: "bg-violet-500",
     ring: "ring-violet-200",
     roles: "ambos",
   },
@@ -49,6 +52,7 @@ const WAYS: Way[] = [
     cadence: "Por cada contratación",
     icon: Handshake,
     tint: "from-emerald-500 to-teal-500",
+    fallback: "bg-emerald-500",
     ring: "ring-emerald-200",
     roles: "ambos",
   },
@@ -60,6 +64,7 @@ const WAYS: Way[] = [
     cadence: "Una sola vez",
     icon: UserCheck,
     tint: "from-sky-500 to-blue-500",
+    fallback: "bg-sky-500",
     ring: "ring-sky-200",
     roles: "ambos",
   },
@@ -71,6 +76,7 @@ const WAYS: Way[] = [
     cadence: "Por cada valoración",
     icon: Star,
     tint: "from-amber-400 to-orange-500",
+    fallback: "bg-amber-400",
     ring: "ring-amber-200",
     roles: "ambos",
   },
@@ -82,6 +88,7 @@ const WAYS: Way[] = [
     cadence: "Por cada entrevista",
     icon: CalendarCheck,
     tint: "from-indigo-500 to-violet-500",
+    fallback: "bg-indigo-500",
     ring: "ring-indigo-200",
     roles: "candidato",
   },
@@ -93,6 +100,7 @@ const WAYS: Way[] = [
     cadence: "Una vez al mes",
     icon: ImagePlus,
     tint: "from-rose-400 to-pink-500",
+    fallback: "bg-rose-400",
     ring: "ring-rose-200",
     roles: "candidato",
   },
@@ -104,6 +112,7 @@ const WAYS: Way[] = [
     cadence: "Una vez por semana",
     icon: CalendarClock,
     tint: "from-cyan-500 to-teal-500",
+    fallback: "bg-cyan-500",
     ring: "ring-cyan-200",
     roles: "candidato",
   },
@@ -115,6 +124,7 @@ const WAYS: Way[] = [
     cadence: "Una vez al día",
     icon: Eye,
     tint: "from-slate-400 to-slate-600",
+    fallback: "bg-slate-400",
     ring: "ring-slate-200",
     roles: "ambos",
   },
@@ -141,7 +151,7 @@ export default function HowToEarnPage() {
       </header>
 
       {/* Portada */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#01A89E] via-[#0d9488] to-[#115e59] px-5 py-10 text-white">
+      <section className="relative overflow-hidden bg-[#01A89E] bg-gradient-to-br from-[#01A89E] via-[#0d9488] to-[#115e59] px-5 py-10 text-white">
         <Sparkles className="pointer-events-none absolute -right-6 -top-6 h-40 w-40 text-white/10" />
         <Coins className="pointer-events-none absolute -bottom-8 -left-6 h-36 w-36 text-white/10" />
         <div className="relative mx-auto max-w-2xl">
@@ -193,7 +203,7 @@ export default function HowToEarnPage() {
                   className={`flex gap-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ${way.ring}`}
                 >
                   <div
-                    className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br ${way.tint} text-white`}
+                    className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl ${way.fallback} bg-gradient-to-br ${way.tint} text-white`}
                   >
                     <Icon className="h-5 w-5" />
                     <span className="mt-0.5 text-[13px] font-bold leading-none">+{way.points}</span>
@@ -231,7 +241,7 @@ export default function HowToEarnPage() {
             {[1, 2, 3, 4, 5, 6].map((lvl) => (
               <div key={lvl} className="flex flex-1 flex-col items-center gap-1.5">
                 <div
-                  className="w-full rounded-t-lg bg-gradient-to-t from-[#01A89E] to-[#5eead4]"
+                  className="w-full rounded-t-lg bg-[#01A89E] bg-gradient-to-t from-[#01A89E] to-[#5eead4]"
                   style={{ height: `${18 + lvl * 11}px` }}
                 />
                 <span className="text-[12px] font-semibold text-slate-500">{lvl}</span>
