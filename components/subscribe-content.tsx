@@ -21,6 +21,13 @@ interface SubscribeContentProps {
   isNewBusiness?: boolean
 }
 
+/** Nombre legible de cada plan; `plan_type` guarda el identificador. */
+const PLAN_LABELS: Record<string, string> = {
+  "standard-business": "Standard",
+  "premium-business": "Premium",
+  "premium-worker": "Premium Trabajador",
+}
+
 export function SubscribeContent({
   user,
   profile,
@@ -215,8 +222,17 @@ export function SubscribeContent({
                   <div>
                     <h3 className="font-semibold">Suscripción Activa</h3>
                     <p className="text-sm text-muted-foreground">
-                      Plan: {currentSubscription.plan_type} — Renovación:{" "}
-                      {new Date(currentSubscription.current_period_end).toLocaleDateString("es-ES")}
+                      Plan: {PLAN_LABELS[currentSubscription.plan_type] || currentSubscription.plan_type}
+                      {currentSubscription.current_period_end && (
+                        <>
+                          {" "}— Renovación:{" "}
+                          {new Date(currentSubscription.current_period_end).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>

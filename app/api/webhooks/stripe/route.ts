@@ -53,6 +53,31 @@ const FEATURE_LABELS: Record<string, string> = {
   highlight_job: "Destacar oferta (24h)",
 }
 
+/**
+ * Periodo de facturación de una suscripción, esté donde esté el dato.
+ *
+ * Stripe movió `current_period_start` / `current_period_end` de la raíz de la
+ * suscripción a sus items. Y los eventos del webhook NO se serializan con la
+ * versión de API que fija nuestro SDK, sino con la de la cuenta -hoy
+ * 2026-06-24.dahlia-, así que leerlos de la raíz devolvía `undefined` y la
+ * tabla `subscriptions` guardaba null: la pantalla mostraba "Renovación:
+ * 1/1/1970", que es lo que da `new Date(null)`.
+ *
+ * Se miran los dos sitios a propósito, para que la próxima mudanza de campos
+ * no vuelva a romperlo en silencio.
+ */
+function periodoDeSuscripcion(subscription: Stripe.Subscription): {
+  inicio: number | null
+  fin: number | null
+} {
+  const raiz = subscription as any
+  const item = (subscription.items?.data?.[0] as any) || {}
+  return {
+    inicio: raiz.current_period_start ?? item.current_period_start ?? null,
+    fin: raiz.current_period_end ?? item.current_period_end ?? null,
+  }
+}
+
 async function applySubscription(
   supabase: ServiceClient,
   subscription: Stripe.Subscription,
@@ -67,7 +92,7 @@ async function applySubscription(
   }
 
   // Hasta cuándo está pagado, según Stripe: más fiable que sumar 30 días.
-  const periodEnd = (subscription as any).current_period_end as number | undefined
+  const periodEnd = periodoDeSuscripcion(subscription).fin
   const expiresAt = periodEnd
     ? new Date(periodEnd * 1000).toISOString()
     : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -166,8 +191,7 @@ async function recordSubscriptionPayment(
       )
     }
 
-    const periodStart = (subscription as any).current_period_start as number | undefined
-    const periodEnd = (subscription as any).current_period_end as number | undefined
+    const { inicio: periodStart, fin: periodEnd } = periodoDeSuscripcion(subscription)
 
     const { data: existingSub } = await supabase
       .from("subscriptions")
